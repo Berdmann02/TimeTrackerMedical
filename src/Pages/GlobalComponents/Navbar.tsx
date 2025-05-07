@@ -15,14 +15,14 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <a href="/" className="flex-shrink-0 flex items-center">
-              <span className="text-blue-600 font-bold text-xl">PharmRX</span>
+              <span className="text-blue-600 font-bold text-xl">TimeTrackerMed</span>
             </a>
           </div>
 
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <a
-              href="/patients"
+              href="/patient"
               className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Patients
@@ -34,7 +34,7 @@ const Navbar = () => {
               Medical
             </a>
             <a
-              href="/login"
+              href="/"
               className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Login
