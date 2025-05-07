@@ -6,7 +6,7 @@ import PatientsPage from "./Pages/PatientsPage/PatientsPage";
 function App(){
     return (
         <>
-        
+
     <Navbar />
     <Routes>
       <Route path="/" element={<LoginPage />} />
