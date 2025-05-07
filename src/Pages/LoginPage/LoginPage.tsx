@@ -1,9 +1,9 @@
-
+import LoginForm from "./LoginPageComponents/LoginForm"
 
 export default function LoginPage() {
     return (
         <div>
-            Login Page
+            <LoginForm/>
         </div>
     )
 }
