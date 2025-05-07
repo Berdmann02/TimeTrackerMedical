@@ -15,7 +15,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <a href="/" className="flex-shrink-0 flex items-center">
-              <span className="text-blue-600 font-bold text-xl">TimeTrackerMed</span>
+              <span className="text-blue-600 font-bold text-xl">MediTrackTime</span>
             </a>
           </div>
 
@@ -37,7 +37,7 @@ const Navbar = () => {
               href="/"
               className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
-              Login
+              Logout
             </a>
           </div>
 

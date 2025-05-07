@@ -74,10 +74,10 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg">
+        <div className="flex flex-col items-center">
+          <img src="/public/logo.png" alt="MediTrack Time Logo" width={150} height={150}/>
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
