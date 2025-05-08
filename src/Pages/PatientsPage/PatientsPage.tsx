@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 interface Person {
   id: string
@@ -11,6 +12,8 @@ interface Person {
 }
 
 export default function PatientsPage() {
+  const navigate = useNavigate()
+
   // Sample data
   const initialData: Person[] = [
     {
@@ -118,16 +121,13 @@ export default function PatientsPage() {
   const [activityFilter, setActivityFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<keyof Person | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
-  const [selectAll, setSelectAll] = useState(false)
-
-  const [siteFilter, setSiteFilter] = useState<string>("all")
+  const [siteFilter, setSiteFilter] = useState<string>("CP Greater San Antonio")
   const [monthFilter, setMonthFilter] = useState<string>("all")
   const [yearFilter, setYearFilter] = useState<string>("all")
   const [showInactive, setShowInactive] = useState(false)
 
   // Sample data for filters
-  const sites = ["CP Greater San Antonion", "CP Intermountain"]
+  const sites = ["CP Intermountain"]
   const months = [
     "January",
     "February",
@@ -193,41 +193,8 @@ export default function PatientsPage() {
     }
   }
 
-  // Handle row selection
-  const toggleRowSelection = (id: string) => {
-    const newSelected = new Set(selectedRows)
-    if (newSelected.has(id)) {
-      newSelected.delete(id)
-    } else {
-      newSelected.add(id)
-    }
-    setSelectedRows(newSelected)
-    setSelectAll(newSelected.size === sortedData.length)
-  }
-
-  // Handle select all
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      setSelectedRows(new Set())
-    } else {
-      setSelectedRows(new Set(sortedData.map((item) => item.id)))
-    }
-    setSelectAll(!selectAll)
-  }
-
-  // Gender badge component
-  const GenderBadge = ({ gender }: { gender: "Male" | "Female" | "Other" }) => {
-    const colorMap = {
-      Male: "bg-blue-100 text-blue-800",
-      Female: "bg-pink-100 text-pink-800",
-      Other: "bg-purple-100 text-purple-800",
-    }
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorMap[gender] || "bg-gray-100 text-gray-800"}`}>
-        {gender}
-      </span>
-    )
+  const getGenderDisplay = (gender: string) => {
+    return gender === "Male" ? "M" : gender === "Female" ? "F" : "O"
   }
 
   // Dropdown component
@@ -307,7 +274,7 @@ export default function PatientsPage() {
                   onChange={(e) => setSiteFilter(e.target.value)}
                   className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
                 >
-                  <option value="all">All Sites</option>
+                  <option value="CP Greater San Antonio">CP Greater San Antonio</option>
                   {sites.map((site) => (
                     <option key={site} value={site}>
                       {site}
@@ -384,19 +351,6 @@ export default function PatientsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10"
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectAll}
-                      onChange={toggleSelectAll}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                  </div>
-                </th>
                 <th
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -513,26 +467,24 @@ export default function PatientsPage() {
                 sortedData.map((person) => (
                   <tr
                     key={person.id}
-                    className={`${selectedRows.has(person.id) ? "bg-indigo-50" : "hover:bg-gray-50"} transition-colors`}
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.has(person.id)}
-                          onChange={() => toggleRowSelection(person.id)}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                      </div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{person.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(person.birthdate).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <GenderBadge gender={person.gender} />
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getGenderDisplay(person.gender)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.createActivity}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => navigate(`/activity?patientId=${person.id}`)}
+                        className="inline-flex items-center px-2.5 py-1.5 border border-indigo-500 text-xs font-medium rounded text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                      >
+                        <PlusIcon className="h-3 w-3 mr-1" />
+                        Add Activity
+                      </button>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.totalTime} min</td>
                   </tr>
                 ))
@@ -607,28 +559,6 @@ export default function PatientsPage() {
           </div>
         </div>
       </div>
-
-      {/* Selected Items Summary */}
-      {selectedRows.size > 0 && (
-        <div className="mt-4 bg-indigo-50 p-4 rounded-lg shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <CheckIcon className="h-5 w-5 text-indigo-600 mr-2" />
-              <span className="text-sm font-medium text-indigo-700">
-                {selectedRows.size} {selectedRows.size === 1 ? "item" : "items"} selected
-              </span>
-            </div>
-            <div className="flex space-x-2">
-              <button className="px-3 py-1 bg-white text-indigo-600 text-sm font-medium rounded border border-indigo-600 hover:bg-indigo-50">
-                Assign
-              </button>
-              <button className="px-3 py-1 bg-white text-red-600 text-sm font-medium rounded border border-red-600 hover:bg-red-50">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
