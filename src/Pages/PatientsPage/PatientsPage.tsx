@@ -121,13 +121,13 @@ export default function PatientsPage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
 
-  const [siteFilter, setSiteFilter] = useState<string>("all")
+  const [siteFilter, setSiteFilter] = useState<string>("CP Greater San Antonio")
   const [monthFilter, setMonthFilter] = useState<string>("all")
   const [yearFilter, setYearFilter] = useState<string>("all")
   const [showInactive, setShowInactive] = useState(false)
 
   // Sample data for filters
-  const sites = ["CP Greater San Antonion", "CP Intermountain"]
+  const sites = ["CP Intermountain"]
   const months = [
     "January",
     "February",
@@ -307,7 +307,7 @@ export default function PatientsPage() {
                   onChange={(e) => setSiteFilter(e.target.value)}
                   className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
                 >
-                  <option value="all">All Sites</option>
+                  <option value="CP Greater San Antonio">CP Greater San Antonio</option>
                   {sites.map((site) => (
                     <option key={site} value={site}>
                       {site}
