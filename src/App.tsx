@@ -7,17 +7,15 @@ import ActivityPage from "./pages/activities/ActivityPage";
 function App(){
     return (
         <>
-
     <Navbar />
     <Routes>
-      <Route path="/" element={<LoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<PatientsPage />} />
       <Route path="/patients" element={<PatientsPage />} />
       <Route path="/activity" element={<ActivityPage />} /> {/* add id to activity & for each Patient */}
     </Routes>
         </>
-
     )
-
 }
 
 export default App;
