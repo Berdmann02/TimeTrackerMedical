@@ -236,7 +236,7 @@ export default function PatientsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Activity Tracker</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">All Patients</h1>
 
         {/* Filters and Search */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
@@ -476,7 +476,7 @@ export default function PatientsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => navigate(`/patientdetails`)}
-                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                         >
                           {person.name}
                         </button>
@@ -490,7 +490,7 @@ export default function PatientsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button
                           onClick={() => navigate(`/activity?patientId=${person.id}`)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
                         >
                           <PlusIcon className="h-3 w-3 mr-1" />
                           Add Activity

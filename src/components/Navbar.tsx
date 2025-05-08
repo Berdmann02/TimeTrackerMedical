@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Menu, X, Plus, LogOut } from "lucide-react"
+import { Menu, X, Users, LogOut } from "lucide-react"
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -21,11 +21,11 @@ const Navbar = () => {
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href="/activity"
+              href="/users"
               className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
             >
-              <Plus className="w-5 h-5" />
-              Add Activity
+              <Users className="w-5 h-5" />
+              Manage Users
             </a>
             <a
               href="/login"
@@ -59,12 +59,12 @@ const Navbar = () => {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <a
-              href="/activity"
+              href="/users"
               className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2"
               onClick={toggleMenu}
             >
-              <Plus className="w-5 h-5" />
-              Add Activity
+              <Users className="w-5 h-5" />
+              Manage Users
             </a>
             <a
               href="/"
