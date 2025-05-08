@@ -238,7 +238,7 @@ export default function PatientsPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Activity Tracker</h1>
 
       {/* Filters and Search */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+      <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
         <div className="flex flex-col space-y-4">
           {/* Top row with total patients and search */}
           <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -262,7 +262,7 @@ export default function PatientsPage() {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-gray-200"></div>
+          <div className="border-t border-gray-200 my-4"></div>
 
           {/* Filter dropdowns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -272,7 +272,7 @@ export default function PatientsPage() {
                 <select
                   value={siteFilter}
                   onChange={(e) => setSiteFilter(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border appearance-none"
                 >
                   <option value="CP Greater San Antonio">CP Greater San Antonio</option>
                   {sites.map((site) => (
@@ -293,7 +293,7 @@ export default function PatientsPage() {
                 <select
                   value={monthFilter}
                   onChange={(e) => setMonthFilter(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border appearance-none"
                 >
                   <option value="all">All Months</option>
                   {months.map((month, index) => (
@@ -314,7 +314,7 @@ export default function PatientsPage() {
                 <select
                   value={yearFilter}
                   onChange={(e) => setYearFilter(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border appearance-none"
                 >
                   <option value="all">All Years</option>
                   {years.map((year) => (
@@ -329,24 +329,27 @@ export default function PatientsPage() {
               </div>
             </div>
 
-            <div className="flex items-end">
-              <label className="inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={() => setShowInactive(!showInactive)}
-                  className="sr-only peer"
-                />
-                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive</span>
-              </label>
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <div className="flex items-center h-[38px]">
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showInactive}
+                    onChange={() => setShowInactive(!showInactive)}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg border border-gray-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
