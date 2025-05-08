@@ -8,7 +8,7 @@ interface FormData {
   rememberMe: boolean
 }
 
-export default function LoginForm() {
+export default function LoginPage() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState<FormData>({
     email: "",

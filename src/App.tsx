@@ -1,8 +1,8 @@
 import { Routes,Route } from "react-router-dom";
-import Navbar from "./Pages/GlobalComponents/Navbar";
-import LoginPage from "./Pages/LoginPage/LoginPage";
-import PatientsPage from "./Pages/PatientsPage/PatientsPage";
-import ActivityPage from "./Pages/ActivityPage/ActivityPage";
+import Navbar from  "./components/Navbar";
+import LoginPage from "./pages/login/LoginPage";
+import PatientsPage from "./pages/patients/PatientsPage";
+import ActivityPage from "./pages/activities/ActivityPage";
 
 function App(){
     return (
