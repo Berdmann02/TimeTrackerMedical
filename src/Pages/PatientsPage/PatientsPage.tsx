@@ -5,7 +5,7 @@ interface Person {
   id: string
   name: string
   birthdate: string
-  gender: string
+  gender: "Male" | "Female" | "Other"
   createActivity: string
   totalTime: number
 }
@@ -121,13 +121,13 @@ export default function PatientsPage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
 
-  const [siteFilter, setSiteFilter] = useState<string>("CP Greater San Antonio")
+  const [siteFilter, setSiteFilter] = useState<string>("all")
   const [monthFilter, setMonthFilter] = useState<string>("all")
   const [yearFilter, setYearFilter] = useState<string>("all")
   const [showInactive, setShowInactive] = useState(false)
 
   // Sample data for filters
-  const sites = ["CP Intermountain"]
+  const sites = ["CP Greater San Antonion", "CP Intermountain"]
   const months = [
     "January",
     "February",
@@ -216,7 +216,7 @@ export default function PatientsPage() {
   }
 
   // Gender badge component
-  const GenderBadge = ({ gender }: { gender: string }) => {
+  const GenderBadge = ({ gender }: { gender: "Male" | "Female" | "Other" }) => {
     const colorMap = {
       Male: "bg-blue-100 text-blue-800",
       Female: "bg-pink-100 text-pink-800",
@@ -307,7 +307,7 @@ export default function PatientsPage() {
                   onChange={(e) => setSiteFilter(e.target.value)}
                   className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
                 >
-                  <option value="CP Greater San Antonio">CP Greater San Antonio</option>
+                  <option value="all">All Sites</option>
                   {sites.map((site) => (
                     <option key={site} value={site}>
                       {site}

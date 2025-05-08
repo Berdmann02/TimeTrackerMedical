@@ -11,7 +11,7 @@ function App(){
     <Navbar />
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/patient" element={<PatientsPage />} />
+      <Route path="/patients" element={<PatientsPage />} />
       <Route path="/activity" element={<ActivityPage />} /> {/* add id to activity & for each Patient */}
     </Routes>
         </>
