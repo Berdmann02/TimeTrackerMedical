@@ -123,7 +123,7 @@ export default function PatientDetailsPage() {
                     <label className="text-sm font-medium text-gray-500">Status</label>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       patientData.patient.isActivePatient
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-blue-100 text-blue-800"
                         : "bg-red-100 text-red-800"
                     }`}>
                       {patientData.patient.isActivePatient ? "Active" : "Inactive"}
@@ -173,7 +173,7 @@ export default function PatientDetailsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleActivityClick(activity.activityId)}
-                          className="inline-flex items-center px-2 py-1 rounded text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           {activity.activityId}
                         </button>

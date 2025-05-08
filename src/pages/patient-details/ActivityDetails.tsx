@@ -54,7 +54,7 @@ const ActivityDetailsPage: FC = () => {
         label,
         value
     }) => (
-        <div className="flex items-center p-4 border-b border-gray-200 hover:bg-gray-50">
+        <div className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
             <Icon className="h-5 w-5 text-gray-500 mr-4" />
             <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500">{label}</p>
@@ -75,13 +75,13 @@ const ActivityDetailsPage: FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 py-8">
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-7xl mx-auto px-4">
                 <div className="bg-white shadow rounded-lg overflow-hidden">
                     <div className="px-6 py-5 border-b border-gray-200">
                         <h1 className="text-2xl font-bold text-gray-900">Activity Details</h1>
                     </div>
 
-                    <div className="divide-y divide-gray-200">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <DetailRow
                             icon={HiOutlineClock}
                             label="Date and Time of Service"

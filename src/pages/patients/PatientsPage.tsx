@@ -216,7 +216,7 @@ export default function PatientsPage() {
           <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
           >
             <option value="all">All {label}s</option>
             {options.map((option) => (
@@ -245,7 +245,7 @@ export default function PatientsPage() {
             <div className="flex flex-col md:flex-row justify-between gap-4">
               <div className="flex items-center">
                 <div className="text-lg font-semibold text-gray-800">
-                  Total Active Patients: <span className="text-indigo-600">176</span>
+                  Total Active Patients: <span className="text-blue-600">176</span>
                 </div>
               </div>
               <div className="relative w-full md:w-64">
@@ -257,7 +257,7 @@ export default function PatientsPage() {
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function PatientsPage() {
                   <select
                     value={siteFilter}
                     onChange={(e) => setSiteFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
                     <option value="CP Greater San Antonio">CP Greater San Antonio</option>
                     {sites.map((site) => (
@@ -294,7 +294,7 @@ export default function PatientsPage() {
                   <select
                     value={monthFilter}
                     onChange={(e) => setMonthFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Months</option>
                     {months.map((month, index) => (
@@ -315,7 +315,7 @@ export default function PatientsPage() {
                   <select
                     value={yearFilter}
                     onChange={(e) => setYearFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Years</option>
                     {years.map((year) => (
@@ -340,7 +340,7 @@ export default function PatientsPage() {
                       onChange={() => setShowInactive(!showInactive)}
                       className="sr-only peer"
                     />
-                    <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive</span>
                   </label>
                 </div>
@@ -365,12 +365,12 @@ export default function PatientsPage() {
                       <div className="ml-1 flex">
                         <ArrowUpIcon
                           className={`h-3 w-3 ${
-                            sortField === "name" && sortDirection === "asc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "name" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                         <ArrowDownIcon
                           className={`h-3 w-3 ${
-                            sortField === "name" && sortDirection === "desc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "name" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                       </div>
@@ -386,12 +386,12 @@ export default function PatientsPage() {
                       <div className="ml-1 flex">
                         <ArrowUpIcon
                           className={`h-3 w-3 ${
-                            sortField === "birthdate" && sortDirection === "asc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "birthdate" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                         <ArrowDownIcon
                           className={`h-3 w-3 ${
-                            sortField === "birthdate" && sortDirection === "desc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "birthdate" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                       </div>
@@ -407,12 +407,12 @@ export default function PatientsPage() {
                       <div className="ml-1 flex">
                         <ArrowUpIcon
                           className={`h-3 w-3 ${
-                            sortField === "gender" && sortDirection === "asc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "gender" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                         <ArrowDownIcon
                           className={`h-3 w-3 ${
-                            sortField === "gender" && sortDirection === "desc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "gender" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                       </div>
@@ -429,14 +429,14 @@ export default function PatientsPage() {
                         <ArrowUpIcon
                           className={`h-3 w-3 ${
                             sortField === "createActivity" && sortDirection === "asc"
-                              ? "text-indigo-600"
+                              ? "text-blue-600"
                               : "text-gray-300"
                           }`}
                         />
                         <ArrowDownIcon
                           className={`h-3 w-3 ${
                             sortField === "createActivity" && sortDirection === "desc"
-                              ? "text-indigo-600"
+                              ? "text-blue-600"
                               : "text-gray-300"
                           }`}
                         />
@@ -453,12 +453,12 @@ export default function PatientsPage() {
                       <div className="ml-1 flex">
                         <ArrowUpIcon
                           className={`h-3 w-3 ${
-                            sortField === "totalTime" && sortDirection === "asc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "totalTime" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                         <ArrowDownIcon
                           className={`h-3 w-3 ${
-                            sortField === "totalTime" && sortDirection === "desc" ? "text-indigo-600" : "text-gray-300"
+                            sortField === "totalTime" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
                           }`}
                         />
                       </div>
@@ -476,7 +476,7 @@ export default function PatientsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => navigate(`/patientdetails`)}
-                          className="inline-flex items-center px-2 py-1 rounded text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           {person.name}
                         </button>
@@ -490,7 +490,7 @@ export default function PatientsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button
                           onClick={() => navigate(`/activity?patientId=${person.id}`)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-indigo-500 text-xs font-medium rounded text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                          className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                         >
                           <PlusIcon className="h-3 w-3 mr-1" />
                           Add Activity

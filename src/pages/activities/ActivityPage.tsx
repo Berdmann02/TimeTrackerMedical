@@ -73,7 +73,7 @@ const ActivityPage: React.FC = () => {
             <div className="border-b border-gray-200 bg-gray-100 px-6 py-4">
               <h2 className="text-lg font-semibold text-gray-800 flex items-center">
                 <FaClipboardList className="w-5 h-5 mr-2 text-gray-600" />
-                Activity Details
+                New Activity
               </h2>
             </div>
 
