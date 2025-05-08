@@ -473,7 +473,14 @@ export default function PatientsPage() {
                       key={person.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{person.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => navigate(`/patientdetails`)}
+                          className="inline-flex items-center px-2 py-1 rounded text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          {person.name}
+                        </button>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(person.birthdate).toLocaleDateString()}
                       </td>

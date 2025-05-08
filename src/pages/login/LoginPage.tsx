@@ -65,7 +65,7 @@ export default function LoginPage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      navigate("/patient")
+      navigate("/")
     } catch (error) {
       console.error("Login failed:", error)
     } finally {

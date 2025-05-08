@@ -28,7 +28,7 @@ const Navbar = () => {
               Add Activity
             </a>
             <a
-              href="/"
+              href="/login"
               className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
             >
               <LogOut className="w-5 h-5" />

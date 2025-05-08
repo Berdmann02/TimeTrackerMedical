@@ -3,6 +3,8 @@ import Navbar from  "./components/Navbar";
 import LoginPage from "./pages/login/LoginPage";
 import PatientsPage from "./pages/patients/PatientsPage";
 import ActivityPage from "./pages/activities/ActivityPage";
+import PatientDetailsPage from "./pages/patient-details/PatientDetailsPage";
+import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 
 function App(){
     return (
@@ -13,6 +15,8 @@ function App(){
       <Route path="/" element={<PatientsPage />} />
       <Route path="/patients" element={<PatientsPage />} />
       <Route path="/activity" element={<ActivityPage />} /> {/* add id to activity & for each Patient */}
+      <Route path="/patientdetails" element={<PatientDetailsPage />} /> {/* add id to patient details */}
+      <Route path="/activity/:activityId" element={<ActivityDetailsPage />} /> {/* Dynamic route with activity ID parameter */}
     </Routes>
         </>
     )
