@@ -10,7 +10,9 @@ import {
     HiOutlineOfficeBuilding as HospitalIcon,
     HiOutlineBeaker,
     HiOutlineExclamationCircle,
-    HiOutlineBadgeCheck
+    HiOutlineBadgeCheck,
+    HiOutlinePencil,
+    HiOutlineTrash
 } from 'react-icons/hi';
 
 interface ActivityDetails {
@@ -49,6 +51,16 @@ const ActivityDetailsPage: FC = () => {
         useOpioids: false,
     };
 
+    const handleEdit = () => {
+        // TODO: Implement edit functionality
+        console.log('Edit activity');
+    };
+
+    const handleDelete = () => {
+        // TODO: Implement delete functionality
+        console.log('Delete activity');
+    };
+
     const DetailRow: FC<{ icon: any; label: string; value: string | boolean }> = ({
         icon: Icon,
         label,
@@ -77,8 +89,23 @@ const ActivityDetailsPage: FC = () => {
         <div className="min-h-screen bg-gray-100 py-8">
             <div className="max-w-7xl mx-auto px-4">
                 <div className="bg-white shadow rounded-lg overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-200">
-                        <h1 className="text-2xl font-bold text-gray-900">Activity Details</h1>
+                    <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                        <h1 className="text-2xl font-bold text-gray-900">Activity #1563 Details</h1>
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={handleEdit}
+                                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                            >
+                                <HiOutlinePencil className="h-4 w-4 mr-2" />
+                                Edit Activity
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
+                            >
+                                <HiOutlineTrash className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { User, Phone, Calendar, MapPin, Shield, Activity, Clock, Plus } from "lucide-react"
+import { User, MapPin, Shield, Activity, Plus } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate } from "react-router-dom"
 
@@ -13,10 +13,6 @@ export default function PatientDetailsPage() {
       birthDate: "1980-01-15",
       gender: "M",
       siteName: "Main Clinic",
-      phoneNumber: "(555) 123-4567",
-      contactName: "Jane Doe",
-      contactPhoneNumber: "(555) 987-6543",
-      insurance: "Health Plus Insurance",
       isActivePatient: true
     },
     activities: [
@@ -59,47 +55,27 @@ export default function PatientDetailsPage() {
         {/* Patient Information Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-600" />
                   Basic Information
                 </h2>
-                <div className="space-y-3">
+                <div className="flex items-center gap-6">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Full Name</label>
-                    <p className="text-gray-900">{`${patientData.patient.firstName} ${patientData.patient.lastName}`}</p>
+                    <label className="text-sm font-medium text-gray-500 block">Full Name</label>
+                    <p className="text-gray-900 mt-1 text-lg font-medium">{`${patientData.patient.firstName} ${patientData.patient.lastName}`}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Birth Date</label>
-                    <p className="text-gray-900">{new Date(patientData.patient.birthDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Gender</label>
-                    <p className="text-gray-900">{patientData.patient.gender}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-blue-600" />
-                  Contact Information
-                </h2>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                    <p className="text-gray-900">{patientData.patient.phoneNumber}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Emergency Contact</label>
-                    <p className="text-gray-900">{patientData.patient.contactName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Emergency Phone</label>
-                    <p className="text-gray-900">{patientData.patient.contactPhoneNumber}</p>
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block">Birth Date</label>
+                      <p className="text-gray-900 mt-1">{new Date(patientData.patient.birthDate).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block">Gender</label>
+                      <p className="text-gray-900 mt-1">{patientData.patient.gender}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -110,18 +86,14 @@ export default function PatientDetailsPage() {
                   <Shield className="w-5 h-5 text-blue-600" />
                   Additional Information
                 </h2>
-                <div className="space-y-3">
+                <div className="flex items-center gap-6">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Site Name</label>
-                    <p className="text-gray-900">{patientData.patient.siteName}</p>
+                    <label className="text-sm font-medium text-gray-500 block">Site Name</label>
+                    <p className="text-gray-900 mt-1">{patientData.patient.siteName}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Insurance</label>
-                    <p className="text-gray-900">{patientData.patient.insurance}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Status</label>
-                    <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <label className="text-sm font-medium text-gray-500 block">Status</label>
+                    <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       patientData.patient.isActivePatient
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
@@ -144,15 +116,15 @@ export default function PatientDetailsPage() {
                 Activities
               </h2>
               <button
-                className="inline-flex items-center px-3 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
-                onClick={() => navigate('/add-activity')}
+                className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                onClick={() => navigate('/activity')}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Activity
               </button>
             </div>
             
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -178,14 +150,15 @@ export default function PatientDetailsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {patientData.activities.map((activity) => (
-                    <tr key={activity.activityId} className="hover:bg-gray-50">
+                    <tr 
+                      key={activity.activityId} 
+                      className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                      onClick={() => handleActivityClick(activity.activityId)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleActivityClick(activity.activityId)}
-                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                        >
+                        <span className="text-blue-600 hover:text-blue-900 hover:underline">
                           {activity.activityId}
-                        </button>
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {activity.activityType}
