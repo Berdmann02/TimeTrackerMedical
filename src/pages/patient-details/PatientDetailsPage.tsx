@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { User, Phone, Calendar, MapPin, Shield, Activity, Clock } from "lucide-react"
+import { User, Phone, Calendar, MapPin, Shield, Activity, Clock, Plus } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate } from "react-router-dom"
 
@@ -121,9 +121,9 @@ export default function PatientDetailsPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Status</label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       patientData.patient.isActivePatient
-                        ? "bg-blue-100 text-blue-800"
+                        ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }`}>
                       {patientData.patient.isActivePatient ? "Active" : "Inactive"}
@@ -138,10 +138,19 @@ export default function PatientDetailsPage() {
         {/* Activities Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
-              Activities
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-blue-600" />
+                Activities
+              </h2>
+              <button
+                className="inline-flex items-center px-3 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                onClick={() => navigate('/add-activity')}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Activity
+              </button>
+            </div>
             
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">

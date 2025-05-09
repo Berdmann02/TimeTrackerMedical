@@ -187,7 +187,7 @@ const ActivityPage: React.FC = () => {
                           }`}
                         >
                           <FaPlay className="w-4 h-4 mr-2" />
-                          Start Timer
+                          Start Time
                         </button>
                       </div>
                       <div className="h-5">
@@ -213,7 +213,7 @@ const ActivityPage: React.FC = () => {
                           }`}
                         >
                           <FaStop className="w-4 h-4 mr-2" />
-                          Stop Timer
+                          Stop Time
                         </button>
                       </div>
                       <div className="h-5">
