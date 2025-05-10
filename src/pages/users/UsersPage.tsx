@@ -2,6 +2,7 @@ import { useState } from "react"
 import { User, Pencil, Trash, Plus, Shield } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import AddUserModal from "../../components/AddUserModal"
+import EditUserModal from "../../components/EditUserModal"
 
 interface UserAccount {
   id: string
@@ -14,6 +15,8 @@ interface UserAccount {
 export default function UsersPage() {
   const navigate = useNavigate()
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false)
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null)
 
   // Sample data - replace with actual API call
   const initialUsers: UserAccount[] = [
@@ -52,7 +55,11 @@ export default function UsersPage() {
   })
 
   const handleEdit = (userId: string) => {
-    navigate(`/edit-user/${userId}`)
+    const user = users.find(u => u.id === userId)
+    if (user) {
+      setSelectedUser(user)
+      setIsEditUserModalOpen(true)
+    }
   }
 
   const handleDelete = (userId: string) => {
@@ -202,6 +209,11 @@ export default function UsersPage() {
       <AddUserModal 
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
+      />
+      <EditUserModal
+        isOpen={isEditUserModalOpen}
+        onClose={() => setIsEditUserModalOpen(false)}
+        user={selectedUser}
       />
     </div>
   )

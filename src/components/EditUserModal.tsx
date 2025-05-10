@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { User, Shield, X } from 'lucide-react';
 
-interface AddUserModalProps {
+interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: {
+    email: string;
+    role: 'admin' | 'generic' | 'pharmacist';
+    isActive?: boolean;
+  } | null;
 }
 
 interface UserFormData {
@@ -11,15 +16,28 @@ interface UserFormData {
   password: string;
   confirmPassword: string;
   role: 'admin' | 'generic' | 'pharmacist';
+  isActive: boolean;
 }
 
-const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
+const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
   const [formData, setFormData] = useState<UserFormData>({
-    email: '',
+    email: user?.email || '',
     password: '',
     confirmPassword: '',
-    role: 'generic'
+    role: user?.role || 'generic',
+    isActive: user?.isActive !== false,
   });
+
+  // Update form when user changes
+  React.useEffect(() => {
+    setFormData({
+      email: user?.email || '',
+      password: '',
+      confirmPassword: '',
+      role: user?.role || 'generic',
+      isActive: user?.isActive !== false,
+    });
+  }, [user, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +47,12 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   if (!isOpen) return null;
@@ -57,9 +79,9 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
               </svg>
             </button>
             <div className="ml-4">
-              <h2 className="text-2xl font-bold text-gray-900">Create New User</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Edit User</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Add a new user account to the system
+                Modify user account details and permissions
               </p>
             </div>
           </div>
@@ -87,7 +109,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Shield className="text-gray-400" size={18} />
-                <span>Password</span>
+                <span>New Password (leave blank to keep current)</span>
               </label>
               <input
                 type="password"
@@ -95,7 +117,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                required
+                placeholder=""
               />
             </div>
 
@@ -103,7 +125,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Shield className="text-gray-400" size={18} />
-                <span>Confirm Password</span>
+                <span>Confirm New Password</span>
               </label>
               <input
                 type="password"
@@ -111,7 +133,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                required
+                placeholder=""
               />
             </div>
 
@@ -134,6 +156,26 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
               </select>
             </div>
 
+            {/* Inactive Status Toggle */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <span className="flex items-center gap-2">
+                  <X className="text-gray-400" size={18} />
+                  Inactive Status
+                </span>
+                <input
+                  type="checkbox"
+                  name="isActive"
+                  checked={!formData.isActive}
+                  onChange={e => setFormData(prev => ({ ...prev, isActive: !e.target.checked }))}
+                  className="ml-2 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-500">
+                  {formData.isActive ? 'User account is active' : 'User account is inactive'}
+                </span>
+              </label>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4">
               <button
@@ -147,7 +189,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 type="submit"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
               >
-                Create User
+                Save Changes
               </button>
             </div>
           </form>
@@ -157,4 +199,4 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
   );
 };
 
-export default AddUserModal; 
+export default EditUserModal; 
