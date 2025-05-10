@@ -6,6 +6,7 @@ import ActivityPage from "./pages/activities/ActivityPage";
 import PatientDetailsPage from "./pages/patient-details/PatientDetailsPage";
 import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 import UsersPage from "./pages/users/UsersPage";
+import EditUserPage from "./pages/users/EditUsers";
 
 function App(){
     return (
@@ -18,8 +19,8 @@ function App(){
       <Route path="/activity" element={<ActivityPage />} /> {/* add id to activity & for each Patient */}
       <Route path="/patientdetails" element={<PatientDetailsPage />} /> {/* add id to patient details */}
       <Route path="/activity/:activityId" element={<ActivityDetailsPage />} /> {/* Dynamic route with activity ID parameter */}
-      <Route path="/add-patient" element={<ActivityDetailsPage />} /> {/* Dynamic route with activity ID parameter */}
-      <Route path="/users" element={<UsersPage />} /> {/* Dynamic route with activity ID parameter */}
+      <Route path="/users" element={<UsersPage />} />
+      <Route path="/edit-user/:userId" element={<EditUserPage />} />
     </Routes>
         </>
     )

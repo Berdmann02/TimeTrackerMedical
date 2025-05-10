@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import AddPatientModal from "../../components/AddPatientModal"
 
 interface Person {
   id: string
@@ -13,6 +14,7 @@ interface Person {
 
 export default function PatientsPage() {
   const navigate = useNavigate()
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false)
 
   // Sample data
   const initialData: Person[] = [
@@ -250,7 +252,7 @@ export default function PatientsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => navigate('/add-patient')}
+                  onClick={() => setIsAddPatientModalOpen(true)}
                   className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
                 >
                   <PlusIcon className="h-4 w-4 mr-1.5" />
@@ -580,6 +582,12 @@ export default function PatientsPage() {
           </div>
         </div>
       </div>
+
+      {/* Add Patient Modal */}
+      <AddPatientModal
+        isOpen={isAddPatientModalOpen}
+        onClose={() => setIsAddPatientModalOpen(false)}
+      />
     </div>
   )
 }

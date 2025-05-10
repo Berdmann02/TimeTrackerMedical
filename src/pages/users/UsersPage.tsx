@@ -1,17 +1,19 @@
 import { useState } from "react"
 import { User, Pencil, Trash, Plus, Shield } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import AddUserModal from "../../components/AddUserModal"
 
 interface UserAccount {
   id: string
   email: string
-  role: "admin" | "generic"
+  role: "admin" | "generic" | "pharmacist"
   isActive: boolean
   lastLogin: string
 }
 
 export default function UsersPage() {
   const navigate = useNavigate()
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false)
 
   // Sample data - replace with actual API call
   const initialUsers: UserAccount[] = [
@@ -40,7 +42,7 @@ export default function UsersPage() {
 
   const [users, setUsers] = useState<UserAccount[]>(initialUsers)
   const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "generic">("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "generic" | "pharmacist">("all")
 
   // Filter users based on search and role
   const filteredUsers = users.filter((user) => {
@@ -50,8 +52,7 @@ export default function UsersPage() {
   })
 
   const handleEdit = (userId: string) => {
-    // TODO: Implement edit functionality
-    console.log("Edit user:", userId)
+    navigate(`/edit-user/${userId}`)
   }
 
   const handleDelete = (userId: string) => {
@@ -62,8 +63,7 @@ export default function UsersPage() {
   }
 
   const handleAddUser = () => {
-    // TODO: Implement add user functionality
-    console.log("Add new user")
+    setIsAddUserModalOpen(true)
   }
 
   return (
@@ -82,31 +82,37 @@ export default function UsersPage() {
 
         {/* Filters */}
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 justify-between">
-            <div className="flex-1 max-w-xs">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search Users</label>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1 w-full">
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by email..."
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  placeholder="Search users by email..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
-                <User className="h-5 w-5 text-gray-400 absolute right-3 top-2" />
               </div>
             </div>
-            <div className="w-48">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role Filter</label>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "generic")}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-              >
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="generic">Generic</option>
-              </select>
+            <div className="w-full sm:w-48 flex-shrink-0">
+              <div className="relative">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "generic" | "pharmacist")}
+                  className="block w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white cursor-pointer"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="generic">Generic</option>
+                  <option value="pharmacist">Pharmacist</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <Shield className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -145,7 +151,7 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
-                        <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : "text-gray-400"} mr-1`} />
+                        <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : user.role === "generic" ? "text-gray-400" : "text-green-500"} mr-1`} />
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </td>
@@ -165,14 +171,14 @@ export default function UsersPage() {
                       <div className="flex space-x-3">
                         <button
                           onClick={() => handleEdit(user.id)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
                           title="Edit user"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
+                          className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
                           title="Delete user"
                         >
                           <Trash className="h-4 w-4" />
@@ -193,6 +199,10 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+      <AddUserModal 
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+      />
     </div>
   )
 }
