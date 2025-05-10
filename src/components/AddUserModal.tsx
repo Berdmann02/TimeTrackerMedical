@@ -46,22 +46,19 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
       >
         <div className="p-6">
           {/* Header Section */}
-          <div className="flex items-start">
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <div className="ml-4">
+          <div className="flex justify-between items-center mb-6">
+            <div>
               <h2 className="text-2xl font-bold text-gray-900">Create New User</h2>
               <p className="mt-1 text-sm text-gray-600">
                 Add a new user account to the system
               </p>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
 
           {/* Form */}
