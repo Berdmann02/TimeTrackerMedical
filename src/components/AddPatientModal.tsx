@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { User, Calendar, Building2, MapPin, X } from 'lucide-react';
+import { createPatient } from '../services/patientService';
+import type { CreatePatientDTO } from '../services/patientService';
 
 interface AddPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPatientAdded?: () => void;
 }
 
 interface PatientFormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'M' | 'F' | 'O';
   siteId: string;
   building: string;
 }
@@ -38,20 +42,53 @@ const buildingOptions = {
   ]
 };
 
-const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
+const getSiteNameById = (siteId: string): string => {
+  const site = siteOptions.find(site => site.id === siteId);
+  return site ? site.name : '';
+};
+
+const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalProps) => {
   const [formData, setFormData] = useState<PatientFormData>({
-    name: '',
+    firstName: '',
+    lastName: '',
     dateOfBirth: '',
-    gender: 'male',
-    siteId: '',
+    gender: 'M',
+    siteId: 'cpgsa',
     building: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle form submission
-    console.log(formData);
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      // Map the form data to the DTO format
+      const patientData: CreatePatientDTO = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        birthdate: formData.dateOfBirth,
+        gender: formData.gender,
+        site_name: getSiteNameById(formData.siteId),
+        is_active: true
+      };
+      
+      await createPatient(patientData);
+      
+      // Notify parent component that a patient was added
+      if (onPatientAdded) {
+        onPatientAdded();
+      }
+      
+      onClose();
+    } catch (err) {
+      console.error('Failed to create patient:', err);
+      setError('Failed to create patient. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -70,7 +107,7 @@ const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
 
   return (
     <div 
-      className="fixed inset-0 backdrop-blur-[2px] bg-white/30 flex items-center justify-center z-50"
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
       onClick={onClose}
     >
       <div 
@@ -94,25 +131,51 @@ const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
             </button>
           </div>
 
+          {/* Error message */}
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* Name Field */}
-              <div className="col-span-2">
+              {/* First Name Field */}
+              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <div className="flex items-center gap-2">
                     <User className="text-indigo-600" size={18} />
-                    <span>Full Name</span>
+                    <span>First Name</span>
                   </div>
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="firstName"
+                  value={formData.firstName}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
                   required
-                  placeholder="Enter patient's full name"
+                  placeholder="Enter patient's first name"
+                />
+              </div>
+
+              {/* Last Name Field */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <User className="text-indigo-600" size={18} />
+                    <span>Last Name</span>
+                  </div>
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                  required
+                  placeholder="Enter patient's last name"
                 />
               </div>
 
@@ -149,9 +212,9 @@ const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
                   required
                 >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
+                  <option value="O">Other</option>
                 </select>
               </div>
 
@@ -170,7 +233,6 @@ const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
                   required
                 >
-                  <option value="">Select a site</option>
                   {siteOptions.map(site => (
                     <option key={site.id} value={site.id}>
                       {site.name}
@@ -192,7 +254,6 @@ const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
                   value={formData.building}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
-                  required
                   disabled={!formData.siteId}
                 >
                   <option value="">Select a building</option>
@@ -210,16 +271,18 @@ const AddPatientModal = ({ isOpen, onClose }: AddPatientModalProps) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center gap-2 cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <User size={18} />
-                Create Patient Record
+                {isSubmitting ? 'Creating...' : 'Create Patient Record'}
               </button>
             </div>
           </form>

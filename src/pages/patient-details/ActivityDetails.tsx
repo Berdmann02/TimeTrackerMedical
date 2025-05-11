@@ -1,5 +1,6 @@
+import { useState, useEffect, memo } from 'react';
 import type { FC } from 'react';
-import type { IconType } from 'react-icons';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
     HiOutlineClock,
     HiOutlineUser,
@@ -12,173 +13,597 @@ import {
     HiOutlineExclamationCircle,
     HiOutlineBadgeCheck,
     HiOutlinePencil,
-    HiOutlineTrash
+    HiOutlineTrash,
+    HiOutlineChevronLeft,
+    HiOutlineSave,
+    HiOutlineX,
+    HiOutlineCalendar
 } from 'react-icons/hi';
+import { FaPlay, FaStop } from 'react-icons/fa';
+import { getActivityById, deleteActivity, updateActivity, getActivityTypes } from '../../services/activityService';
+import type { Activity } from '../../services/patientService';
+import { getPatientById } from '../../services/patientService';
 
-interface ActivityDetails {
-    dateTime: string;
-    patientName: string;
-    siteName: string;
-    personnelInitials: string;
-    activityType: string;
-    notes: string;
-    medicalRecordsCompleted: boolean;
-    bpAtGoal: boolean;
-    hospitalVisited: boolean;
-    a1cAtGoal: string;
-    fallSinceLastVisit: boolean;
-    useBenzo: boolean;
-    useAntipsychotic: boolean;
-    useOpioids: boolean;
+interface DetailRowProps {
+    icon: any;
+    label: string;
+    value: string | boolean | number | null | undefined;
+    isEditing?: boolean;
+    onEdit?: (value: any) => void;
+    editOptions?: string[];
+    editType?: 'text' | 'number' | 'boolean' | 'select' | 'datetime' | 'readonly';
+    calculateTimeDifference?: () => number;
 }
 
-const ActivityDetailsPage: FC = () => {
-    // Sample data - replace with actual data fetching
-    const activityDetails: ActivityDetails = {
-        dateTime: '04/27/2025 12:54:14',
-        patientName: 'John Doe',
-        siteName: 'Main Clinic',
-        personnelInitials: 'JD',
-        activityType: 'Assess medical - functional - psychosocial needs',
-        notes: 'Regular checkup - ClinRx core',
-        medicalRecordsCompleted: false,
-        bpAtGoal: true,
-        hospitalVisited: false,
-        a1cAtGoal: 'N/A',
-        fallSinceLastVisit: false,
-        useBenzo: false,
-        useAntipsychotic: false,
-        useOpioids: false,
-    };
-
-    const handleEdit = () => {
-        // TODO: Implement edit functionality
-        console.log('Edit activity');
-    };
-
-    const handleDelete = () => {
-        // TODO: Implement delete functionality
-        console.log('Delete activity');
-    };
-
-    const DetailRow: FC<{ icon: any; label: string; value: string | boolean }> = ({
-        icon: Icon,
-        label,
-        value
-    }) => (
-        <div className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-            <Icon className="h-5 w-5 text-gray-500 mr-4" />
-            <div className="flex-1">
-                <p className="text-sm font-medium text-gray-500">{label}</p>
-                <p className="text-base text-gray-900">
+// Move DetailRow component outside of the main component and wrap with memo
+const DetailRow: FC<DetailRowProps> = memo(({
+    icon: Icon,
+    label,
+    value,
+    isEditing = false,
+    onEdit,
+    editOptions = [],
+    editType = 'text',
+    calculateTimeDifference = () => 0
+}) => (
+    <div className="flex flex-col py-3 border-b border-gray-200">
+        <div className="flex items-center mb-1">
+            <Icon className="h-5 w-5 text-gray-500 mr-2" />
+            <span className="text-sm font-medium text-gray-600">{label}</span>
+        </div>
+        <div className="ml-7">
+            {isEditing && editType !== 'readonly' ? (
+                <>
+                    {editType === 'text' && (
+                        <input
+                            type="text"
+                            value={value as string || ''}
+                            onChange={(e) => onEdit && onEdit(e.target.value)}
+                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                        />
+                    )}
+                    
+                    {editType === 'number' && (
+                        <input
+                            type="number"
+                            value={(() => {
+                                const calculatedValue = calculateTimeDifference();
+                                return typeof calculatedValue === 'number' ? calculatedValue : 0;
+                            })()}
+                            onChange={(e) => onEdit && onEdit(parseFloat(e.target.value))}
+                            min="0"
+                            step="0.01"
+                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                        />
+                    )}
+                    
+                    {editType === 'boolean' && (
+                        <select
+                            value={value ? 'true' : 'false'}
+                            onChange={(e) => onEdit && onEdit(e.target.value === 'true')}
+                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                        >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    )}
+                    
+                    {editType === 'select' && (
+                        <select
+                            value={value as string || ''}
+                            onChange={(e) => onEdit && onEdit(e.target.value)}
+                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                        >
+                            {editOptions.map(option => (
+                                <option key={option} value={option}>{option}</option>
+                            ))}
+                        </select>
+                    )}
+                    
+                    {editType === 'datetime' && (
+                        <input
+                            type="datetime-local"
+                            value={value ? new Date(value as string).toISOString().slice(0, 16) : ''}
+                            onChange={(e) => {
+                                const date = new Date(e.target.value);
+                                onEdit && onEdit(date.toISOString());
+                            }}
+                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                        />
+                    )}
+                </>
+            ) : (
+                <p className="text-base text-gray-900 font-medium">
                     {typeof value === 'boolean' ? (
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                             {value ? 'Yes' : 'No'}
                         </span>
+                    ) : value === null || value === undefined ? (
+                        'N/A'
+                    ) : typeof value === 'number' ? (
+                        `${value.toFixed(2)} minutes`
                     ) : (
                         value
                     )}
                 </p>
-            </div>
+            )}
         </div>
-    );
+    </div>
+));
+
+const ActivityDetailsPage: FC = () => {
+    const { activityId } = useParams<{ activityId: string }>();
+    const navigate = useNavigate();
+    
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [activity, setActivity] = useState<Activity | null>(null);
+    const [patientName, setPatientName] = useState<string>('');
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedActivity, setEditedActivity] = useState<Activity | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [activityTypes, setActivityTypes] = useState<string[]>([]);
+    const [isTracking, setIsTracking] = useState(false);
+
+    useEffect(() => {
+        const fetchActivityData = async () => {
+            if (!activityId) {
+                setError("No activity ID provided");
+                setIsLoading(false);
+                return;
+            }
+            
+            setIsLoading(true);
+            setError(null);
+            
+            try {
+                const activityData = await getActivityById(activityId);
+                setActivity(activityData);
+                setEditedActivity(activityData);
+                
+                // Get the patient name if we have a patient ID
+                if (activityData.patient_id) {
+                    try {
+                        const patient = await getPatientById(activityData.patient_id);
+                        setPatientName(`${patient.first_name} ${patient.last_name}`);
+                    } catch (patientError) {
+                        console.error("Error fetching patient data:", patientError);
+                        // Don't fail completely if just the patient data fails
+                    }
+                }
+
+                // Get activity types
+                try {
+                    const types = await getActivityTypes();
+                    setActivityTypes(types);
+                } catch (typesError) {
+                    console.error("Error fetching activity types:", typesError);
+                }
+            } catch (err) {
+                console.error("Error fetching activity data:", err);
+                setError("Failed to load activity data. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchActivityData();
+    }, [activityId]);
+
+    const handleEdit = () => {
+        // Prevent scrolling when entering edit mode
+        const currentScrollPosition = window.scrollY;
+        setIsEditing(true);
+        // Restore scroll position after state update
+        setTimeout(() => {
+            window.scrollTo({
+                top: currentScrollPosition,
+                behavior: 'auto'
+            });
+        }, 0);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        // Reset to original data
+        setEditedActivity(activity);
+    };
+
+    const handleStartTime = () => {
+        if (!editedActivity) return;
+        
+        const now = new Date().toISOString();
+        setEditedActivity(prev => {
+            if (!prev) return prev;
+            return { 
+                ...prev, 
+                service_datetime: now,
+                created_at: now 
+            };
+        });
+        setIsTracking(true);
+    };
+
+    const handleEndTime = () => {
+        if (!isTracking || !editedActivity) return;
+        
+        const now = new Date().toISOString();
+        const startTime = new Date(editedActivity.service_datetime || editedActivity.created_at || '').getTime();
+        const endTime = new Date(now).getTime();
+        const durationMinutes = Math.max(0, (endTime - startTime) / (1000 * 60));
+        
+        setEditedActivity(prev => {
+            if (!prev) return prev;
+            return { 
+                ...prev, 
+                time_spent: durationMinutes,
+                duration_minutes: durationMinutes
+            };
+        });
+        setIsTracking(false);
+    };
+
+    const calculateTimeDifference = (): number => {
+        if (!editedActivity) return 0;
+        
+        if (editedActivity.time_spent !== undefined && typeof editedActivity.time_spent === 'number') {
+            return editedActivity.time_spent;
+        }
+        
+        if (editedActivity.duration_minutes !== undefined && typeof editedActivity.duration_minutes === 'number') {
+            return editedActivity.duration_minutes;
+        }
+        
+        return 0;
+    };
+
+    const handleSave = async () => {
+        if (!activityId || !editedActivity) return;
+        
+        setIsSaving(true);
+        
+        try {
+            // Create properly formatted data for backend
+            const timeSpent = typeof editedActivity.time_spent === 'number' ? 
+                editedActivity.time_spent : 
+                (typeof editedActivity.duration_minutes === 'number' ? 
+                    editedActivity.duration_minutes : 0);
+            
+            // Simplify to include only the fields the backend expects
+            const updateData = {
+                id: Number(activityId),
+                patient_id: editedActivity.patient_id,
+                activity_type: editedActivity.activity_type,
+                personnel_initials: editedActivity.personnel_initials || editedActivity.user_initials || '',
+                pharm_flag: Boolean(editedActivity.pharm_flag || editedActivity.is_pharmacist),
+                notes: editedActivity.notes || '',
+                site_name: editedActivity.site_name || 'CP Greater San Antonio',
+                service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
+                duration_minutes: timeSpent
+            };
+            
+            console.log('Updating activity with data:', updateData);
+            const updatedActivity = await updateActivity(activityId, updateData);
+            setActivity(updatedActivity);
+            setEditedActivity(updatedActivity);
+            setIsEditing(false);
+        } catch (err) {
+            console.error("Error updating activity:", err);
+            alert("Failed to update activity. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleFieldChange = (field: string, value: any) => {
+        if (!editedActivity) return;
+        
+        setEditedActivity(prev => {
+            if (!prev) return prev;
+            return { ...prev, [field]: value };
+        });
+    };
+
+    const handleDelete = async () => {
+        // Implement delete functionality
+        if (!activityId || !activity) return;
+        
+        if (window.confirm("Are you sure you want to delete this activity?")) {
+            try {
+                setIsDeleting(true);
+                await deleteActivity(activityId);
+                
+                // Navigate back to patient details
+                if (activity.patient_id) {
+                    navigate(`/patientdetails/${activity.patient_id}`);
+                } else {
+                    navigate('/patients');
+                }
+            } catch (err) {
+                console.error("Error deleting activity:", err);
+                alert("Failed to delete activity. Please try again.");
+                setIsDeleting(false);
+            }
+        }
+    };
+
+    const handleBack = () => {
+        // Navigate back to patient details if we have a patient_id
+        if (activity && activity.patient_id) {
+            navigate(`/patientdetails/${activity.patient_id}`);
+        } else {
+            navigate('/patients');
+        }
+    };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="bg-white p-8 rounded-lg shadow text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading activity data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error || !activity || !editedActivity) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md">
+                    <div className="text-red-600 mb-4 text-5xl">!</div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Activity</h2>
+                    <p className="text-gray-600 mb-4">{error || "Activity data not found"}</p>
+                    <button 
+                        onClick={() => navigate('/patients')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                        Return to Patients List
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-100 py-8">
-            <div className="max-w-7xl mx-auto px-4">
-                <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="max-w-5xl mx-auto px-4">
+                <div className="bg-white shadow rounded-lg">
                     <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
-                        <h1 className="text-2xl font-bold text-gray-900">Activity #1563 Details</h1>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleBack}
+                                className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                title="Back"
+                            >
+                                <HiOutlineChevronLeft className="h-5 w-5" />
+                            </button>
+                            <h1 className="text-2xl font-bold text-gray-900">Activity #{activityId} Details</h1>
+                        </div>
                         <div className="flex space-x-3">
-                            <button
-                                onClick={handleEdit}
-                                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                            >
-                                <HiOutlinePencil className="h-4 w-4 mr-2" />
-                                Edit Activity
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
-                            >
-                                <HiOutlineTrash className="h-4 w-4" />
-                            </button>
+                            {isEditing ? (
+                                <>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                    >
+                                        <HiOutlineSave className="h-4 w-4 mr-2" />
+                                        {isSaving ? "Saving..." : "Save Changes"}
+                                    </button>
+                                    <button
+                                        onClick={handleCancelEdit}
+                                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
+                                    >
+                                        <HiOutlineX className="h-4 w-4 mr-2" />
+                                        Cancel
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={handleEdit}
+                                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                    >
+                                        <HiOutlinePencil className="h-4 w-4 mr-2" />
+                                        Edit Activity
+                                    </button>
+                                    <button
+                                        onClick={handleDelete}
+                                        disabled={isDeleting}
+                                        className={`inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium ${
+                                            isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
+                                        } bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
+                                    >
+                                        <HiOutlineTrash className="h-4 w-4 mr-2" />
+                                        {isDeleting ? "Deleting..." : "Delete"}
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DetailRow
-                            icon={HiOutlineClock}
-                            label="Date and Time of Service"
-                            value={activityDetails.dateTime}
-                        />
-                        <DetailRow
-                            icon={HiOutlineUser}
-                            label="Patient Name"
-                            value={activityDetails.patientName}
-                        />
-                        <DetailRow
-                            icon={HiOutlineOfficeBuilding}
-                            label="Site Name"
-                            value={activityDetails.siteName}
-                        />
-                        <DetailRow
-                            icon={HiOutlineUserGroup}
-                            label="Personnel Initials"
-                            value={activityDetails.personnelInitials}
-                        />
-                        <DetailRow
-                            icon={HiOutlineClipboardCheck}
-                            label="Activity Type"
-                            value={activityDetails.activityType}
-                        />
-                        <DetailRow
-                            icon={HiOutlineClipboardCheck}
-                            label="Notes"
-                            value={activityDetails.notes}
-                        />
-                        <DetailRow
-                            icon={HiOutlineClipboardCheck}
-                            label="Medical Records Completed"
-                            value={activityDetails.medicalRecordsCompleted}
-                        />
-                        <DetailRow
-                            icon={HiOutlineHeart}
-                            label="BP at Goal"
-                            value={activityDetails.bpAtGoal}
-                        />
-                        <DetailRow
-                            icon={HospitalIcon}
-                            label="Hospital Visited Since Last Review"
-                            value={activityDetails.hospitalVisited}
-                        />
-                        <DetailRow
-                            icon={HiOutlineBeaker}
-                            label="A1C at Goal"
-                            value={activityDetails.a1cAtGoal}
-                        />
-                        <DetailRow
-                            icon={HiOutlineExclamationCircle}
-                            label="Fall Since Last Visit"
-                            value={activityDetails.fallSinceLastVisit}
-                        />
-                        <DetailRow
-                            icon={HiOutlineBadgeCheck}
-                            label="Use Benzo"
-                            value={activityDetails.useBenzo}
-                        />
-                        <DetailRow
-                            icon={HiOutlineBadgeCheck}
-                            label="Use Antipsychotic"
-                            value={activityDetails.useAntipsychotic}
-                        />
-                        <DetailRow
-                            icon={HiOutlineBadgeCheck}
-                            label="Use Opioids"
-                            value={activityDetails.useOpioids}
-                        />
+                    <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mb-6">
+                            <DetailRow
+                                icon={HiOutlineClock}
+                                label="Date and Time of Service"
+                                value={editedActivity.service_datetime 
+                                    ? new Date(editedActivity.service_datetime).toLocaleString() 
+                                    : (editedActivity.created_at ? new Date(editedActivity.created_at).toLocaleString() : '')}
+                                isEditing={isEditing}
+                                editType="datetime"
+                                onEdit={(value) => {
+                                    handleFieldChange('service_datetime', value);
+                                    handleFieldChange('created_at', value);
+                                }}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineUser}
+                                label="Patient Name"
+                                value={patientName || 'Unknown Patient'}
+                                isEditing={isEditing}
+                                editType="readonly"
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineOfficeBuilding}
+                                label="Site Name"
+                                value={editedActivity.site_name || 'CP Greater San Antonio'}
+                                isEditing={isEditing}
+                                editType="select"
+                                editOptions={['CP Greater San Antonio', 'CP Intermountain']}
+                                onEdit={(value) => handleFieldChange('site_name', value)}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineUserGroup}
+                                label="Personnel Initials"
+                                value={editedActivity.personnel_initials || editedActivity.user_initials || ''}
+                                isEditing={isEditing}
+                                editType="text"
+                                onEdit={(value) => {
+                                    handleFieldChange('personnel_initials', value);
+                                    handleFieldChange('user_initials', value);
+                                }}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineClipboardCheck}
+                                label="Activity Type"
+                                value={editedActivity.activity_type || ''}
+                                isEditing={isEditing}
+                                editType="select"
+                                editOptions={activityTypes}
+                                onEdit={(value) => handleFieldChange('activity_type', value)}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineClipboardCheck}
+                                label="Total Time"
+                                value={(() => {
+                                    const time = calculateTimeDifference();
+                                    return typeof time === 'number' ? time : 0;
+                                })()}
+                                isEditing={isEditing}
+                                editType="number"
+                                onEdit={(value) => {
+                                    handleFieldChange('time_spent', value);
+                                    handleFieldChange('duration_minutes', value);
+                                }}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineClipboardCheck}
+                                label="Is Pharmacist"
+                                value={editedActivity.is_pharmacist !== undefined 
+                                    ? editedActivity.is_pharmacist 
+                                    : (editedActivity.pharm_flag !== undefined 
+                                        ? editedActivity.pharm_flag 
+                                        : false)}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={(value) => {
+                                    handleFieldChange('is_pharmacist', value);
+                                    handleFieldChange('pharm_flag', value);
+                                }}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineClipboardCheck}
+                                label="Notes"
+                                value={editedActivity.notes || ''}
+                                isEditing={isEditing}
+                                editType="text"
+                                onEdit={(value) => handleFieldChange('notes', value)}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            
+                            {/* Additional health metrics */}
+                            <DetailRow
+                                icon={HiOutlineClipboardCheck}
+                                label="Medical Records Completed"
+                                value={false}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineHeart}
+                                label="BP at Goal"
+                                value={true}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HospitalIcon}
+                                label="Hospital Visited Since Last Review"
+                                value={false}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineBeaker}
+                                label="A1C at Goal"
+                                value="N/A"
+                                isEditing={isEditing}
+                                editType="text"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineExclamationCircle}
+                                label="Fall Since Last Visit"
+                                value={false}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineBadgeCheck}
+                                label="Use Benzo"
+                                value={false}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineBadgeCheck}
+                                label="Use Antipsychotic"
+                                value={false}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={HiOutlineBadgeCheck}
+                                label="Use Opioids"
+                                value={true}
+                                isEditing={isEditing}
+                                editType="boolean"
+                                onEdit={() => {}}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

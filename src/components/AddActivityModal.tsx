@@ -8,11 +8,11 @@ import {
   FaPlay,
   FaStop,
 } from "react-icons/fa";
-import { useNavigate, useLocation } from "react-router-dom";
-import { getPatients } from "../../services/patientService";
-import type { Patient } from "../../services/patientService";
-import { createActivity, getActivityTypes } from "../../services/activityService";
-import type { CreateActivityDTO } from "../../services/activityService";
+import { getPatients } from "../services/patientService";
+import type { Patient } from "../services/patientService";
+import { createActivity, getActivityTypes } from "../services/activityService";
+import type { CreateActivityDTO } from "../services/activityService";
+import { X } from "lucide-react";
 
 interface ActivityForm {
   patientId: string;
@@ -25,21 +25,35 @@ interface ActivityForm {
   isPharmacist: boolean;
 }
 
-const ActivityPage: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const patientIdParam = queryParams.get('patientId');
-  
-  const [patients, setPatients] = useState<Patient[]>([]);
+interface AddActivityModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onActivityAdded?: () => void;
+  patientId?: string;
+  patientName?: string;
+  siteName?: string;
+  // Optional patients list to avoid loading
+  patients?: Patient[];
+}
+
+const AddActivityModal: React.FC<AddActivityModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onActivityAdded,
+  patientId: initialPatientId,
+  patientName,
+  siteName,
+  patients: providedPatients = [] 
+}) => {
+  const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(providedPatients.length === 0);
   
   const [formData, setFormData] = useState<ActivityForm>({
-    patientId: patientIdParam || "",
-    siteId: "cp-san-antonio",
+    patientId: initialPatientId || "",
+    siteId: siteName === "CP Intermountain" ? "cp-intermountain" : "cp-san-antonio",
     activityType: "",
     startTime: "",
     endTime: "",
@@ -50,30 +64,67 @@ const ActivityPage: React.FC = () => {
 
   const [isTracking, setIsTracking] = useState(false);
 
-  // Fetch patients and activity types
+  // Update patients state when providedPatients changes
   useEffect(() => {
+    if (providedPatients.length > 0) {
+      setPatients(providedPatients);
+      setIsLoadingData(false);
+    }
+  }, [providedPatients]);
+
+  // Reset form when modal opens or when initialPatientId changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      patientId: initialPatientId || "",
+      siteId: siteName === "CP Intermountain" ? "cp-intermountain" : "cp-san-antonio",
+    }));
+  }, [initialPatientId, siteName, isOpen]);
+
+  // Fetch activity types and patients if needed
+  useEffect(() => {
+    if (!isOpen) return; // Only fetch data when modal is open
+    
     const fetchData = async () => {
-      setIsLoading(true);
       setError(null);
       
       try {
-        const [patientsData, activityTypesData] = await Promise.all([
-          getPatients(),
-          getActivityTypes()
-        ]);
-        
-        setPatients(patientsData);
+        // Always fetch activity types
+        const activityTypesData = await getActivityTypes();
         setActivityTypes(activityTypesData);
+        
+        // Only fetch patients if we don't have them already
+        if (patients.length === 0) {
+          setIsLoadingData(true);
+          const patientsData = await getPatients();
+          setPatients(patientsData);
+          setIsLoadingData(false);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load required data. Please try again.");
-      } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     };
     
     fetchData();
-  }, []);
+  }, [isOpen, patients.length]);
+
+  // Lock/unlock body scroll when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      // Lock scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore scroll
+      document.body.style.overflow = 'auto';
+    }
+    
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -85,8 +136,6 @@ const ActivityPage: React.FC = () => {
     // Special handling for datetime-local input
     if (name === 'startTime' || name === 'endTime') {
       // Convert the datetime-local value to ISO string format
-      // The input value will be in the format: "2023-04-22T14:30"
-      // We need to convert it to an ISO string
       if (value) {
         const date = new Date(value);
         const isoString = date.toISOString();
@@ -114,6 +163,7 @@ const ActivityPage: React.FC = () => {
 
   const handleStartTime = () => {
     const now = new Date().toISOString();
+    // Allow restarting even after stopping (having an end time)
     setFormData((prev) => ({ ...prev, startTime: now, endTime: "" }));
     setIsTracking(true);
   };
@@ -158,70 +208,83 @@ const ActivityPage: React.FC = () => {
         activity_type: formData.activityType,
         user_initials: formData.userInitials,
         is_pharmacist: formData.isPharmacist,
-        time_spent: calculateTimeDifference()
+        time_spent: calculateTimeDifference(),
+        notes: formData.notes
       };
       
       await createActivity(activityData);
       
-      // Redirect to patient details page after successful creation
-      navigate(`/patientdetails/${formData.patientId}`);
+      // Notify parent component
+      if (onActivityAdded) {
+        onActivityAdded();
+      }
+      
+      // Close the modal
+      onClose();
     } catch (err) {
       console.error("Error creating activity:", err);
-      alert("Failed to create activity. Please try again.");
+      setError("Failed to create activity. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/patients');
-  };
+  if (!isOpen) return null;
 
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
-        <div className="bg-white p-8 rounded-lg shadow text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md">
-          <div className="text-red-600 mb-4 text-5xl">!</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => navigate('/patients')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Return to Patients List
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Find selected patient details
+  const selectedPatient = patients.find(p => p.id.toString() === formData.patientId);
+  const selectedPatientName = selectedPatient 
+    ? `${selectedPatient.last_name}, ${selectedPatient.first_name}`
+    : patientName && initialPatientId === formData.patientId ? patientName : "";
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100">
-      <div className="h-full w-full flex flex-col pt-6">
-        <div className="mx-auto w-full max-w-4xl px-4">
-          <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="border-b border-gray-200 bg-gray-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                <FaClipboardList className="w-5 h-5 mr-2 text-gray-600" />
-                New Activity
-              </h2>
+    <div 
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="p-6">
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Add New Activity</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                {selectedPatientName || "Please fill in all the required information to track an activity."}
+              </p>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
 
-            <form onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
+          {isLoadingData ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading data...</p>
+            </div>
+          ) : error ? (
+            <div className="p-8 text-center">
+              <div className="text-red-600 mb-4 text-5xl">!</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button 
+                onClick={onClose}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Patient and Site Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Patient */}
+                {/* Patient - Always allow selection */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">
                     <span className="flex items-center">
@@ -441,7 +504,7 @@ const ActivityPage: React.FC = () => {
                 <div className="flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={handleCancel}
+                    onClick={onClose}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors shadow-sm"
                   >
                     Cancel
@@ -456,11 +519,11 @@ const ActivityPage: React.FC = () => {
                 </div>
               </div>
             </form>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default ActivityPage;
+export default AddActivityModal; 

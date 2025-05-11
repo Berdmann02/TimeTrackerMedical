@@ -1,56 +1,150 @@
-import { useState } from "react"
-import { User, MapPin, Shield, Activity, Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { User, MapPin, Shield, Activity, Plus, ChevronLeft } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
+import { getPatientById, getPatientActivities } from "../../services/patientService"
+import type { Patient, Activity as ApiActivity } from "../../services/patientService"
+import AddActivityModal from "../../components/AddActivityModal"
 
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
-  // In a real app, this would be fetched from an API
-  const [patientData] = useState<PatientWithActivities>({
-    patient: {
-      firstName: "John",
-      lastName: "Doe",
-      birthDate: "1980-01-15",
-      gender: "M",
-      siteName: "Main Clinic",
-      isActivePatient: true
-    },
-    activities: [
-      {
-        activityId: "ACT001",
-        activityType: "Assess medical - functional - psychosocial needs",
-        initials: "JD",
-        isPharmacist: true,
-        recordDate: "2024-04-30",
-        totalTime: 25.5
-      },
-      {
-        activityId: "ACT002",
-        activityType: "Assess medical - functional - psychosocial needs",
-        initials: "JD",
-        isPharmacist: true,
-        recordDate: "2024-03-15",
-        totalTime: 30.2
-      },
-      {
-        activityId: "ACT003",
-        activityType: "Assess medical - functional - psychosocial needs",
-        initials: "JD",
-        isPharmacist: true,
-        recordDate: "2024-02-01",
-        totalTime: 22.8
+  const { patientId } = useParams<{ patientId: string }>()
+  
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [activities, setActivities] = useState<ApiActivity[]>([])
+  const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
+
+  // Fetch patient data and activities
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      if (!patientId) {
+        setError("No patient ID provided")
+        setIsLoading(false)
+        return
       }
-    ]
-  })
+      
+      setIsLoading(true)
+      setError(null)
+      
+      try {
+        // First, try to get the patient details
+        const patientData = await getPatientById(patientId)
+        setPatient(patientData)
+        
+        // Then try to get activities, but don't fail the whole request if this fails
+        try {
+          const activitiesData = await getPatientActivities(patientId)
+          setActivities(activitiesData)
+        } catch (activityError) {
+          console.error("Error fetching patient activities:", activityError)
+          // Just set empty activities instead of failing completely
+          setActivities([])
+        }
+      } catch (err) {
+        console.error("Error fetching patient data:", err)
+        setError("Failed to load patient data. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchPatientData()
+  }, [patientId])
+
+  // Convert API data to format expected by the component
+  const patientData: PatientWithActivities | null = patient ? {
+    patient: {
+      firstName: patient.first_name,
+      lastName: patient.last_name,
+      birthDate: patient.birthdate,
+      gender: patient.gender,
+      siteName: patient.site_name,
+      isActivePatient: patient.is_active,
+      phoneNumber: patient.phone_number || undefined,
+      contactName: patient.contact_name || undefined,
+      contactPhoneNumber: patient.contact_phone_number || undefined,
+      insurance: patient.insurance || undefined
+    },
+    activities: activities.map(activity => {
+      // Handle potential field name differences in the backend response
+      return {
+        activityId: activity.id?.toString() || '',
+        activityType: activity.activity_type || '',
+        initials: activity.user_initials || activity.personnel_initials || '',
+        isPharmacist: activity.is_pharmacist !== undefined ? activity.is_pharmacist : (activity.pharm_flag || false),
+        recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
+        // Handle the different field names for time/duration
+        totalTime: activity.time_spent !== undefined ? activity.time_spent : 
+                  (activity.duration_minutes !== undefined ? activity.duration_minutes : 0)
+      };
+    })
+  } : null
 
   const handleActivityClick = (activityId: string) => {
     navigate(`/activity/${activityId}`)
   }
 
+  const handleAddActivity = () => {
+    setIsAddActivityModalOpen(true);
+  }
+
+  const handleActivityAdded = () => {
+    // Refresh activities after adding a new one
+    if (patientId) {
+      getPatientActivities(patientId)
+        .then(data => setActivities(data))
+        .catch(err => console.error("Failed to refresh activities:", err));
+    }
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading patient data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error || !patientData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md">
+          <div className="text-red-600 mb-4 text-5xl">!</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Patient</h2>
+          <p className="text-gray-600 mb-4">{error || "Patient data not found"}</p>
+          <button 
+            onClick={() => navigate('/patients')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Return to Patients List
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const patientFullName = `${patientData.patient.lastName}, ${patientData.patient.firstName}`;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Patient Details</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => navigate('/patients')}
+            className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+            title="Back to All Patients"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
+        </div>
 
         {/* Patient Information Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
@@ -117,72 +211,97 @@ export default function PatientDetailsPage() {
               </h2>
               <button
                 className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
-                onClick={() => navigate('/activity')}
+                onClick={handleAddActivity}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Activity
               </button>
             </div>
             
-            <div className="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Activity #
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Activity Type
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Initials
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pharm?
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Record Date
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Time
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {patientData.activities.map((activity) => (
-                    <tr 
-                      key={activity.activityId} 
-                      className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
-                      onClick={() => handleActivityClick(activity.activityId)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <span className="text-blue-600 hover:text-blue-900 hover:underline">
-                          {activity.activityId}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {activity.activityType}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.initials}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.isPharmacist ? "Y" : "N"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(activity.recordDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.totalTime.toFixed(2)} minutes
-                      </td>
+            {patientData.activities.length > 0 ? (
+              <div className="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Activity #
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Activity Type
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Initials
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Pharm?
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Record Date
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Time
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {patientData.activities.map((activity) => (
+                      <tr 
+                        key={activity.activityId} 
+                        className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                        onClick={() => handleActivityClick(activity.activityId)}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <span className="text-blue-600 hover:text-blue-900 hover:underline">
+                            {activity.activityId}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {activity.activityType}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {activity.initials}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {activity.isPharmacist ? "Y" : "N"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(activity.recordDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {typeof activity.totalTime === 'number' 
+                            ? `${activity.totalTime.toFixed(2)} minutes` 
+                            : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-gray-600">No activities found for this patient.</p>
+                {/* <button
+                  onClick={handleAddActivity}
+                  className="mt-4 inline-flex items-center px-4 py-2 border border-blue-600 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Activity
+                </button> */}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Add Activity Modal */}
+      <AddActivityModal
+        isOpen={isAddActivityModalOpen}
+        onClose={() => setIsAddActivityModalOpen(false)}
+        onActivityAdded={handleActivityAdded}
+        patientId={patientId}
+        patientName={patientFullName}
+        siteName={patientData.patient.siteName}
+      />
     </div>
   )
 }

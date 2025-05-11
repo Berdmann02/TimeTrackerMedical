@@ -1,132 +1,53 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import AddPatientModal from "../../components/AddPatientModal"
-
-interface Person {
-  id: string
-  name: string
-  birthdate: string
-  gender: "Male" | "Female" | "Other"
-  createActivity: string
-  totalTime: number
-}
+import AddActivityModal from "../../components/AddActivityModal"
+import { getPatients } from "../../services/patientService"
+import type { Patient } from "../../services/patientService"
 
 export default function PatientsPage() {
   const navigate = useNavigate()
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false)
+  const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
+  const [selectedPatientId, setSelectedPatientId] = useState<string>("")
+  const [selectedPatientName, setSelectedPatientName] = useState<string>("")
+  const [selectedPatientSite, setSelectedPatientSite] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Sample data
-  const initialData: Person[] = [
-    {
-      id: "P001",
-      name: "Sarah Chen",
-      birthdate: "1990-05-15",
-      gender: "Female",
-      createActivity: "Running",
-      totalTime: 450,
-    },
-    {
-      id: "P002",
-      name: "John Smith",
-      birthdate: "1985-11-20",
-      gender: "Male",
-      createActivity: "Swimming",
-      totalTime: 320,
-    },
-    {
-      id: "P003",
-      name: "Emily Johnson",
-      birthdate: "1992-03-25",
-      gender: "Female",
-      createActivity: "Cycling",
-      totalTime: 520,
-    },
-    {
-      id: "P004",
-      name: "Michael Brown",
-      birthdate: "1988-07-18",
-      gender: "Male",
-      createActivity: "Yoga",
-      totalTime: 400,
-    },
-    {
-      id: "P005",
-      name: "Jessica Lee",
-      birthdate: "1995-09-22",
-      gender: "Female",
-      createActivity: "Running",
-      totalTime: 600,
-    },
-    {
-      id: "P006",
-      name: "David Wilson",
-      birthdate: "1983-12-30",
-      gender: "Male",
-      createActivity: "Swimming",
-      totalTime: 480,
-    },
-    {
-      id: "P007",
-      name: "Amanda Robinson",
-      birthdate: "1991-04-15",
-      gender: "Female",
-      createActivity: "Cycling",
-      totalTime: 350,
-    },
-    {
-      id: "P008",
-      name: "Robert Taylor",
-      birthdate: "1987-08-05",
-      gender: "Male",
-      createActivity: "Yoga",
-      totalTime: 290,
-    },
-    {
-      id: "P009",
-      name: "Jennifer Garcia",
-      birthdate: "1993-10-10",
-      gender: "Female",
-      createActivity: "Running",
-      totalTime: 510,
-    },
-    {
-      id: "P010",
-      name: "Thomas Martinez",
-      birthdate: "1986-02-17",
-      gender: "Male",
-      createActivity: "Swimming",
-      totalTime: 380,
-    },
-    {
-      id: "P011",
-      name: "Lisa Anderson",
-      birthdate: "1989-06-15",
-      gender: "Female",
-      createActivity: "Cycling",
-      totalTime: 420,
-    },
-    {
-      id: "P012",
-      name: "James Wilson",
-      birthdate: "1984-09-29",
-      gender: "Male",
-      createActivity: "Yoga",
-      totalTime: 330,
-    },
-  ]
-
-  // State
-  const [data, setData] = useState<Person[]>(initialData)
+  // State for patients data
+  const [patients, setPatients] = useState<Patient[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [genderFilter, setGenderFilter] = useState<string>("all")
   const [activityFilter, setActivityFilter] = useState<string>("all")
-  const [sortField, setSortField] = useState<keyof Person | null>(null)
+  const [sortField, setSortField] = useState<keyof Patient | "name" | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
-  const [siteFilter, setSiteFilter] = useState<string>("CP Greater San Antonio")
+  const [siteFilter, setSiteFilter] = useState<string>("all")
   const [monthFilter, setMonthFilter] = useState<string>("all")
   const [yearFilter, setYearFilter] = useState<string>("all")
   const [showInactive, setShowInactive] = useState(false)
+
+  // Fetch patients data
+  const fetchPatientsData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await getPatients();
+      setPatients(data);
+    } catch (err) {
+      console.error('Error fetching patients:', err);
+      setError('Failed to load patients. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
+    fetchPatientsData();
+  }, []);
 
   // Sample data for filters
   const sites = ["CP Intermountain"]
@@ -146,58 +67,100 @@ export default function PatientsPage() {
   ]
   const years = [2020, 2021, 2022, 2023, 2024, 2025]
 
-  // Get unique departments for filter
-  const activities = Array.from(new Set(initialData.map((item) => item.createActivity)))
-  const genders = Array.from(new Set(initialData.map((item) => item.gender)))
+  // Helper to get full name from first and last name
+  const getFullName = (patient: Patient) => {
+    return `${patient.first_name} ${patient.last_name}`;
+  };
+
+  // Map sortField 'name' to actual field
+  const getSortField = (field: typeof sortField): keyof Patient | null => {
+    if (field === 'name') return 'first_name';
+    return field;
+  };
 
   // Filter and sort data
-  const filteredData = initialData.filter((item) => {
+  const filteredPatients = patients.filter((patient) => {
+    const fullName = getFullName(patient);
     const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchTerm.toLowerCase())
+      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(patient.id).toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesGender = genderFilter === "all" || item.gender === genderFilter
-    const matchesActivity = activityFilter === "all" || item.createActivity === activityFilter
-
-    // New filters
-    const matchesSite = siteFilter === "all" || true // Replace with actual site matching when you have site data
+    const matchesGender = genderFilter === "all" || patient.gender === genderFilter;
+    
+    // Site filter
+    const matchesSite = siteFilter === "all" || patient.site_name === siteFilter;
+    
+    // Month and year filters from birthdate
+    const birthdate = patient.birthdate ? new Date(patient.birthdate) : null;
     const matchesMonth =
       monthFilter === "all" ||
-      (item.birthdate && new Date(item.birthdate).getMonth() + 1 === Number.parseInt(monthFilter))
+      (birthdate && birthdate.getMonth() + 1 === Number.parseInt(monthFilter));
+    
     const matchesYear =
-      yearFilter === "all" || (item.birthdate && new Date(item.birthdate).getFullYear() === Number.parseInt(yearFilter))
-    const matchesActive = showInactive || true // Replace with actual active status matching when you have that data
+      yearFilter === "all" || 
+      (birthdate && birthdate.getFullYear() === Number.parseInt(yearFilter));
+    
+    // Active status
+    const matchesActive = showInactive || patient.is_active;
 
     return (
-      matchesSearch && matchesGender && matchesActivity && matchesSite && matchesMonth && matchesYear && matchesActive
-    )
-  })
+      matchesSearch && matchesGender && matchesSite && matchesMonth && matchesYear && matchesActive
+    );
+  });
 
-  // Sort data if sort field is set
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (!sortField) return 0
+  // Sort patients
+  const sortedPatients = [...filteredPatients].sort((a, b) => {
+    if (!sortField) return 0;
 
-    const aValue = a[sortField]
-    const bValue = b[sortField]
+    // Special handling for 'name' field
+    if (sortField === 'name') {
+      const aName = getFullName(a);
+      const bName = getFullName(b);
+      
+      if (aName < bName) return sortDirection === "asc" ? -1 : 1;
+      if (aName > bName) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    }
+    
+    const actualSortField = getSortField(sortField);
+    if (!actualSortField) return 0;
+    
+    const aValue = a[actualSortField];
+    const bValue = b[actualSortField];
 
-    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
-    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
-    return 0
-  })
+    if (aValue && bValue) {
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
 
   // Handle sort
-  const handleSort = (field: keyof Person) => {
+  const handleSort = (field: keyof Patient | "name") => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      setSortField(field)
-      setSortDirection("asc")
+      setSortField(field);
+      setSortDirection("asc");
     }
-  }
+  };
 
   const getGenderDisplay = (gender: string) => {
-    return gender === "Male" ? "M" : gender === "Female" ? "F" : "O"
-  }
+    return gender === "M" ? "M" : gender === "F" ? "F" : "O";
+  };
+
+  // Handle patient creation callback
+  const handlePatientAdded = () => {
+    fetchPatientsData();
+  };
+
+  // Handle opening the add activity modal
+  const handleAddActivity = (patient: Patient) => {
+    setSelectedPatientId(patient.id.toString());
+    setSelectedPatientName(`${patient.last_name}, ${patient.first_name}`);
+    setSelectedPatientSite(patient.site_name);
+    setIsAddActivityModalOpen(true);
+  };
 
   // Dropdown component
   const Dropdown = ({
@@ -247,7 +210,7 @@ export default function PatientsPage() {
             <div className="flex flex-col md:flex-row justify-between gap-4">
               <div className="flex items-center">
                 <div className="text-lg font-semibold text-gray-800">
-                  Total Active Patients: <span className="text-blue-600">176</span>
+                  Total Active Patients: <span className="text-blue-600">{patients.filter(p => p.is_active).length}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -286,6 +249,7 @@ export default function PatientsPage() {
                     onChange={(e) => setSiteFilter(e.target.value)}
                     className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
+                    <option value="all">All Sites</option>
                     <option value="CP Greater San Antonio">CP Greater San Antonio</option>
                     {sites.map((site) => (
                       <option key={site} value={site}>
@@ -360,233 +324,244 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("name")}
-                  >
-                    <div className="flex items-center">
-                      <span>Name</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon
-                          className={`h-3 w-3 ${
-                            sortField === "name" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                        <ArrowDownIcon
-                          className={`h-3 w-3 ${
-                            sortField === "name" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("birthdate")}
-                  >
-                    <div className="flex items-center">
-                      <span>Birthdate</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon
-                          className={`h-3 w-3 ${
-                            sortField === "birthdate" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                        <ArrowDownIcon
-                          className={`h-3 w-3 ${
-                            sortField === "birthdate" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("gender")}
-                  >
-                    <div className="flex items-center">
-                      <span>Gender</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon
-                          className={`h-3 w-3 ${
-                            sortField === "gender" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                        <ArrowDownIcon
-                          className={`h-3 w-3 ${
-                            sortField === "gender" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("createActivity")}
-                  >
-                    <div className="flex items-center">
-                      <span>Create Activity</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon
-                          className={`h-3 w-3 ${
-                            sortField === "createActivity" && sortDirection === "asc"
-                              ? "text-blue-600"
-                              : "text-gray-300"
-                          }`}
-                        />
-                        <ArrowDownIcon
-                          className={`h-3 w-3 ${
-                            sortField === "createActivity" && sortDirection === "desc"
-                              ? "text-blue-600"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("totalTime")}
-                  >
-                    <div className="flex items-center">
-                      <span>Total Time</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon
-                          className={`h-3 w-3 ${
-                            sortField === "totalTime" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                        <ArrowDownIcon
-                          className={`h-3 w-3 ${
-                            sortField === "totalTime" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sortedData.length > 0 ? (
-                  sortedData.map((person) => (
-                    <tr
-                      key={person.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => navigate(`/patientdetails`)}
-                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                        >
-                          {person.name}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(person.birthdate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getGenderDisplay(person.gender)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          onClick={() => navigate(`/activity?patientId=${person.id}`)}
-                          className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
-                        >
-                          <PlusIcon className="h-3 w-3 mr-1" />
-                          Add Activity
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.totalTime} min</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No data found matching your filters
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        {/* Error display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6">
+            <p>{error}</p>
+            <button 
+              onClick={fetchPatientsData} 
+              className="mt-2 text-red-600 hover:text-red-800 underline"
+            >
+              Try again
+            </button>
           </div>
+        )}
 
-          {/* Table Footer */}
-          <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Previous
-              </button>
-              <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Next
-              </button>
+        {/* Loading state */}
+        {isLoading && (
+          <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center">
+            <div className="text-gray-500">Loading patients data...</div>
+          </div>
+        )}
+
+        {/* Table - only show when not loading and no error */}
+        {!isLoading && !error && (
+          <div className="bg-white rounded-lg border border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort("name")}
+                    >
+                      <div className="flex items-center">
+                        <span>Name</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === "name" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === "name" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort("birthdate")}
+                    >
+                      <div className="flex items-center">
+                        <span>Birthdate</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === "birthdate" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === "birthdate" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort("gender")}
+                    >
+                      <div className="flex items-center">
+                        <span>Gender</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === "gender" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === "gender" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort("site_name")}
+                    >
+                      <div className="flex items-center">
+                        <span>Site</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === "site_name" && sortDirection === "asc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === "site_name" && sortDirection === "desc" ? "text-blue-600" : "text-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedPatients.length > 0 ? (
+                    sortedPatients.map((patient) => (
+                      <tr
+                        key={patient.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => navigate(`/patientdetails/${patient.id}`)}
+                            className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                          >
+                            {getFullName(patient)}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {patient.birthdate ? new Date(patient.birthdate).toLocaleDateString() : ''}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {getGenderDisplay(patient.gender)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <button
+                            onClick={() => handleAddActivity(patient)}
+                            className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                          >
+                            <PlusIcon className="h-3 w-3 mr-1" />
+                            Add Activity
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.site_name}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                        No patients found matching your filters
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">1</span> to{" "}
-                  <span className="font-medium">{sortedData.length}</span> of{" "}
-                  <span className="font-medium">{sortedData.length}</span> results
-                </p>
+
+            {/* Table Footer */}
+            <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Previous
+                </button>
+                <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Next
+                </button>
               </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span className="sr-only">Previous</span>
-                    <svg
-                      className="h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    1
-                  </button>
-                  <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                    <span className="sr-only">Next</span>
-                    <svg
-                      className="h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </nav>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">1</span> to{" "}
+                    <span className="font-medium">{sortedPatients.length}</span> of{" "}
+                    <span className="font-medium">{sortedPatients.length}</span> results
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      <span className="sr-only">Previous</span>
+                      <svg
+                        className="h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                      1
+                    </button>
+                    <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      <span className="sr-only">Next</span>
+                      <svg
+                        className="h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </nav>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Add Patient Modal */}
       <AddPatientModal
         isOpen={isAddPatientModalOpen}
         onClose={() => setIsAddPatientModalOpen(false)}
+        onPatientAdded={handlePatientAdded}
+      />
+
+      {/* Add Activity Modal */}
+      <AddActivityModal
+        isOpen={isAddActivityModalOpen}
+        onClose={() => setIsAddActivityModalOpen(false)}
+        onActivityAdded={() => fetchPatientsData()}
+        patientId={selectedPatientId}
+        patientName={selectedPatientName}
+        siteName={selectedPatientSite}
       />
     </div>
   )
