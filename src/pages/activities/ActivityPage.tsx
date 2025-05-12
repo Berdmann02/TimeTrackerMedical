@@ -22,7 +22,6 @@ interface ActivityForm {
   endTime: string;
   notes: string;
   userInitials: string;
-  isPharmacist: boolean;
 }
 
 const ActivityPage: React.FC = () => {
@@ -44,8 +43,7 @@ const ActivityPage: React.FC = () => {
     startTime: "",
     endTime: "",
     notes: "",
-    userInitials: "",
-    isPharmacist: false
+    userInitials: ""
   });
 
   const [isTracking, setIsTracking] = useState(false);
@@ -104,14 +102,6 @@ const ActivityPage: React.FC = () => {
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
-
   const handleStartTime = () => {
     const now = new Date().toISOString();
     setFormData((prev) => ({ ...prev, startTime: now, endTime: "" }));
@@ -157,7 +147,6 @@ const ActivityPage: React.FC = () => {
         patient_id: parseInt(formData.patientId),
         activity_type: formData.activityType,
         user_initials: formData.userInitials,
-        is_pharmacist: formData.isPharmacist,
         time_spent: calculateTimeDifference()
       };
       
@@ -267,40 +256,23 @@ const ActivityPage: React.FC = () => {
               </div>
 
               {/* User Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* User Initials */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <FaUser className="w-4 h-4 text-gray-400 mr-2" />
-                      Your Initials
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    name="userInitials"
-                    value={formData.userInitials}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm hover:bg-gray-100 transition-colors"
-                    placeholder="e.g., JD"
-                    maxLength={5}
-                    required
-                  />
-                </div>
-
-                {/* Is Pharmacist */}
-                <div className="space-y-1.5 flex items-center">
-                  <label className="inline-flex items-center mt-6">
-                    <input
-                      type="checkbox"
-                      name="isPharmacist"
-                      checked={formData.isPharmacist}
-                      onChange={handleCheckboxChange}
-                      className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out"
-                    />
-                    <span className="ml-2 text-gray-700">I am a Pharmacist</span>
-                  </label>
-                </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  <span className="flex items-center">
+                    <FaUser className="w-4 h-4 text-gray-400 mr-2" />
+                    Your Initials
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  name="userInitials"
+                  value={formData.userInitials}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm hover:bg-gray-100 transition-colors"
+                  placeholder="e.g., JD"
+                  maxLength={5}
+                  required
+                />
               </div>
 
               {/* Activity Type */}

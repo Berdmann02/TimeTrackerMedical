@@ -7,7 +7,6 @@ export interface CreateActivityDTO {
   patient_id: number;
   activity_type: string;
   user_initials: string;
-  is_pharmacist: boolean;
   time_spent: number;
   notes?: string;
 }
@@ -31,9 +30,6 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       // Use both field names to ensure compatibility
       personnel_initials: activityData.user_initials,
       user_initials: activityData.user_initials,
-      // Use both field names to ensure compatibility
-      pharm_flag: activityData.is_pharmacist,
-      is_pharmacist: activityData.is_pharmacist,
       notes: activityData.notes || '',
       site_name: 'CP Greater San Antonio', // Default value
       // Use both field names to ensure compatibility

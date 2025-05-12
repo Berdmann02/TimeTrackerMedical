@@ -15,6 +15,14 @@ export interface Patient {
   is_active: boolean;
   site_name: string;
   created_at: string;
+  medical_records_completed?: boolean;
+  bp_at_goal?: boolean;
+  hospital_visited_since_last_review?: boolean;
+  a1c_at_goal?: boolean;
+  use_benzo?: boolean;
+  fall_since_last_visit?: boolean;
+  use_antipsychotic?: boolean;
+  use_opioids?: boolean;
 }
 
 export interface Activity {
@@ -29,8 +37,18 @@ export interface Activity {
   duration_minutes?: number;
   created_at?: string;
   service_datetime?: string;
+  end_time?: string;
   notes?: string;
   site_name?: string;
+  building?: string;
+  site_start_time?: string;
+  site_end_time?: string;
+  personnel_start_time?: string;
+  personnel_end_time?: string;
+  activity_start_time?: string;
+  activity_end_time?: string;
+  notes_start_time?: string;
+  notes_end_time?: string;
 }
 
 export interface CreatePatientDTO {

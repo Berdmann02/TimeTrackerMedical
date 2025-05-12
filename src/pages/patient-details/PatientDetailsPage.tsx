@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { User, MapPin, Shield, Activity, Plus, ChevronLeft } from "lucide-react"
+import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate, useParams } from "react-router-dom"
 import { getPatientById, getPatientActivities } from "../../services/patientService"
@@ -65,21 +65,24 @@ export default function PatientDetailsPage() {
       phoneNumber: patient.phone_number || undefined,
       contactName: patient.contact_name || undefined,
       contactPhoneNumber: patient.contact_phone_number || undefined,
-      insurance: patient.insurance || undefined
+      insurance: patient.insurance || undefined,
+      medicalRecordsCompleted: patient.medical_records_completed,
+      bpAtGoal: patient.bp_at_goal,
+      hospitalVisitedSinceLastReview: patient.hospital_visited_since_last_review,
+      a1cAtGoal: patient.a1c_at_goal,
+      useBenzo: patient.use_benzo,
+      fallSinceLastVisit: patient.fall_since_last_visit,
+      useAntipsychotic: patient.use_antipsychotic,
+      useOpioids: patient.use_opioids
     },
-    activities: activities.map(activity => {
-      // Handle potential field name differences in the backend response
-      return {
-        activityId: activity.id?.toString() || '',
-        activityType: activity.activity_type || '',
-        initials: activity.user_initials || activity.personnel_initials || '',
-        isPharmacist: activity.is_pharmacist !== undefined ? activity.is_pharmacist : (activity.pharm_flag || false),
-        recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
-        // Handle the different field names for time/duration
-        totalTime: activity.time_spent !== undefined ? activity.time_spent : 
-                  (activity.duration_minutes !== undefined ? activity.duration_minutes : 0)
-      };
-    })
+    activities: activities.map(activity => ({
+      activityId: activity.id?.toString() || '',
+      activityType: activity.activity_type || '',
+      initials: activity.user_initials || activity.personnel_initials || '',
+      recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
+      totalTime: activity.time_spent !== undefined ? activity.time_spent : 
+                (activity.duration_minutes !== undefined ? activity.duration_minutes : 0)
+    }))
   } : null
 
   const handleActivityClick = (activityId: string) => {
@@ -97,6 +100,11 @@ export default function PatientDetailsPage() {
         .then(data => setActivities(data))
         .catch(err => console.error("Failed to refresh activities:", err));
     }
+  }
+
+  const handleEditPatient = () => {
+    // TODO: Implement edit patient functionality
+    console.log("Edit patient clicked")
   }
 
   // Loading state
@@ -135,15 +143,24 @@ export default function PatientDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/patients')}
+              className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+              title="Back to All Patients"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
+          </div>
           <button
-            onClick={() => navigate('/patients')}
-            className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-            title="Back to All Patients"
+            onClick={handleEditPatient}
+            className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit Patient
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
         </div>
 
         {/* Patient Information Card */}
@@ -151,17 +168,17 @@ export default function PatientDetailsPage() {
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Basic Information */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-600" />
                   Basic Information
                 </h2>
-                <div className="flex items-center gap-6">
+                <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500 block">Full Name</label>
                     <p className="text-gray-900 mt-1 text-lg font-medium">{`${patientData.patient.firstName} ${patientData.patient.lastName}`}</p>
                   </div>
-                  <div className="flex items-center gap-6">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-500 block">Birth Date</label>
                       <p className="text-gray-900 mt-1">{new Date(patientData.patient.birthDate).toLocaleDateString()}</p>
@@ -172,15 +189,53 @@ export default function PatientDetailsPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Medical Status */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <Heart className="w-5 h-5 text-blue-600" />
+                    Medical Status
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <ClipboardCheck className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Medical Records:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.medicalRecordsCompleted ? 'text-green-600' : 'text-red-600'}`}>
+                        {patientData.patient.medicalRecordsCompleted ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">BP at Goal:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.bpAtGoal ? 'text-green-600' : 'text-red-600'}`}>
+                        {patientData.patient.bpAtGoal ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Hospital className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Hospital Visit:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.hospitalVisitedSinceLastReview ? 'text-red-600' : 'text-green-600'}`}>
+                        {patientData.patient.hospitalVisitedSinceLastReview ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">A1C at Goal:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.a1cAtGoal ? 'text-green-600' : 'text-red-600'}`}>
+                        {patientData.patient.a1cAtGoal ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Additional Information */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-blue-600" />
                   Additional Information
                 </h2>
-                <div className="flex items-center gap-6">
+                <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500 block">Site Name</label>
                     <p className="text-gray-900 mt-1">{patientData.patient.siteName}</p>
@@ -194,6 +249,44 @@ export default function PatientDetailsPage() {
                     }`}>
                       {patientData.patient.isActivePatient ? "Active" : "Inactive"}
                     </span>
+                  </div>
+                </div>
+
+                {/* Medication Status */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <Pill className="w-5 h-5 text-blue-600" />
+                    Medication Status
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Pill className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Benzodiazepines:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.useBenzo ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {patientData.patient.useBenzo ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Syringe className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Antipsychotics:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.useAntipsychotic ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {patientData.patient.useAntipsychotic ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Pill className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Opioids:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.useOpioids ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {patientData.patient.useOpioids ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
+                      <span className={`text-sm font-medium ${patientData.patient.fallSinceLastVisit ? 'text-red-600' : 'text-green-600'}`}>
+                        {patientData.patient.fallSinceLastVisit ? 'Yes' : 'No'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -233,9 +326,6 @@ export default function PatientDetailsPage() {
                         Initials
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Pharm?
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Record Date
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -260,9 +350,6 @@ export default function PatientDetailsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {activity.initials}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {activity.isPharmacist ? "Y" : "N"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(activity.recordDate).toLocaleDateString()}

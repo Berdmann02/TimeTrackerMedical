@@ -2,24 +2,20 @@ import { useState, useEffect, memo } from 'react';
 import type { FC } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-    HiOutlineClock,
-    HiOutlineUser,
-    HiOutlineOfficeBuilding,
-    HiOutlineUserGroup,
-    HiOutlineClipboardCheck,
-    HiOutlineHeart,
-    HiOutlineOfficeBuilding as HospitalIcon,
-    HiOutlineBeaker,
-    HiOutlineExclamationCircle,
-    HiOutlineBadgeCheck,
-    HiOutlinePencil,
-    HiOutlineTrash,
-    HiOutlineChevronLeft,
-    HiOutlineSave,
-    HiOutlineX,
-    HiOutlineCalendar
-} from 'react-icons/hi';
-import { FaPlay, FaStop } from 'react-icons/fa';
+    Clock,
+    User,
+    Building2,
+    Users,
+    ClipboardCheck,
+    Pencil,
+    Trash2,
+    ChevronLeft,
+    Save,
+    X,
+    Calendar,
+    Timer,
+    TimerOff
+} from 'lucide-react';
 import { getActivityById, deleteActivity, updateActivity, getActivityTypes } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
 import { getPatientById } from '../../services/patientService';
@@ -28,8 +24,12 @@ interface DetailRowProps {
     icon: any;
     label: string;
     value: string | boolean | number | null | undefined;
+    startTime?: string;
+    endTime?: string;
     isEditing?: boolean;
     onEdit?: (value: any) => void;
+    onStartTimeEdit?: (value: string) => void;
+    onEndTimeEdit?: (value: string) => void;
     editOptions?: string[];
     editType?: 'text' | 'number' | 'boolean' | 'select' | 'datetime' | 'readonly';
     calculateTimeDifference?: () => number;
@@ -40,18 +40,22 @@ const DetailRow: FC<DetailRowProps> = memo(({
     icon: Icon,
     label,
     value,
+    startTime,
+    endTime,
     isEditing = false,
     onEdit,
+    onStartTimeEdit,
+    onEndTimeEdit,
     editOptions = [],
     editType = 'text',
     calculateTimeDifference = () => 0
 }) => (
-    <div className="flex flex-col py-3 border-b border-gray-200">
-        <div className="flex items-center mb-1">
+    <div className="flex flex-col py-4 border-b border-gray-200">
+        <div className="flex items-center mb-2">
             <Icon className="h-5 w-5 text-gray-500 mr-2" />
             <span className="text-sm font-medium text-gray-600">{label}</span>
         </div>
-        <div className="ml-7">
+        <div className="ml-7 space-y-3">
             {isEditing && editType !== 'readonly' ? (
                 <>
                     {editType === 'text' && (
@@ -79,18 +83,6 @@ const DetailRow: FC<DetailRowProps> = memo(({
                         />
                     )}
                     
-                    {editType === 'boolean' && (
-                        <select
-                            value={value ? 'true' : 'false'}
-                            onChange={(e) => onEdit && onEdit(e.target.value === 'true')}
-                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            autoFocus
-                        >
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                        </select>
-                    )}
-                    
                     {editType === 'select' && (
                         <select
                             value={value as string || ''}
@@ -105,34 +97,56 @@ const DetailRow: FC<DetailRowProps> = memo(({
                     )}
                     
                     {editType === 'datetime' && (
-                        <input
-                            type="datetime-local"
-                            value={value ? new Date(value as string).toISOString().slice(0, 16) : ''}
-                            onChange={(e) => {
-                                const date = new Date(e.target.value);
-                                onEdit && onEdit(date.toISOString());
-                            }}
-                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            autoFocus
-                        />
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <Timer className="h-4 w-4 text-gray-500" />
+                                <input
+                                    type="datetime-local"
+                                    value={startTime ? new Date(startTime).toISOString().slice(0, 16) : ''}
+                                    onChange={(e) => onStartTimeEdit && onStartTimeEdit(e.target.value)}
+                                    className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <TimerOff className="h-4 w-4 text-gray-500" />
+                                <input
+                                    type="datetime-local"
+                                    value={endTime ? new Date(endTime).toISOString().slice(0, 16) : ''}
+                                    onChange={(e) => onEndTimeEdit && onEndTimeEdit(e.target.value)}
+                                    className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
                     )}
                 </>
             ) : (
-                <p className="text-base text-gray-900 font-medium">
-                    {typeof value === 'boolean' ? (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                            {value ? 'Yes' : 'No'}
-                        </span>
-                    ) : value === null || value === undefined ? (
-                        'N/A'
-                    ) : typeof value === 'number' ? (
-                        `${value.toFixed(2)} minutes`
-                    ) : (
-                        value
+                <div className="space-y-2">
+                    <p className="text-base text-gray-900 font-medium">
+                        {value === null || value === undefined ? (
+                            'N/A'
+                        ) : typeof value === 'number' ? (
+                            `${value.toFixed(2)} minutes`
+                        ) : (
+                            value
+                        )}
+                    </p>
+                    {(startTime || endTime) && (
+                        <div className="text-sm text-gray-600 space-y-1">
+                            {startTime && (
+                                <div className="flex items-center space-x-2">
+                                    <Timer className="h-4 w-4" />
+                                    <span>Start: {new Date(startTime).toLocaleString()}</span>
+                                </div>
+                            )}
+                            {endTime && (
+                                <div className="flex items-center space-x-2">
+                                    <TimerOff className="h-4 w-4" />
+                                    <span>End: {new Date(endTime).toLocaleString()}</span>
+                                </div>
+                            )}
+                        </div>
                     )}
-                </p>
+                </div>
             )}
         </div>
     </div>
@@ -386,7 +400,7 @@ const ActivityDetailsPage: FC = () => {
                                 className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                                 title="Back"
                             >
-                                <HiOutlineChevronLeft className="h-5 w-5" />
+                                <ChevronLeft className="h-5 w-5" />
                             </button>
                             <h1 className="text-2xl font-bold text-gray-900">Activity #{activityId} Details</h1>
                         </div>
@@ -398,14 +412,14 @@ const ActivityDetailsPage: FC = () => {
                                         disabled={isSaving}
                                         className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                                     >
-                                        <HiOutlineSave className="h-4 w-4 mr-2" />
+                                        <Save className="h-4 w-4 mr-2" />
                                         {isSaving ? "Saving..." : "Save Changes"}
                                     </button>
                                     <button
                                         onClick={handleCancelEdit}
                                         className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
                                     >
-                                        <HiOutlineX className="h-4 w-4 mr-2" />
+                                        <X className="h-4 w-4 mr-2" />
                                         Cancel
                                     </button>
                                 </>
@@ -415,7 +429,7 @@ const ActivityDetailsPage: FC = () => {
                                         onClick={handleEdit}
                                         className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
                                     >
-                                        <HiOutlinePencil className="h-4 w-4 mr-2" />
+                                        <Pencil className="h-4 w-4 mr-2" />
                                         Edit Activity
                                     </button>
                                     <button
@@ -425,7 +439,7 @@ const ActivityDetailsPage: FC = () => {
                                             isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
                                         } bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
                                     >
-                                        <HiOutlineTrash className="h-4 w-4 mr-2" />
+                                        <Trash2 className="h-4 w-4 mr-2" />
                                         {isDeleting ? "Deleting..." : "Delete"}
                                     </button>
                                 </>
@@ -436,21 +450,22 @@ const ActivityDetailsPage: FC = () => {
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mb-6">
                             <DetailRow
-                                icon={HiOutlineClock}
+                                icon={Clock}
                                 label="Date and Time of Service"
-                                value={editedActivity.service_datetime 
-                                    ? new Date(editedActivity.service_datetime).toLocaleString() 
-                                    : (editedActivity.created_at ? new Date(editedActivity.created_at).toLocaleString() : '')}
+                                value=""
+                                startTime="2024-03-20T09:00:00"
+                                endTime="2024-03-20T10:30:00"
                                 isEditing={isEditing}
                                 editType="datetime"
-                                onEdit={(value) => {
+                                onStartTimeEdit={(value) => {
                                     handleFieldChange('service_datetime', value);
                                     handleFieldChange('created_at', value);
                                 }}
+                                onEndTimeEdit={(value) => handleFieldChange('end_time', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
-                                icon={HiOutlineUser}
+                                icon={User}
                                 label="Patient Name"
                                 value={patientName || 'Unknown Patient'}
                                 isEditing={isEditing}
@@ -458,39 +473,69 @@ const ActivityDetailsPage: FC = () => {
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
-                                icon={HiOutlineOfficeBuilding}
+                                icon={Building2}
                                 label="Site Name"
                                 value={editedActivity.site_name || 'CP Greater San Antonio'}
+                                startTime={editedActivity.site_start_time}
+                                endTime={editedActivity.site_end_time}
                                 isEditing={isEditing}
                                 editType="select"
                                 editOptions={['CP Greater San Antonio', 'CP Intermountain']}
                                 onEdit={(value) => handleFieldChange('site_name', value)}
+                                onStartTimeEdit={(value) => handleFieldChange('site_start_time', value)}
+                                onEndTimeEdit={(value) => handleFieldChange('site_end_time', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
-                                icon={HiOutlineUserGroup}
+                                icon={Building2}
+                                label="Building"
+                                value="Main Medical Center"
+                                isEditing={isEditing}
+                                editType="select"
+                                editOptions={[
+                                    'Main Medical Center',
+                                    'North Wing',
+                                    'South Wing',
+                                    'East Wing',
+                                    'West Wing',
+                                    'Emergency Department',
+                                    'Outpatient Clinic'
+                                ]}
+                                onEdit={(value) => handleFieldChange('building', value)}
+                                calculateTimeDifference={calculateTimeDifference}
+                            />
+                            <DetailRow
+                                icon={Users}
                                 label="Personnel Initials"
                                 value={editedActivity.personnel_initials || editedActivity.user_initials || ''}
+                                startTime={editedActivity.personnel_start_time}
+                                endTime={editedActivity.personnel_end_time}
                                 isEditing={isEditing}
                                 editType="text"
                                 onEdit={(value) => {
                                     handleFieldChange('personnel_initials', value);
                                     handleFieldChange('user_initials', value);
                                 }}
+                                onStartTimeEdit={(value) => handleFieldChange('personnel_start_time', value)}
+                                onEndTimeEdit={(value) => handleFieldChange('personnel_end_time', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
-                                icon={HiOutlineClipboardCheck}
+                                icon={ClipboardCheck}
                                 label="Activity Type"
                                 value={editedActivity.activity_type || ''}
+                                startTime={editedActivity.activity_start_time}
+                                endTime={editedActivity.activity_end_time}
                                 isEditing={isEditing}
                                 editType="select"
                                 editOptions={activityTypes}
                                 onEdit={(value) => handleFieldChange('activity_type', value)}
+                                onStartTimeEdit={(value) => handleFieldChange('activity_start_time', value)}
+                                onEndTimeEdit={(value) => handleFieldChange('activity_end_time', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
-                                icon={HiOutlineClipboardCheck}
+                                icon={Clock}
                                 label="Total Time"
                                 value={(() => {
                                     const time = calculateTimeDifference();
@@ -505,102 +550,16 @@ const ActivityDetailsPage: FC = () => {
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
-                                icon={HiOutlineClipboardCheck}
-                                label="Is Pharmacist"
-                                value={editedActivity.is_pharmacist !== undefined 
-                                    ? editedActivity.is_pharmacist 
-                                    : (editedActivity.pharm_flag !== undefined 
-                                        ? editedActivity.pharm_flag 
-                                        : false)}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={(value) => {
-                                    handleFieldChange('is_pharmacist', value);
-                                    handleFieldChange('pharm_flag', value);
-                                }}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineClipboardCheck}
+                                icon={ClipboardCheck}
                                 label="Notes"
                                 value={editedActivity.notes || ''}
+                                startTime={editedActivity.notes_start_time}
+                                endTime={editedActivity.notes_end_time}
                                 isEditing={isEditing}
                                 editType="text"
                                 onEdit={(value) => handleFieldChange('notes', value)}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            
-                            {/* Additional health metrics */}
-                            <DetailRow
-                                icon={HiOutlineClipboardCheck}
-                                label="Medical Records Completed"
-                                value={false}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineHeart}
-                                label="BP at Goal"
-                                value={true}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HospitalIcon}
-                                label="Hospital Visited Since Last Review"
-                                value={false}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineBeaker}
-                                label="A1C at Goal"
-                                value="N/A"
-                                isEditing={isEditing}
-                                editType="text"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineExclamationCircle}
-                                label="Fall Since Last Visit"
-                                value={false}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineBadgeCheck}
-                                label="Use Benzo"
-                                value={false}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineBadgeCheck}
-                                label="Use Antipsychotic"
-                                value={false}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
-                                calculateTimeDifference={calculateTimeDifference}
-                            />
-                            <DetailRow
-                                icon={HiOutlineBadgeCheck}
-                                label="Use Opioids"
-                                value={true}
-                                isEditing={isEditing}
-                                editType="boolean"
-                                onEdit={() => {}}
+                                onStartTimeEdit={(value) => handleFieldChange('notes_start_time', value)}
+                                onEndTimeEdit={(value) => handleFieldChange('notes_end_time', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                         </div>

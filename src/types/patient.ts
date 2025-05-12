@@ -9,13 +9,20 @@ export interface Patient {
   contactPhoneNumber?: string
   insurance?: string
   isActivePatient: boolean
+  medicalRecordsCompleted?: boolean
+  bpAtGoal?: boolean
+  hospitalVisitedSinceLastReview?: boolean
+  a1cAtGoal?: boolean
+  useBenzo?: boolean
+  fallSinceLastVisit?: boolean
+  useAntipsychotic?: boolean
+  useOpioids?: boolean
 }
 
 export interface Activity {
   activityId: string
   activityType: string
   initials: string
-  isPharmacist: boolean
   recordDate: string
   totalTime: number
 }
