@@ -1,12 +1,20 @@
 import { useState } from "react"
 import { Menu, X, Users, LogOut } from "lucide-react"
+import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/auth.service';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
   }
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-white shadow-md">
@@ -28,8 +36,9 @@ const Navbar = () => {
               Manage Users
             </a>
             <a
-              href="/login"
+              href="/"
               className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+              onClick={handleLogout}
             >
               <LogOut className="w-5 h-5" />
               Logout
@@ -69,7 +78,7 @@ const Navbar = () => {
             <a
               href="/"
               className="bg-blue-600 text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2"
-              onClick={toggleMenu}
+              onClick={handleLogout}
             >
               <LogOut className="w-5 h-5" />
               Logout

@@ -1,6 +1,7 @@
-import { Routes,Route } from "react-router-dom";
-import Navbar from  "./components/Navbar";
-import LoginPage from "./pages/login/LoginPage";
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { authService } from './services/auth.service';
+import LoginPage from './pages/login/LoginPage';
+import Navbar from './components/Navbar';
 import PatientsPage from "./pages/patients/PatientsPage";
 import ActivityPage from "./pages/activities/ActivityPage";
 import PatientDetailsPage from "./pages/patient-details/PatientDetailsPage";
@@ -8,22 +9,96 @@ import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 import UsersPage from "./pages/users/UsersPage";
 import EditUserPage from "./pages/users/EditUsers";
 
-function App(){
-    return (
-        <>
-    <Navbar />
+// Protected Route wrapper component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  if (!authService.isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
+};
+
+// Public Route wrapper component (for login)
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  if (authService.isAuthenticated()) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
+function App() {
+  return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<PatientsPage />} />
-      <Route path="/patients" element={<PatientsPage />} />
-      <Route path="/activity" element={<ActivityPage />} /> {/* add id to activity & for each Patient */}
-      <Route path="/patientdetails/:patientId" element={<PatientDetailsPage />} /> {/* Dynamic route with patient ID parameter */}
-      <Route path="/activity/:activityId" element={<ActivityDetailsPage />} /> {/* Dynamic route with activity ID parameter */}
-      <Route path="/users" element={<UsersPage />} />
-      <Route path="/edit-user/:userId" element={<EditUserPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <PatientsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute>
+            <PatientsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity"
+        element={
+          <ProtectedRoute>
+            <ActivityPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patientdetails/:patientId"
+        element={
+          <ProtectedRoute>
+            <PatientDetailsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity/:activityId"
+        element={
+          <ProtectedRoute>
+            <ActivityDetailsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/edit-user/:userId"
+        element={
+          <ProtectedRoute>
+            <EditUserPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
-        </>
-    )
+  );
 }
 
 export default App;

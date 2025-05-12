@@ -1,6 +1,8 @@
 import type React from "react"
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
+import { authService } from "../../services/auth.service"
+import { QuickAdminLogin } from "../../components/QuickAdminLogin"
 
 interface FormData {
   email: string
@@ -17,6 +19,7 @@ export default function LoginPage() {
   })
   const [errors, setErrors] = useState<Partial<FormData>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [loginError, setLoginError] = useState<string>("")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -53,21 +56,28 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    setLoginError("")
 
     if (!validateForm()) return
 
     setIsLoading(true)
 
     try {
-      // Here you would implement your authentication logic
-      console.log("Form submitted:", formData)
+      const response = await authService.login({
+        email: formData.email,
+        password: formData.password,
+      })
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      authService.setToken(response.access_token)
+
+      if (formData.rememberMe) {
+        // If remember me is checked, we could implement additional persistence logic here
+      }
 
       navigate("/")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error)
+      setLoginError(error.response?.data?.message || "Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -81,53 +91,57 @@ export default function LoginPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
+          {loginError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {loginError}
+            </div>
+          )}
 
-        <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`block w-full px-4 py-3 rounded-xl text-sm ${
-                    errors.email
-                      ? "border-red-300 ring-1 ring-red-300 focus:ring-red-500"
-                      : "border-gray-200 focus:border-gray-300 focus:ring-gray-300"
-                  } shadow-sm focus:ring-2 focus:outline-none transition-all duration-200`}
-                  placeholder="name@example.com"
-                />
-                {errors.email && <p className="mt-1.5 text-sm text-red-500">{errors.email}</p>}
-              </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className={`block w-full px-4 py-3 rounded-xl text-sm ${
+                errors.email
+                  ? "border-red-300 ring-1 ring-red-300 focus:ring-red-500"
+                  : "border-gray-200 focus:border-gray-300 focus:ring-gray-300"
+              } shadow-sm focus:ring-2 focus:outline-none transition-all duration-200`}
+              placeholder="name@example.com"
+            />
+            {errors.email && <p className="mt-1.5 text-sm text-red-500">{errors.email}</p>}
+          </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
-                  </label>
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`block w-full px-4 py-3 rounded-xl text-sm ${
-                    errors.password
-                      ? "border-red-300 ring-1 ring-red-300 focus:ring-red-500"
-                      : "border-gray-200 focus:border-gray-300 focus:ring-gray-300"
-                  } shadow-sm focus:ring-2 focus:outline-none transition-all duration-200`}
-                  placeholder="••••••••"
-                />
-                {errors.password && <p className="mt-1.5 text-sm text-red-500">{errors.password}</p>}
-              </div>
-        
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+            </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className={`block w-full px-4 py-3 rounded-xl text-sm ${
+                errors.password
+                  ? "border-red-300 ring-1 ring-red-300 focus:ring-red-500"
+                  : "border-gray-200 focus:border-gray-300 focus:ring-gray-300"
+              } shadow-sm focus:ring-2 focus:outline-none transition-all duration-200`}
+              placeholder="••••••••"
+            />
+            {errors.password && <p className="mt-1.5 text-sm text-red-500">{errors.password}</p>}
+          </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -144,6 +158,13 @@ export default function LoginPage() {
               </label>
             </div>
           </div>
+
+          {/* Only show QuickAdminLogin in development */}
+          {import.meta.env.DEV && (
+            <div className="border-t border-gray-200 mt-4 pt-4">
+              <QuickAdminLogin />
+            </div>
+          )}
 
           <div>
             <button
