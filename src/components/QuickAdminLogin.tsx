@@ -22,7 +22,7 @@ export const QuickAdminLogin = () => {
     <button
       type="button"
       onClick={handleQuickLogin}
-      className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors py-2 cursor-pointer"
+      className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors py-2 cursor-pointer appearance-none bg-transparent border-none"
     >
       🚀 Quick Admin Login (Dev Only)
     </button>
