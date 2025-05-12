@@ -166,79 +166,33 @@ export default function PatientDetailsPage() {
         {/* Patient Information Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
               {/* Basic Information */}
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
                   <User className="w-5 h-5 text-blue-600" />
                   Basic Information
                 </h2>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500 block">Full Name</label>
                     <p className="text-gray-900 mt-1 text-lg font-medium">{`${patientData.patient.firstName} ${patientData.patient.lastName}`}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500 block">Birth Date</label>
-                      <p className="text-gray-900 mt-1">{new Date(patientData.patient.birthDate).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500 block">Gender</label>
-                      <p className="text-gray-900 mt-1">{patientData.patient.gender}</p>
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block">Birth Date</label>
+                    <p className="text-gray-900 mt-1">{new Date(patientData.patient.birthDate).toLocaleDateString()}</p>
                   </div>
-                </div>
-
-                {/* Medical Status */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                    <Heart className="w-5 h-5 text-blue-600" />
-                    Medical Status
-                  </h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <ClipboardCheck className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Medical Records:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.medicalRecordsCompleted ? 'text-green-600' : 'text-red-600'}`}>
-                        {patientData.patient.medicalRecordsCompleted ? 'Completed' : 'Pending'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Heart className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">BP at Goal:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.bpAtGoal ? 'text-green-600' : 'text-red-600'}`}>
-                        {patientData.patient.bpAtGoal ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Hospital className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Hospital Visit:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.hospitalVisitedSinceLastReview ? 'text-red-600' : 'text-green-600'}`}>
-                        {patientData.patient.hospitalVisitedSinceLastReview ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">A1C at Goal:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.a1cAtGoal ? 'text-green-600' : 'text-red-600'}`}>
-                        {patientData.patient.a1cAtGoal ? 'Yes' : 'No'}
-                      </span>
-                    </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block">Gender</label>
+                    <p className="text-gray-900 mt-1">{patientData.patient.gender}</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Additional Information */}
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-blue-600" />
-                  Additional Information
-                </h2>
-                <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500 block">Site Name</label>
                     <p className="text-gray-900 mt-1">{patientData.patient.siteName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block">Insurance</label>
+                    <p className="text-gray-900 mt-1">{patientData.patient.insurance || 'Not specified'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500 block">Status</label>
@@ -251,41 +205,79 @@ export default function PatientDetailsPage() {
                     </span>
                   </div>
                 </div>
+              </div>
 
-                {/* Medication Status */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                    <Pill className="w-5 h-5 text-blue-600" />
-                    Medication Status
-                  </h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Pill className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Benzodiazepines:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.useBenzo ? 'text-yellow-600' : 'text-green-600'}`}>
-                        {patientData.patient.useBenzo ? 'Yes' : 'No'}
-                      </span>
+              <div className="border-t border-gray-200 pt-6">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                  <Heart className="w-5 h-5 text-blue-600" />
+                  Patient Status
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Medical Status */}
+                  <div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <ClipboardCheck className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Medical Records:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.medicalRecordsCompleted ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData.patient.medicalRecordsCompleted ? 'Completed' : 'Pending'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">BP at Goal:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.bpAtGoal ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData.patient.bpAtGoal ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Hospital className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Hospital Visit:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.hospitalVisitedSinceLastReview ? 'text-red-600' : 'text-green-600'}`}>
+                          {patientData.patient.hospitalVisitedSinceLastReview ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">A1C at Goal:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.a1cAtGoal ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData.patient.a1cAtGoal ? 'Yes' : 'No'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Syringe className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Antipsychotics:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.useAntipsychotic ? 'text-yellow-600' : 'text-green-600'}`}>
-                        {patientData.patient.useAntipsychotic ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Pill className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Opioids:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.useOpioids ? 'text-yellow-600' : 'text-green-600'}`}>
-                        {patientData.patient.useOpioids ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
-                      <span className={`text-sm font-medium ${patientData.patient.fallSinceLastVisit ? 'text-red-600' : 'text-green-600'}`}>
-                        {patientData.patient.fallSinceLastVisit ? 'Yes' : 'No'}
-                      </span>
+                  </div>
+
+                  {/* Medication Status */}
+                  <div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <Pill className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Benzodiazepines:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.useBenzo ? 'text-yellow-600' : 'text-green-600'}`}>
+                          {patientData.patient.useBenzo ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Syringe className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Antipsychotics:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.useAntipsychotic ? 'text-yellow-600' : 'text-green-600'}`}>
+                          {patientData.patient.useAntipsychotic ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Pill className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Opioids:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.useOpioids ? 'text-yellow-600' : 'text-green-600'}`}>
+                          {patientData.patient.useOpioids ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
+                        <span className={`text-sm font-medium ${patientData.patient.fallSinceLastVisit ? 'text-red-600' : 'text-green-600'}`}>
+                          {patientData.patient.fallSinceLastVisit ? 'Yes' : 'No'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
