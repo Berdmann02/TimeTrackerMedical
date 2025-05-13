@@ -19,6 +19,7 @@ import {
 import { getActivityById, deleteActivity, updateActivity, getActivityTypes } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
 import { getPatientById } from '../../services/patientService';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 
 interface DetailRowProps {
     icon: any;
@@ -166,6 +167,7 @@ const ActivityDetailsPage: FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [activityTypes, setActivityTypes] = useState<string[]>([]);
     const [isTracking, setIsTracking] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     useEffect(() => {
         const fetchActivityData = async () => {
@@ -327,25 +329,22 @@ const ActivityDetailsPage: FC = () => {
     };
 
     const handleDelete = async () => {
-        // Implement delete functionality
         if (!activityId || !activity) return;
         
-        if (window.confirm("Are you sure you want to delete this activity?")) {
-            try {
-                setIsDeleting(true);
-                await deleteActivity(activityId);
-                
-                // Navigate back to patient details
-                if (activity.patient_id) {
-                    navigate(`/patientdetails/${activity.patient_id}`);
-                } else {
-                    navigate('/patients');
-                }
-            } catch (err) {
-                console.error("Error deleting activity:", err);
-                alert("Failed to delete activity. Please try again.");
-                setIsDeleting(false);
+        try {
+            setIsDeleting(true);
+            await deleteActivity(activityId);
+            
+            // Navigate back to patient details
+            if (activity.patient_id) {
+                navigate(`/patientdetails/${activity.patient_id}`);
+            } else {
+                navigate('/patients');
             }
+        } catch (err) {
+            console.error("Error deleting activity:", err);
+            alert("Failed to delete activity. Please try again.");
+            setIsDeleting(false);
         }
     };
 
@@ -391,6 +390,13 @@ const ActivityDetailsPage: FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 py-8">
+            <DeleteConfirmationModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                isDeleting={isDeleting}
+                itemName={`Activity #${activityId}`}
+            />
             <div className="max-w-5xl mx-auto px-4">
                 <div className="bg-white shadow rounded-lg">
                     <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
@@ -433,14 +439,14 @@ const ActivityDetailsPage: FC = () => {
                                         Edit Activity
                                     </button>
                                     <button
-                                        onClick={handleDelete}
+                                        onClick={() => setShowDeleteModal(true)}
                                         disabled={isDeleting}
                                         className={`inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium ${
                                             isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
                                         } bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        {isDeleting ? "Deleting..." : "Delete"}
+                                        Delete
                                     </button>
                                 </>
                             )}
