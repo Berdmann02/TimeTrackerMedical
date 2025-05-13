@@ -37,7 +37,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   return (
     <div 
-      className="fixed inset-0 backdrop-blur-[2px] bg-white/30 flex items-center justify-center z-50"
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
       onClick={onClose}
     >
       <div 
