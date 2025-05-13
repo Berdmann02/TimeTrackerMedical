@@ -14,6 +14,7 @@ export interface Patient {
   insurance: string | null;
   is_active: boolean;
   site_name: string;
+  building: string | null;
   created_at: string;
   medical_records_completed?: boolean;
   bp_at_goal?: boolean;

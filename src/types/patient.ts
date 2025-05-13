@@ -4,6 +4,7 @@ export interface Patient {
   birthDate: string
   gender: string
   siteName: string
+  building?: string
   phoneNumber?: string
   contactName?: string
   contactPhoneNumber?: string
