@@ -102,4 +102,14 @@ export const createPatient = async (patientData: CreatePatientDTO): Promise<Pati
     console.error('Error creating patient:', error);
     throw error;
   }
+};
+
+export const updatePatient = async (id: number | string, patientData: Partial<Patient>): Promise<Patient> => {
+  try {
+    const response = await axios.put(`${API_URL}/patients/${id}`, patientData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating patient with ID ${id}:`, error);
+    throw error;
+  }
 }; 

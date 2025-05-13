@@ -1,10 +1,117 @@
-import { useState, useEffect } from "react"
-import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe } from "lucide-react"
+import { useState, useEffect, memo } from "react"
+import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate, useParams } from "react-router-dom"
-import { getPatientById, getPatientActivities } from "../../services/patientService"
+import { getPatientById, getPatientActivities, updatePatient } from "../../services/patientService"
 import type { Patient, Activity as ApiActivity } from "../../services/patientService"
 import AddActivityModal from "../../components/AddActivityModal"
+
+// DetailRow component for editable fields that maintains original UI
+interface DetailRowProps {
+    icon?: any;
+    label: string;
+    value: string | boolean | number | null | undefined;
+    isEditing?: boolean;
+    onEdit?: (value: any) => void;
+    editType?: 'text' | 'date' | 'select' | 'checkbox' | 'readonly';
+    editOptions?: string[];
+    className?: string;
+}
+
+const DetailRow: React.FC<DetailRowProps> = memo(({
+    icon: Icon,
+    label,
+    value,
+    isEditing = false,
+    onEdit,
+    editType = 'text',
+    editOptions = [],
+    className = ''
+}) => {
+    const renderValue = () => {
+        if (value === null || value === undefined) return 'N/A';
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+            // Format the date for display without timezone conversion
+            const [year, month, day] = value.split('T')[0].split('-');
+            return `${month}/${day}/${year}`;
+        }
+        return value;
+    };
+
+    const renderEditField = () => {
+        if (!isEditing || editType === 'readonly') {
+            return (
+                <p className={`text-gray-900 ${className}`}>
+                    {renderValue()}
+                </p>
+            );
+        }
+
+        switch (editType) {
+            case 'text':
+                return (
+                    <input
+                        type="text"
+                        value={value as string || ''}
+                        onChange={(e) => onEdit && onEdit(e.target.value)}
+                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                );
+            case 'date':
+                // Ensure we're using the date part only without timezone conversion
+                const dateValue = typeof value === 'string' ? value.split('T')[0] : '';
+                return (
+                    <input
+                        type="date"
+                        value={dateValue}
+                        onChange={(e) => onEdit && onEdit(e.target.value)}
+                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                );
+            case 'select':
+                return (
+                    <select
+                        value={value as string || ''}
+                        onChange={(e) => onEdit && onEdit(e.target.value)}
+                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        {editOptions.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                        ))}
+                    </select>
+                );
+            case 'checkbox':
+                return (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">{label}</span>
+                        <input
+                            type="checkbox"
+                            checked={value as boolean}
+                            onChange={(e) => onEdit && onEdit(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                    </div>
+                );
+            default:
+                return <p className={`text-gray-900 ${className}`}>{renderValue()}</p>;
+        }
+    };
+
+    // For checkbox type, we don't need the label since it's inline
+    if (editType === 'checkbox' && isEditing) {
+        return renderEditField();
+    }
+
+    return (
+        <div>
+            <label className="text-sm font-medium text-gray-500 block">{label}</label>
+            <div className="mt-1">
+                {renderEditField()}
+            </div>
+        </div>
+    );
+});
 
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
@@ -13,8 +120,11 @@ export default function PatientDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [patient, setPatient] = useState<Patient | null>(null)
+  const [editedPatient, setEditedPatient] = useState<Patient | null>(null)
   const [activities, setActivities] = useState<ApiActivity[]>([])
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Fetch patient data and activities
   useEffect(() => {
@@ -103,9 +213,41 @@ export default function PatientDetailsPage() {
   }
 
   const handleEditPatient = () => {
-    // TODO: Implement edit patient functionality
-    console.log("Edit patient clicked")
-  }
+    setIsEditing(true);
+    setEditedPatient(patient);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedPatient(patient);
+  };
+
+  const handleSave = async () => {
+    if (!patientId || !editedPatient) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const updatedPatient = await updatePatient(patientId, editedPatient);
+      setPatient(updatedPatient);
+      setEditedPatient(updatedPatient);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Error updating patient:", err);
+      alert("Failed to update patient. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFieldChange = (field: string, value: any) => {
+    if (!editedPatient) return;
+    
+    setEditedPatient(prev => {
+      if (!prev) return prev;
+      return { ...prev, [field]: value };
+    });
+  };
 
   // Loading state
   if (isLoading) {
@@ -154,13 +296,35 @@ export default function PatientDetailsPage() {
             </button>
             <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
           </div>
-          <button
-            onClick={handleEditPatient}
-            className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out"
-          >
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit Patient
-          </button>
+          <div className="flex space-x-3">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleEditPatient}
+                className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Patient
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Patient Information Card */}
@@ -175,34 +339,82 @@ export default function PatientDetailsPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
+                    
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailRow
+                          label="First Name"
+                          value={editedPatient?.first_name}
+                          isEditing={isEditing}
+                          editType="text"
+                          onEdit={(value) => handleFieldChange('first_name', value)}
+                        />
+                        <DetailRow
+                          label="Last Name"
+                          value={editedPatient?.last_name}
+                          isEditing={isEditing}
+                          editType="text"
+                          onEdit={(value) => handleFieldChange('last_name', value)}
+                        />
+                      </div>
+                    ) : (
+                    <div>
                     <label className="text-sm font-medium text-gray-500 block">Full Name</label>
-                    <p className="text-gray-900 mt-1 text-lg font-medium">{`${patientData.patient.firstName} ${patientData.patient.lastName}`}</p>
+                      <p className="text-gray-900 mt-1 text-lg font-medium">
+                        {`${patientData?.patient.firstName} ${patientData?.patient.lastName}`}
+                      </p>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500 block">Birth Date</label>
-                    <p className="text-gray-900 mt-1">{new Date(patientData.patient.birthDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500 block">Gender</label>
-                    <p className="text-gray-900 mt-1">{patientData.patient.gender}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500 block">Site Name</label>
-                    <p className="text-gray-900 mt-1">{patientData.patient.siteName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500 block">Insurance</label>
-                    <p className="text-gray-900 mt-1">{patientData.patient.insurance || 'Not specified'}</p>
-                  </div>
+                  <DetailRow
+                    label="Birth Date"
+                    value={isEditing ? editedPatient?.birthdate : patientData?.patient.birthDate}
+                    isEditing={isEditing}
+                    editType="date"
+                    onEdit={(value) => handleFieldChange('birthdate', value)}
+                  />
+                  <DetailRow
+                    label="Gender"
+                    value={isEditing ? editedPatient?.gender : patientData?.patient.gender}
+                    isEditing={isEditing}
+                    editType="select"
+                    editOptions={['Male', 'Female', 'Other']}
+                    onEdit={(value) => handleFieldChange('gender', value)}
+                  />
+                  <DetailRow
+                    label="Site Name"
+                    value={isEditing ? editedPatient?.site_name : patientData?.patient.siteName}
+                    isEditing={isEditing}
+                    editType="select"
+                    editOptions={['CP Greater San Antonio', 'CP Intermountain']}
+                    onEdit={(value) => handleFieldChange('site_name', value)}
+                  />
+                  <DetailRow
+                    label="Insurance"
+                    value={isEditing ? editedPatient?.insurance : patientData?.patient.insurance}
+                    isEditing={isEditing}
+                    editType="text"
+                    onEdit={(value) => handleFieldChange('insurance', value)}
+                  />
                   <div>
                     <label className="text-sm font-medium text-gray-500 block">Status</label>
-                    <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      patientData.patient.isActivePatient
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {patientData.patient.isActivePatient ? "Active" : "Inactive"}
-                    </span>
+                    {isEditing ? (
+                      <DetailRow
+                        label=""
+                        value={editedPatient?.is_active}
+                        isEditing={isEditing}
+                        editType="checkbox"
+                        onEdit={(value) => handleFieldChange('is_active', value)}
+                      />
+                    ) : (
+                      <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        patientData?.patient.isActivePatient
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}>
+                        {patientData?.patient.isActivePatient ? "Active" : "Inactive"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -216,68 +428,162 @@ export default function PatientDetailsPage() {
                   {/* Medical Status */}
                   <div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <ClipboardCheck className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Medical Records:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.medicalRecordsCompleted ? 'text-green-600' : 'text-red-600'}`}>
-                          {patientData.patient.medicalRecordsCompleted ? 'Completed' : 'Pending'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Heart className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">BP at Goal:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.bpAtGoal ? 'text-green-600' : 'text-red-600'}`}>
-                          {patientData.patient.bpAtGoal ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Hospital className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Hospital Visit:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.hospitalVisitedSinceLastReview ? 'text-red-600' : 'text-green-600'}`}>
-                          {patientData.patient.hospitalVisitedSinceLastReview ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">A1C at Goal:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.a1cAtGoal ? 'text-green-600' : 'text-red-600'}`}>
-                          {patientData.patient.a1cAtGoal ? 'Yes' : 'No'}
-                        </span>
-                      </div>
+                      {isEditing ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <ClipboardCheck className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="Medical Records"
+                              value={editedPatient?.medical_records_completed}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('medical_records_completed', value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="BP at Goal"
+                              value={editedPatient?.bp_at_goal}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('bp_at_goal', value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Hospital className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="Hospital Visit"
+                              value={editedPatient?.hospital_visited_since_last_review}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('hospital_visited_since_last_review', value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="A1C at Goal"
+                              value={editedPatient?.a1c_at_goal}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('a1c_at_goal', value)}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <ClipboardCheck className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">Medical Records:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.medicalRecordsCompleted ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.medicalRecordsCompleted ? 'Completed' : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">BP at Goal:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.bpAtGoal ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.bpAtGoal ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Hospital className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">Hospital Visit:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.hospitalVisitedSinceLastReview ? 'text-red-600' : 'text-green-600'}`}>
+                              {patientData?.patient.hospitalVisitedSinceLastReview ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">A1C at Goal:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.a1cAtGoal ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.a1cAtGoal ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   {/* Medication Status */}
                   <div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <Pill className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Benzodiazepines:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.useBenzo ? 'text-yellow-600' : 'text-green-600'}`}>
-                          {patientData.patient.useBenzo ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Syringe className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Antipsychotics:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.useAntipsychotic ? 'text-yellow-600' : 'text-green-600'}`}>
-                          {patientData.patient.useAntipsychotic ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Pill className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Opioids:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.useOpioids ? 'text-yellow-600' : 'text-green-600'}`}>
-                          {patientData.patient.useOpioids ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
-                        <span className={`text-sm font-medium ${patientData.patient.fallSinceLastVisit ? 'text-red-600' : 'text-green-600'}`}>
-                          {patientData.patient.fallSinceLastVisit ? 'Yes' : 'No'}
-                        </span>
-                      </div>
+                      {isEditing ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Pill className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="Benzodiazepines"
+                              value={editedPatient?.use_benzo}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('use_benzo', value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Syringe className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="Antipsychotics"
+                              value={editedPatient?.use_antipsychotic}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('use_antipsychotic', value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Pill className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="Opioids"
+                              value={editedPatient?.use_opioids}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('use_opioids', value)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-gray-400" />
+                            <DetailRow
+                              label="Fall Since Last Visit"
+                              value={editedPatient?.fall_since_last_visit}
+                              isEditing={isEditing}
+                              editType="checkbox"
+                              onEdit={(value) => handleFieldChange('fall_since_last_visit', value)}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Pill className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">Benzodiazepines:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.useBenzo ? 'text-yellow-600' : 'text-green-600'}`}>
+                              {patientData?.patient.useBenzo ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Syringe className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">Antipsychotics:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.useAntipsychotic ? 'text-yellow-600' : 'text-green-600'}`}>
+                              {patientData?.patient.useAntipsychotic ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Pill className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">Opioids:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.useOpioids ? 'text-yellow-600' : 'text-green-600'}`}>
+                              {patientData?.patient.useOpioids ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
+                            <span className={`text-sm font-medium ${patientData?.patient.fallSinceLastVisit ? 'text-red-600' : 'text-green-600'}`}>
+                              {patientData?.patient.fallSinceLastVisit ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
