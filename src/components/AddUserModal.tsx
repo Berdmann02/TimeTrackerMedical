@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Shield, X } from 'lucide-react';
+import { User, Shield, X, Building2 } from 'lucide-react';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -7,18 +7,49 @@ interface AddUserModalProps {
 }
 
 interface UserFormData {
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'admin' | 'generic' | 'pharmacist';
+  role: 'admin' | 'Nurse' | 'pharmacist';
+  primarySite: string;
+  assignedSite: string;
 }
+
+const SITE_OPTIONS = [
+  'All',
+  'Ancora',
+  'Center For Geriatrics- Keystone',
+  'Choice Health',
+  'CP El Paso',
+  'CP Greater San Antonio',
+  'CP Intermountain',
+  'Dixie Care',
+  'Finding Home Boise',
+  'Finding Home Southeast Idaho',
+  'Finding Homes Northern Utah',
+  'Finding Homes Salt Lake',
+  'Finding Homes Southern Utah',
+  'Integrity Mental Health - Boise',
+  'Jemericus',
+  'Keystone Center For Geriatrics',
+  'Keystone Healthcare',
+  'OmniaCare',
+  'Rocky Mountain Psych Pocatello',
+  'Test Site'
+];
 
 const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
   const [formData, setFormData] = useState<UserFormData>({
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'generic'
+    role: 'Nurse',
+    primarySite: '',
+    assignedSite: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,7 +72,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
@@ -62,10 +93,44 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {/* Name Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <User className="text-gray-400" size={18} />
+                  <span>First Name</span>
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  required
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <User className="text-gray-400" size={18} />
+                  <span>Last Name</span>
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  required
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+
             {/* Email Field */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
                 <User className="text-gray-400" size={18} />
                 <span>Email Address</span>
               </label>
@@ -74,47 +139,87 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 required
                 placeholder="user@example.com"
               />
             </div>
 
-            {/* Password Field */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Shield className="text-gray-400" size={18} />
-                <span>Password</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                required
-              />
+            {/* Password Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <Shield className="text-gray-400" size={18} />
+                  <span>Password</span>
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  required
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <Shield className="text-gray-400" size={18} />
+                  <span>Confirm Password</span>
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  required
+                />
+              </div>
             </div>
 
-            {/* Confirm Password Field */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Shield className="text-gray-400" size={18} />
-                <span>Confirm Password</span>
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                required
-              />
+            {/* Site Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <Building2 className="text-gray-400" size={18} />
+                  <span>Primary Site</span>
+                </label>
+                <select
+                  name="primarySite"
+                  value={formData.primarySite}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
+                  required
+                >
+                  <option value="">Select a primary site</option>
+                  {SITE_OPTIONS.map(site => (
+                    <option key={site} value={site}>{site}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <Building2 className="text-gray-400" size={18} />
+                  <span>Assigned Site</span>
+                </label>
+                <select
+                  name="assignedSite"
+                  value={formData.assignedSite}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
+                  required
+                >
+                  <option value="">Select an assigned site</option>
+                  {SITE_OPTIONS.map(site => (
+                    <option key={site} value={site}>{site}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Role Field */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
                 <Shield className="text-gray-400" size={18} />
                 <span>Role</span>
               </label>
@@ -122,12 +227,12 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
                 required
               >
-                <option value="generic">Generic</option>
                 <option value="admin">Admin</option>
                 <option value="pharmacist">Pharmacist</option>
+                <option value="Nurse">Nurse</option>
               </select>
             </div>
 

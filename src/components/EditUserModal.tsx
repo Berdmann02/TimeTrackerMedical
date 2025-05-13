@@ -6,7 +6,7 @@ interface EditUserModalProps {
   onClose: () => void;
   user?: {
     email: string;
-    role: 'admin' | 'generic' | 'pharmacist';
+    role: 'admin' | 'Nurse' | 'pharmacist';
     isActive?: boolean;
   } | null;
 }
@@ -15,7 +15,7 @@ interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'admin' | 'generic' | 'pharmacist';
+  role: 'admin' | 'Nurse' | 'pharmacist';
   isActive: boolean;
 }
 
@@ -24,7 +24,7 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
     email: user?.email || '',
     password: '',
     confirmPassword: '',
-    role: user?.role || 'generic',
+    role: user?.role || 'Nurse',
     isActive: user?.isActive !== false,
   });
 
@@ -34,7 +34,7 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
       email: user?.email || '',
       password: '',
       confirmPassword: '',
-      role: user?.role || 'generic',
+      role: user?.role || 'Nurse',
       isActive: user?.isActive !== false,
     });
   }, [user, isOpen]);
@@ -147,9 +147,9 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
                 required
               >
-                <option value="generic">Generic</option>
                 <option value="admin">Admin</option>
                 <option value="pharmacist">Pharmacist</option>
+                <option value="Nurse">Nurse</option>
               </select>
             </div>
 

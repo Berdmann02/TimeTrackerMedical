@@ -6,7 +6,7 @@ interface FormData {
   email: string
   password: string
   confirmPassword: string
-  role: "admin" | "pharmacist" | "generic"
+  role: "admin" | "pharmacist" | "Nurse"
   isInactive: boolean
 }
 
@@ -24,7 +24,7 @@ export default function EditUsers() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "generic",
+    role: "Nurse",
     isInactive: false
   })
   const [errors, setErrors] = useState<FormErrors>({})
@@ -41,7 +41,7 @@ export default function EditUsers() {
           email: "user@example.com",
           password: "",
           confirmPassword: "",
-          role: "generic",
+          role: "Nurse",
           isInactive: false
         })
       } catch (error) {
@@ -244,7 +244,7 @@ export default function EditUsers() {
               >
                 <option value="admin">Admin</option>
                 <option value="pharmacist">Pharmacist</option>
-                <option value="generic">Generic</option>
+                <option value="Nurse">Nurse</option>
               </select>
               {errors.role && (
                 <p className="mt-1 text-sm text-red-600">{errors.role}</p>

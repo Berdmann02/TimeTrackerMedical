@@ -8,9 +8,9 @@ import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
 interface UserAccount {
   id: string
   email: string
-  role: "admin" | "generic" | "pharmacist"
+  role: "admin" | "Nurse" | "pharmacist"
   isActive: boolean
-  lastLogin: string
+  primarySite: string
 }
 
 export default function UsersPage() {
@@ -29,27 +29,27 @@ export default function UsersPage() {
       email: "admin@example.com",
       role: "admin",
       isActive: true,
-      lastLogin: "2024-04-30T10:30:00",
+      primarySite: "Main Hospital",
     },
     {
       id: "2",
       email: "user1@example.com",
-      role: "generic",
+      role: "Nurse",
       isActive: true,
-      lastLogin: "2024-04-29T15:45:00",
+      primarySite: "North Clinic",
     },
     {
       id: "3",
       email: "user2@example.com",
-      role: "generic",
+      role: "Nurse",
       isActive: true,
-      lastLogin: "2024-04-28T09:15:00",
+      primarySite: "South Clinic",
     },
   ]
 
   const [users, setUsers] = useState<UserAccount[]>(initialUsers)
   const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "generic" | "pharmacist">("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "Nurse" | "pharmacist">("all")
 
   // Filter users based on search and role
   const filteredUsers = users.filter((user) => {
@@ -129,13 +129,13 @@ export default function UsersPage() {
               <div className="relative">
                 <select
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "generic" | "pharmacist")}
+                  onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "Nurse" | "pharmacist")}
                   className="block w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white cursor-pointer"
                 >
                   <option value="all">All Roles</option>
                   <option value="admin">Admin</option>
-                  <option value="generic">Generic</option>
                   <option value="pharmacist">Pharmacist</option>
+                  <option value="Nurse">Nurse</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <Shield className="h-4 w-4 text-gray-400" />
@@ -161,7 +161,7 @@ export default function UsersPage() {
                     Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Login
+                    Primary Site
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -179,7 +179,7 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
-                        <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : user.role === "generic" ? "text-gray-400" : "text-green-500"} mr-1`} />
+                        <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : user.role === "Nurse" ? "text-gray-400" : "text-green-500"} mr-1`} />
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </td>
@@ -193,7 +193,7 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.lastLogin).toLocaleString()}
+                      {user.primarySite}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-3">
