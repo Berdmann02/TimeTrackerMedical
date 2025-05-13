@@ -1,13 +1,14 @@
 import axios from 'axios';
 import type { Activity } from './patientService';
 
-const API_URL = 'https://time-tracker-medical-backend.onrender.com';
+const API_URL = 'time-tracker-medical-backend-production.up.railway.app';
 
 export interface CreateActivityDTO {
   patient_id: number;
   activity_type: string;
   user_initials: string;
   time_spent: number;
+  is_pharmacist: boolean;
   notes?: string;
 }
 
