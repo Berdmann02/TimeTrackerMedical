@@ -3,6 +3,7 @@ import { User, Pencil, Trash, Plus, Shield } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import AddUserModal from "../../components/AddUserModal"
 import EditUserModal from "../../components/EditUserModal"
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
 
 interface UserAccount {
   id: string
@@ -17,6 +18,9 @@ export default function UsersPage() {
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false)
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Sample data - replace with actual API call
   const initialUsers: UserAccount[] = [
@@ -63,9 +67,26 @@ export default function UsersPage() {
   }
 
   const handleDelete = (userId: string) => {
-    // TODO: Implement delete functionality with confirmation
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      setUsers(users.filter((user) => user.id !== userId))
+    const user = users.find(u => u.id === userId)
+    if (user) {
+      setUserToDelete(user)
+      setIsDeleteModalOpen(true)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      // TODO: Add actual API call here
+      setUsers(users.filter((user) => user.id !== userToDelete.id))
+      setIsDeleteModalOpen(false)
+    } catch (error) {
+      console.error('Error deleting user:', error)
+    } finally {
+      setIsDeleting(false)
+      setUserToDelete(null)
     }
   }
 
@@ -214,6 +235,16 @@ export default function UsersPage() {
         isOpen={isEditUserModalOpen}
         onClose={() => setIsEditUserModalOpen(false)}
         user={selectedUser}
+      />
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setUserToDelete(null)
+        }}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+        itemName={userToDelete ? `user ${userToDelete.email}` : 'user'}
       />
     </div>
   )
