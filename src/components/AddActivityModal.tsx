@@ -21,8 +21,18 @@ interface ActivityForm {
   startTime: string;
   endTime: string;
   notes: string;
-  userInitials: string;
-  isPharmacist: boolean;
+  building: string;
+  insurance: string;
+  medicalChecks: {
+    medicalRecords: boolean;
+    bpAtGoal: boolean;
+    hospitalVisit: boolean;
+    a1cAtGoal: boolean;
+    benzodiazepines: boolean;
+    antipsychotics: boolean;
+    opioids: boolean;
+    fallSinceLastVisit: boolean;
+  };
 }
 
 interface AddActivityModalProps {
@@ -58,8 +68,18 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     startTime: "",
     endTime: "",
     notes: "",
-    userInitials: "",
-    isPharmacist: false
+    building: "",
+    insurance: "",
+    medicalChecks: {
+      medicalRecords: false,
+      bpAtGoal: false,
+      hospitalVisit: false,
+      a1cAtGoal: false,
+      benzodiazepines: false,
+      antipsychotics: false,
+      opioids: false,
+      fallSinceLastVisit: false
+    }
   });
 
   const [isTracking, setIsTracking] = useState(false);
@@ -190,7 +210,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.patientId || !formData.activityType || !formData.userInitials) {
+    if (!formData.patientId || !formData.activityType || !formData.building) {
       alert("Please fill in all required fields");
       return;
     }
@@ -206,10 +226,20 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
         activity_type: formData.activityType,
-        user_initials: formData.userInitials,
-        is_pharmacist: formData.isPharmacist,
+        building: formData.building,
         time_spent: calculateTimeDifference(),
-        notes: formData.notes
+        notes: formData.notes,
+        insurance: formData.insurance,
+        medical_checks: {
+          medical_records: formData.medicalChecks.medicalRecords,
+          bp_at_goal: formData.medicalChecks.bpAtGoal,
+          hospital_visit: formData.medicalChecks.hospitalVisit,
+          a1c_at_goal: formData.medicalChecks.a1cAtGoal,
+          benzodiazepines: formData.medicalChecks.benzodiazepines,
+          antipsychotics: formData.medicalChecks.antipsychotics,
+          opioids: formData.medicalChecks.opioids,
+          fall_since_last_visit: formData.medicalChecks.fallSinceLastVisit
+        }
       };
       
       await createActivity(activityData);
@@ -252,7 +282,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Add New Activity</h2>
               <p className="mt-1 text-sm text-gray-600">
-                {selectedPatientName || "Please fill in all the required information to track an activity."}
+                Please fill in all the required information to track an activity.
               </p>
             </div>
             <button
@@ -331,63 +361,271 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
               {/* User Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* User Initials */}
+                {/* Building Selection */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">
                     <span className="flex items-center">
-                      <FaUser className="w-4 h-4 text-gray-400 mr-2" />
-                      Your Initials
+                      <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
+                      Building
                     </span>
                   </label>
-                  <input
-                    type="text"
-                    name="userInitials"
-                    value={formData.userInitials}
+                  <select
+                    name="building"
+                    value={formData.building}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm hover:bg-gray-100 transition-colors"
-                    placeholder="e.g., JD"
-                    maxLength={5}
+                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
                     required
-                  />
+                  >
+                    <option value="">Select Building</option>
+                    <option value="building-a">Building A</option>
+                    <option value="building-b">Building B</option>
+                    <option value="building-c">Building C</option>
+                  </select>
                 </div>
 
-                {/* Is Pharmacist */}
-                <div className="space-y-1.5 flex items-center">
-                  <label className="inline-flex items-center mt-6">
-                    <input
-                      type="checkbox"
-                      name="isPharmacist"
-                      checked={formData.isPharmacist}
-                      onChange={handleCheckboxChange}
-                      className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out"
-                    />
-                    <span className="ml-2 text-gray-700">I am a Pharmacist</span>
+                {/* Activity Type */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <span className="flex items-center">
+                      <FaClipboardList className="w-4 h-4 text-gray-400 mr-2" />
+                      Activity Type
+                    </span>
                   </label>
+                  <select
+                    name="activityType"
+                    value={formData.activityType}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                    required
+                  >
+                    <option value="">Select Activity Type</option>
+                    {activityTypes.map(type => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {/* Activity Type */}
-              <div className="space-y-1.5">
+              {/* Insurance Field */}
+              <div className="space-y-1.5 mt-6">
                 <label className="block text-sm font-medium text-gray-700">
                   <span className="flex items-center">
                     <FaClipboardList className="w-4 h-4 text-gray-400 mr-2" />
-                    Activity Type
+                    Insurance Information
                   </span>
                 </label>
-                <select
-                  name="activityType"
-                  value={formData.activityType}
+                <input
+                  type="text"
+                  name="insurance"
+                  value={formData.insurance}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                  required
-                >
-                  <option value="">Select Activity Type</option>
-                  {activityTypes.map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                  className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm hover:bg-gray-100 transition-colors"
+                  placeholder="Enter insurance information"
+                />
+              </div>
+
+              {/* Medical Checklist */}
+              <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center mb-6 pb-4 border-b border-gray-200">
+                  <FaClipboardList className="w-5 h-5 text-gray-500 mr-2" />
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Medical Checklist
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.medicalRecords"
+                          checked={formData.medicalChecks.medicalRecords}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                medicalRecords: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">Medical Records</span>
+                      </div>
+                    </label>
+
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.bpAtGoal"
+                          checked={formData.medicalChecks.bpAtGoal}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                bpAtGoal: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">BP at Goal</span>
+                      </div>
+                    </label>
+
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.hospitalVisit"
+                          checked={formData.medicalChecks.hospitalVisit}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                hospitalVisit: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">Hospital Visit Since Last Review</span>
+                      </div>
+                    </label>
+
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.a1cAtGoal"
+                          checked={formData.medicalChecks.a1cAtGoal}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                a1cAtGoal: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">A1C at Goal</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.benzodiazepines"
+                          checked={formData.medicalChecks.benzodiazepines}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                benzodiazepines: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">Benzodiazepines</span>
+                      </div>
+                    </label>
+
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.antipsychotics"
+                          checked={formData.medicalChecks.antipsychotics}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                antipsychotics: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">Antipsychotics</span>
+                      </div>
+                    </label>
+
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.opioids"
+                          checked={formData.medicalChecks.opioids}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                opioids: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">Opioids</span>
+                      </div>
+                    </label>
+
+                    <label className="relative flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          name="medicalChecks.fallSinceLastVisit"
+                          checked={formData.medicalChecks.fallSinceLastVisit}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              medicalChecks: {
+                                ...prev.medicalChecks,
+                                fallSinceLastVisit: e.target.checked
+                              }
+                            }));
+                          }}
+                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm">
+                        <span className="text-gray-700">Fall Since Last Visit</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Time Tracking */}

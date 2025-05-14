@@ -6,10 +6,20 @@ const API_URL = 'time-tracker-medical-backend-production.up.railway.app';
 export interface CreateActivityDTO {
   patient_id: number;
   activity_type: string;
-  user_initials: string;
   time_spent: number;
-  is_pharmacist: boolean;
+  building: string;
   notes?: string;
+  insurance?: string;
+  medical_checks?: {
+    medical_records: boolean;
+    bp_at_goal: boolean;
+    hospital_visit: boolean;
+    a1c_at_goal: boolean;
+    benzodiazepines: boolean;
+    antipsychotics: boolean;
+    opioids: boolean;
+    fall_since_last_visit: boolean;
+  };
 }
 
 export const getActivityById = async (id: number | string): Promise<Activity> => {
@@ -28,9 +38,6 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
     const backendActivityData = {
       patient_id: activityData.patient_id,
       activity_type: activityData.activity_type,
-      // Use both field names to ensure compatibility
-      personnel_initials: activityData.user_initials,
-      user_initials: activityData.user_initials,
       notes: activityData.notes || '',
       site_name: 'CP Greater San Antonio', // Default value
       // Use both field names to ensure compatibility
@@ -38,7 +45,17 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       created_at: new Date().toISOString(),
       // Use both field names to ensure compatibility
       duration_minutes: activityData.time_spent,
-      time_spent: activityData.time_spent
+      time_spent: activityData.time_spent,
+      building: activityData.building,
+      insurance: activityData.insurance || '',
+      medical_records: activityData.medical_checks?.medical_records || false,
+      bp_at_goal: activityData.medical_checks?.bp_at_goal || false,
+      hospital_visit: activityData.medical_checks?.hospital_visit || false,
+      a1c_at_goal: activityData.medical_checks?.a1c_at_goal || false,
+      benzodiazepines: activityData.medical_checks?.benzodiazepines || false,
+      antipsychotics: activityData.medical_checks?.antipsychotics || false,
+      opioids: activityData.medical_checks?.opioids || false,
+      fall_since_last_visit: activityData.medical_checks?.fall_since_last_visit || false
     };
     
     const response = await axios.post(`${API_URL}/activities`, backendActivityData);
