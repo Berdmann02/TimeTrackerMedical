@@ -229,7 +229,7 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
             {/* Password Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 h-12">
                   <Shield className="text-gray-400" size={18} />
                   <span>New Password (leave blank to keep current)</span>
                 </label>
@@ -242,7 +242,7 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
                 />
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 h-12">
                   <Shield className="text-gray-400" size={18} />
                   <span>Confirm New Password</span>
                 </label>
