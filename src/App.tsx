@@ -7,7 +7,6 @@ import ActivityPage from "./pages/activities/ActivityPage";
 import PatientDetailsPage from "./pages/patient-details/PatientDetailsPage";
 import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 import UsersPage from "./pages/users/UsersPage";
-import EditUserPage from "./pages/users/EditUsers";
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -86,14 +85,6 @@ function App() {
         element={
           <ProtectedRoute>
             <UsersPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/edit-user/:userId"
-        element={
-          <ProtectedRoute>
-            <EditUserPage />
           </ProtectedRoute>
         }
       />
