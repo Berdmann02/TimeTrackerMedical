@@ -7,6 +7,8 @@ import ActivityPage from "./pages/activities/ActivityPage";
 import PatientDetailsPage from "./pages/patient-details/PatientDetailsPage";
 import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 import UsersPage from "./pages/users/UsersPage";
+import SitesPage from "./pages/sites/SitesPage";
+import MedicalActivitiesPage from "./pages/medical-activities/MedicalActivitiesPage";
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -85,6 +87,22 @@ function App() {
         element={
           <ProtectedRoute>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sites"
+        element={
+          <ProtectedRoute>
+            <SitesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/medical-activities"
+        element={
+          <ProtectedRoute>
+            <MedicalActivitiesPage />
           </ProtectedRoute>
         }
       />
