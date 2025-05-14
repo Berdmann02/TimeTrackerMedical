@@ -16,6 +16,7 @@ interface PatientFormData {
   gender: 'M' | 'F' | 'O';
   siteId: string;
   building: string;
+  notes: string;
 }
 
 const siteOptions = [
@@ -54,7 +55,8 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
     dateOfBirth: '',
     gender: 'M',
     siteId: 'cpgsa',
-    building: ''
+    building: '',
+    notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +119,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
@@ -290,6 +292,27 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Notes Field */}
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <div className="flex items-center gap-2">
+                  {/* Using a generic icon for notes, replace if a more specific one is available */}
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="text-blue-600 w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                  </svg>
+                  <span>Notes</span>
+                </div>
+              </label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows={4}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Enter any relevant notes for the patient..."
+              />
             </div>
 
             {/* Submit Button */}
