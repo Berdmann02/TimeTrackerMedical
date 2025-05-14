@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Shield, X } from 'lucide-react';
 
 interface EditUserModalProps {
@@ -27,6 +27,20 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
     role: user?.role || 'Nurse',
     isActive: user?.isActive !== false,
   });
+
+  // Add effect to manage body scroll
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Update form when user changes
   React.useEffect(() => {

@@ -1,4 +1,5 @@
 import { Trash2, X } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -15,6 +16,20 @@ const DeleteConfirmationModal = ({
   isDeleting,
   itemName = 'this item'
 }: DeleteConfirmationModalProps) => {
+  // Add effect to manage body scroll
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (

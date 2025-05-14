@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, Shield, X, Building2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface UserFormData {
   confirmPassword: string;
   role: 'admin' | 'Nurse' | 'pharmacist';
   primarySite: string;
-  assignedSite: string;
+  assignedSites: string[];
 }
 
 const SITE_OPTIONS = [
@@ -49,8 +49,22 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
     confirmPassword: '',
     role: 'Nurse',
     primarySite: '',
-    assignedSite: ''
+    assignedSites: []
   });
+
+  // Add effect to manage body scroll
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +78,46 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSiteCheckbox = (site: string) => {
+    if (site === 'All') {
+      // If "All" is selected, set all sites including "All" itself
+      setFormData(prev => ({
+        ...prev,
+        assignedSites: prev.assignedSites.includes('All') 
+          ? [] // If "All" was checked, uncheck everything
+          : SITE_OPTIONS // Check all sites including "All"
+      }));
+    } else {
+      setFormData(prev => {
+        const newAssignedSites = prev.assignedSites.includes(site)
+          ? prev.assignedSites.filter(s => s !== site)
+          : [...prev.assignedSites, site];
+        
+        // Remove "All" if any individual site is unchecked
+        if (prev.assignedSites.includes(site)) {
+          return {
+            ...prev,
+            assignedSites: newAssignedSites.filter(s => s !== 'All')
+          };
+        }
+        
+        // Add "All" if all other sites are selected
+        if (newAssignedSites.length === SITE_OPTIONS.length - 1 && 
+            SITE_OPTIONS.every(s => s === 'All' || newAssignedSites.includes(s))) {
+          return {
+            ...prev,
+            assignedSites: SITE_OPTIONS
+          };
+        }
+        
+        return {
+          ...prev,
+          assignedSites: newAssignedSites
+        };
+      });
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -72,7 +126,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
@@ -93,13 +147,12 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <User className="text-gray-400" size={18} />
-                  <span>First Name</span>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  First Name
                 </label>
                 <input
                   type="text"
@@ -112,9 +165,8 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 />
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <User className="text-gray-400" size={18} />
-                  <span>Last Name</span>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Last Name
                 </label>
                 <input
                   type="text"
@@ -130,9 +182,8 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
             {/* Email Field */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                <User className="text-gray-400" size={18} />
-                <span>Email Address</span>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Email Address
               </label>
               <input
                 type="email"
@@ -148,9 +199,8 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
             {/* Password Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <Shield className="text-gray-400" size={18} />
-                  <span>Password</span>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Password
                 </label>
                 <input
                   type="password"
@@ -162,9 +212,8 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 />
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <Shield className="text-gray-400" size={18} />
-                  <span>Confirm Password</span>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
                 </label>
                 <input
                   type="password"
@@ -180,9 +229,8 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
             {/* Site Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <Building2 className="text-gray-400" size={18} />
-                  <span>Primary Site</span>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Primary Site
                 </label>
                 <select
                   name="primarySite"
@@ -198,30 +246,37 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 </select>
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <Building2 className="text-gray-400" size={18} />
-                  <span>Assigned Site</span>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Assigned Sites
                 </label>
-                <select
-                  name="assignedSite"
-                  value={formData.assignedSite}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
-                  required
-                >
-                  <option value="">Select an assigned site</option>
-                  {SITE_OPTIONS.map(site => (
-                    <option key={site} value={site}>{site}</option>
-                  ))}
-                </select>
+                <div className="border border-gray-300 rounded-lg h-[180px] overflow-y-auto">
+                  <div className="p-2 space-y-1">
+                    {SITE_OPTIONS.map(site => (
+                      <label
+                        key={site}
+                        className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.assignedSites.includes(site)}
+                          onChange={() => handleSiteCheckbox(site)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <span className="ml-2 text-gray-700">{site}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Selected: {formData.assignedSites.length} sites
+                </p>
               </div>
             </div>
 
             {/* Role Field */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                <Shield className="text-gray-400" size={18} />
-                <span>Role</span>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Role
               </label>
               <select
                 name="role"

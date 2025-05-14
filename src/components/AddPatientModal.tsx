@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Calendar, Building2, MapPin, X } from 'lucide-react';
 import { createPatient } from '../services/patientService';
 import type { CreatePatientDTO } from '../services/patientService';
@@ -59,6 +59,32 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Update scroll lock effect
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    if (isOpen) {
+      // Add both overflow hidden and position fixed to prevent any scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    } else {
+      // Restore original styles
+      document.body.style.overflow = originalStyle;
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+
+    return () => {
+      // Cleanup function to restore original styles
+      document.body.style.overflow = originalStyle;
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -107,11 +133,11 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
 
   return (
     <div 
-      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50 overflow-hidden"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto my-4"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
