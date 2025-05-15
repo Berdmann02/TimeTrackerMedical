@@ -31,8 +31,13 @@ export interface UpdateSiteDto {
 }
 
 export const getAllSites = async (): Promise<Site[]> => {
-  const response = await axios.get(`${API_URL}/sites`);
-  return response.data;
+  try {
+    const response = await axios.get(`${API_URL}/sites`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching sites:', error);
+    return [];
+  }
 };
 
 export const getSiteById = async (id: number): Promise<Site> => {
@@ -57,4 +62,14 @@ export const updateSite = async (id: number, site: UpdateSiteDto): Promise<Site>
 
 export const deleteSite = async (id: number): Promise<void> => {
   await axios.delete(`${API_URL}/sites/${id}`);
+};
+
+export const getAllSiteNames = async (): Promise<string[]> => {
+  try {
+    const sites = await getAllSites();
+    return sites.map(site => site.name);
+  } catch (error) {
+    console.error('Error fetching site names:', error);
+    return [];
+  }
 }; 

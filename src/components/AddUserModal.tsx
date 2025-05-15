@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { getAllSiteNames } from '../services/siteService';
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -17,29 +18,6 @@ interface UserFormData {
   assignedSites: string[];
 }
 
-const SITE_OPTIONS = [
-  'All',
-  'Ancora',
-  'Center For Geriatrics- Keystone',
-  'Choice Health',
-  'CP El Paso',
-  'CP Greater San Antonio',
-  'CP Intermountain',
-  'Dixie Care',
-  'Finding Home Boise',
-  'Finding Home Southeast Idaho',
-  'Finding Homes Northern Utah',
-  'Finding Homes Salt Lake',
-  'Finding Homes Southern Utah',
-  'Integrity Mental Health - Boise',
-  'Jemericus',
-  'Keystone Center For Geriatrics',
-  'Keystone Healthcare',
-  'OmniaCare',
-  'Rocky Mountain Psych Pocatello',
-  'Test Site'
-];
-
 const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
   const [formData, setFormData] = useState<UserFormData>({
     firstName: '',
@@ -51,6 +29,30 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
     primarySite: '',
     assignedSites: []
   });
+
+  const [sites, setSites] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSites = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const siteData = await getAllSiteNames();
+        setSites(['All', ...siteData]);
+      } catch (err) {
+        setError('Failed to load sites. Please try again later.');
+        console.error('Error loading sites:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchSites();
+    }
+  }, [isOpen]);
 
   // Add effect to manage body scroll
   useEffect(() => {
@@ -85,7 +87,7 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
         ...prev,
         assignedSites: prev.assignedSites.includes('All') 
           ? [] // If "All" was checked, uncheck everything
-          : SITE_OPTIONS // Check all sites including "All"
+          : sites // Check all sites including "All"
       }));
     } else {
       setFormData(prev => {
@@ -102,11 +104,11 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
         }
         
         // Add "All" if all other sites are selected
-        if (newAssignedSites.length === SITE_OPTIONS.length - 1 && 
-            SITE_OPTIONS.every(s => s === 'All' || newAssignedSites.includes(s))) {
+        if (newAssignedSites.length === sites.length - 1 && 
+            sites.every(s => s === 'All' || newAssignedSites.includes(s))) {
           return {
             ...prev,
-            assignedSites: SITE_OPTIONS
+            assignedSites: sites
           };
         }
         
@@ -238,9 +240,10 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
                   required
+                  disabled={isLoading}
                 >
                   <option value="">Select a primary site</option>
-                  {SITE_OPTIONS.map(site => (
+                  {sites.filter(site => site !== 'All').map(site => (
                     <option key={site} value={site}>{site}</option>
                   ))}
                 </select>
@@ -250,22 +253,30 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                   Assigned Sites
                 </label>
                 <div className="border border-gray-300 rounded-lg h-[180px] overflow-y-auto">
-                  <div className="p-2 space-y-1">
-                    {SITE_OPTIONS.map(site => (
-                      <label
-                        key={site}
-                        className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedSites.includes(site)}
-                          onChange={() => handleSiteCheckbox(site)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                        />
-                        <span className="ml-2 text-gray-700">{site}</span>
-                      </label>
-                    ))}
-                  </div>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : error ? (
+                    <div className="p-4 text-center text-red-500 text-sm">{error}</div>
+                  ) : (
+                    <div className="p-2 space-y-1">
+                      {sites.map(site => (
+                        <label
+                          key={site}
+                          className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedSites.includes(site)}
+                            onChange={() => handleSiteCheckbox(site)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                          />
+                          <span className="ml-2 text-gray-700">{site}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
                   Selected: {formData.assignedSites.length} sites
