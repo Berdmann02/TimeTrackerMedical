@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type { Activity } from './patientService';
-
-const API_URL = 'time-tracker-medical-backend-production.up.railway.app';
+import { API_URL } from '../config';
 
 export interface CreateActivityDTO {
   patient_id: number;

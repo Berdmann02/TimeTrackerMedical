@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_URL } from '../config';
 
 export interface Site {
   id?: number;
@@ -28,8 +29,6 @@ export interface UpdateSiteDto {
   zip?: string;
   is_active?: boolean;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://time-tracker-medical-backend-production.up.railway.app';
 
 export const getAllSites = async (): Promise<Site[]> => {
   const response = await axios.get(`${API_URL}/sites`);
