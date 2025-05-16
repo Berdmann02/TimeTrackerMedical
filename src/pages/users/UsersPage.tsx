@@ -1,17 +1,11 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, Pencil, Trash, Plus, Shield } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import AddUserModal from "../../components/AddUserModal"
 import EditUserModal from "../../components/EditUserModal"
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
-
-interface UserAccount {
-  id: string
-  email: string
-  role: "admin" | "Nurse" | "pharmacist"
-  isActive: boolean
-  primarySite: string
-}
+import { userService } from "../../services/user.service"
+import type { UserAccount, CreateUserData, UpdateUserData } from "../../services/user.service"
 
 export default function UsersPage() {
   const navigate = useNavigate()
@@ -21,35 +15,30 @@ export default function UsersPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Sample data - replace with actual API call
-  const initialUsers: UserAccount[] = [
-    {
-      id: "1",
-      email: "admin@example.com",
-      role: "admin",
-      isActive: true,
-      primarySite: "Main Hospital",
-    },
-    {
-      id: "2",
-      email: "user1@example.com",
-      role: "Nurse",
-      isActive: true,
-      primarySite: "North Clinic",
-    },
-    {
-      id: "3",
-      email: "user2@example.com",
-      role: "Nurse",
-      isActive: true,
-      primarySite: "South Clinic",
-    },
-  ]
-
-  const [users, setUsers] = useState<UserAccount[]>(initialUsers)
+  const [users, setUsers] = useState<UserAccount[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "Nurse" | "pharmacist">("all")
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const fetchedUsers = await userService.getUsers()
+      setUsers(fetchedUsers)
+    } catch (err) {
+      setError('Failed to fetch users. Please try again later.')
+      console.error('Error fetching users:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Filter users based on search and role
   const filteredUsers = users.filter((user) => {
@@ -79,11 +68,12 @@ export default function UsersPage() {
     
     setIsDeleting(true)
     try {
-      // TODO: Add actual API call here
+      await userService.deleteUser(userToDelete.id)
       setUsers(users.filter((user) => user.id !== userToDelete.id))
       setIsDeleteModalOpen(false)
     } catch (error) {
       console.error('Error deleting user:', error)
+      setError('Failed to delete user. Please try again.')
     } finally {
       setIsDeleting(false)
       setUserToDelete(null)
@@ -94,9 +84,36 @@ export default function UsersPage() {
     setIsAddUserModalOpen(true)
   }
 
+  const handleCreateUser = async (userData: CreateUserData) => {
+    try {
+      const newUser = await userService.createUser(userData)
+      setUsers([...users, newUser])
+      setIsAddUserModalOpen(false)
+    } catch (error) {
+      console.error('Error creating user:', error)
+      setError('Failed to create user. Please try again.')
+    }
+  }
+
+  const handleUpdateUser = async (userId: string, userData: UpdateUserData) => {
+    try {
+      const updatedUser = await userService.updateUser(userId, userData)
+      setUsers(users.map(user => user.id === userId ? updatedUser : user))
+      setIsEditUserModalOpen(false)
+    } catch (error) {
+      console.error('Error updating user:', error)
+      setError('Failed to update user. Please try again.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <button
@@ -148,93 +165,103 @@ export default function UsersPage() {
         {/* Users Table */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Primary Site
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      <div className="flex items-center">
-                        <User className="h-5 w-5 text-gray-400 mr-2" />
-                        {user.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : user.role === "Nurse" ? "text-gray-400" : "text-green-500"} mr-1`} />
-                        <span className="capitalize">{user.role}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {user.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.primarySite}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => handleEdit(user.id)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
-                          title="Edit user"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
-                          title="Delete user"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filteredUsers.length === 0 && (
+            {isLoading ? (
+              <div className="p-4 text-center text-gray-500">
+                Loading users...
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No users found matching your filters
-                    </td>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Primary Site
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div className="flex items-center">
+                          <User className="h-5 w-5 text-gray-400 mr-2" />
+                          {user.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : user.role === "Nurse" ? "text-gray-400" : "text-green-500"} mr-1`} />
+                          <span className="capitalize">{user.role}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {user.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.primarySite}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => handleEdit(user.id)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
+                            title="Edit user"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
+                            title="Delete user"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                        {searchTerm || roleFilter !== "all" 
+                          ? "No users found matching your filters"
+                          : "No users found"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
       <AddUserModal 
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
+        onSubmit={handleCreateUser}
       />
       <EditUserModal
         isOpen={isEditUserModalOpen}
         onClose={() => setIsEditUserModalOpen(false)}
         user={selectedUser}
+        onSubmit={handleUpdateUser}
       />
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

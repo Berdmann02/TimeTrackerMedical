@@ -107,4 +107,75 @@ export const getActivityTypes = async (): Promise<string[]> => {
     console.error('Error fetching activity types:', error);
     throw error;
   }
+};
+
+export interface ActivityFilters {
+  site?: string;
+  month?: number;
+  year?: number;
+  search?: string;
+}
+
+export const getActivities = async (filters?: ActivityFilters): Promise<Activity[]> => {
+  try {
+    // For now, we'll fetch all activities and filter on the frontend
+    // This can be optimized later to use backend filtering
+    const [activitiesResponse, patientsResponse] = await Promise.all([
+      axios.get(`${API_URL}/activities`),
+      axios.get(`${API_URL}/patients`)
+    ]);
+    
+    let activities = activitiesResponse.data;
+    const patients = patientsResponse.data;
+
+    // Create a map of patient IDs to patient names
+    const patientMap = new Map<number, string>(
+      patients.map((patient: any) => [
+        patient.id,
+        `${patient.last_name}, ${patient.first_name}`
+      ])
+    );
+
+    // Add patient names to activities, ensuring it's always a string
+    activities = activities.map((activity: any) => {
+      const patientName = patientMap.get(activity.patient_id);
+      const activityWithName: Activity = {
+        ...activity,
+        patient_name: patientName || 'Unknown Patient'
+      };
+      return activityWithName;
+    });
+
+    // Apply filters if provided
+    if (filters) {
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        activities = activities.filter((activity: Activity) => 
+          activity.patient_name.toLowerCase().includes(searchLower) ||
+          String(activity.id).includes(filters.search!)
+        );
+      }
+      
+      if (filters.site) {
+        activities = activities.filter((activity: Activity) => 
+          activity.site_name === filters.site
+        );
+      }
+
+      if (filters.month || filters.year) {
+        activities = activities.filter((activity: Activity) => {
+          if (!activity.service_datetime) return false;
+          const activityDate = new Date(activity.service_datetime);
+          const matchesMonth = !filters.month || activityDate.getMonth() + 1 === filters.month;
+          const matchesYear = !filters.year || activityDate.getFullYear() === filters.year;
+          return matchesMonth && matchesYear;
+        });
+      }
+    }
+
+    return activities;
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    throw error;
+  }
 }; 

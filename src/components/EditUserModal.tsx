@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { User, Shield, X } from 'lucide-react';
+import type { UserAccount, UpdateUserData } from '../services/user.service';
 
 interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user?: {
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role: 'admin' | 'Nurse' | 'pharmacist';
-    isActive?: boolean;
-    primarySite?: string;
-    assignedSites?: string[];
-  } | null;
+  user: UserAccount | null;
+  onSubmit: (userId: string, userData: UpdateUserData) => Promise<void>;
 }
 
 interface UserFormData {
@@ -50,7 +44,7 @@ const SITE_OPTIONS = [
   'Test Site'
 ];
 
-const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
+const EditUserModal = ({ isOpen, onClose, user, onSubmit }: EditUserModalProps) => {
   const [formData, setFormData] = useState<UserFormData>({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -62,6 +56,8 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
     primarySite: user?.primarySite || '',
     assignedSites: user?.assignedSites || []
   });
+
+  const [error, setError] = useState<string | null>(null);
 
   // Add effect to manage body scroll
   useEffect(() => {
@@ -92,11 +88,35 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
     });
   }, [user, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle form submission
-    console.log(formData);
-    onClose();
+    
+    if (!user) return;
+
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      const updateData: UpdateUserData = {
+        email: formData.email,
+        role: formData.role,
+        isActive: formData.isActive,
+        primarySite: formData.primarySite
+      };
+
+      // Only include password if it's being changed
+      if (formData.password) {
+        updateData.password = formData.password;
+      }
+
+      await onSubmit(user.id, updateData);
+      onClose();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setError('Failed to update user. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

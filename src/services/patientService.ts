@@ -28,6 +28,7 @@ export interface Patient {
 export interface Activity {
   id: number;
   patient_id: number;
+  patient_name: string;
   activity_type: string;
   user_initials?: string;
   personnel_initials?: string;

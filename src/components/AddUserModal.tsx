@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getAllSiteNames } from '../services/siteService';
+import type { CreateUserData } from '../services/user.service';
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (userData: CreateUserData) => Promise<void>;
 }
 
 interface UserFormData {
@@ -18,7 +20,7 @@ interface UserFormData {
   assignedSites: string[];
 }
 
-const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
+const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
   const [formData, setFormData] = useState<UserFormData>({
     firstName: '',
     lastName: '',
@@ -68,11 +70,29 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle form submission
-    console.log(formData);
-    onClose();
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      await onSubmit({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role,
+        primarySite: formData.primarySite,
+        assignedSites: formData.assignedSites
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      setError('Failed to create user. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
