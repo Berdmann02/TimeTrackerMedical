@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { User, Calendar, Building2, MapPin, X } from 'lucide-react';
-import { createPatient } from '../services/patientService';
-import type { CreatePatientDTO } from '../services/patientService';
+import {createPatient,type CreatePatientDTO} from '../services/patientService';
+
+
 
 interface AddPatientModalProps {
   isOpen: boolean;

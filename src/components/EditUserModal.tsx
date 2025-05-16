@@ -5,10 +5,11 @@ interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   user?: {
+    id?: string;
     email: string;
     firstName?: string;
     lastName?: string;
-    role: 'admin' | 'Nurse' | 'pharmacist';
+    role: "Admin" | "Nurse" | "Pharmacist";
     isActive?: boolean;
     primarySite?: string;
     assignedSites?: string[];
@@ -21,7 +22,7 @@ interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'admin' | 'Nurse' | 'pharmacist';
+  role: "Admin" | "Nurse" | "Pharmacist";
   isActive: boolean;
   primarySite: string;
   assignedSites: string[];
@@ -316,8 +317,8 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
                 required
               >
-                <option value="admin">Admin</option>
-                <option value="pharmacist">Pharmacist</option>
+                <option value="Admin">Admin</option>
+                <option value="Pharmacist">Pharmacist</option>
                 <option value="Nurse">Nurse</option>
               </select>
             </div>

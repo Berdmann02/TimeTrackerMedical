@@ -8,7 +8,7 @@ import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
 interface UserAccount {
   id: string
   email: string
-  role: "admin" | "Nurse" | "pharmacist"
+  role: "Admin" | "Nurse" | "Pharmacist"
   isActive: boolean
   primarySite: string
 }
@@ -27,7 +27,7 @@ export default function UsersPage() {
     {
       id: "1",
       email: "admin@example.com",
-      role: "admin",
+      role: "Admin",
       isActive: true,
       primarySite: "Main Hospital",
     },
@@ -49,7 +49,7 @@ export default function UsersPage() {
 
   const [users, setUsers] = useState<UserAccount[]>(initialUsers)
   const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "Nurse" | "pharmacist">("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | "Admin" | "Nurse" | "pharmacist">("all")
 
   // Filter users based on search and role
   const filteredUsers = users.filter((user) => {
@@ -129,11 +129,11 @@ export default function UsersPage() {
               <div className="relative">
                 <select
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "Nurse" | "pharmacist")}
+                  onChange={(e) => setRoleFilter(e.target.value as "all" | "Admin" | "Nurse" | "pharmacist")}
                   className="block w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white cursor-pointer"
                 >
                   <option value="all">All Roles</option>
-                  <option value="admin">Admin</option>
+                  <option value="Admin">Admin</option>
                   <option value="pharmacist">Pharmacist</option>
                   <option value="Nurse">Nurse</option>
                 </select>
@@ -179,7 +179,7 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
-                        <Shield className={`h-4 w-4 ${user.role === "admin" ? "text-blue-500" : user.role === "Nurse" ? "text-gray-400" : "text-green-500"} mr-1`} />
+                        <Shield className={`h-4 w-4 ${user.role === "Admin" ? "text-blue-500" : user.role === "Nurse" ? "text-gray-400" : "text-green-500"} mr-1`} />
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </td>

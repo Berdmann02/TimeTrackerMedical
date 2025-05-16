@@ -113,3 +113,6 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
     throw error;
   }
 }; 
+
+
+// need to add delte patient possibly 

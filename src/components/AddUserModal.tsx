@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, User } from 'lucide-react';
 import { getAllSiteNames } from '../services/siteService';
+import { createUser, type CreateUserDTO } from '../services/userService';
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onUserAdded?: () => void;
 }
 
 interface UserFormData {
@@ -18,7 +20,7 @@ interface UserFormData {
   assignedSites: string[];
 }
 
-const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
+const AddUserModal = ({ isOpen, onClose, onUserAdded }: AddUserModalProps) => {
   const [formData, setFormData] = useState<UserFormData>({
     firstName: '',
     lastName: '',
@@ -32,7 +34,22 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   const [sites, setSites] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const clearForm = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'Nurse',
+      primarySite: '',
+      assignedSites: []
+    });
+    setError(null);
+  };
 
   useEffect(() => {
     const fetchSites = async () => {
@@ -54,26 +71,115 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
     }
   }, [isOpen]);
 
-  // Add effect to manage body scroll
   useEffect(() => {
     if (isOpen) {
+      clearForm();
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
     } else {
       document.body.style.overflow = 'unset';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     }
 
-    // Cleanup function to reset overflow when component unmounts
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle form submission
-    console.log(formData);
-    onClose();
-  };
+    setIsSubmitting(true);
+    setError(null);
+
+    // // Validation checks
+    // if (!formData.firstName.trim()) {
+    //   setError('First name is required');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (!formData.lastName.trim()) {
+    //   setError('Last name is required');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (!formData.email.trim()) {
+    //   setError('Email is required');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // // Email format validation
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (!emailRegex.test(formData.email)) {
+    //   setError('Please enter a valid email address');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (!formData.password) {
+    //   setError('Password is required');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (formData.password.length < 6) {
+    //   setError('Password must be at least 6 characters long');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (formData.password !== formData.confirmPassword) {
+    //   setError('Passwords do not match');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (!formData.primarySite) {
+    //   setError('Primary site is required');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    // if (formData.assignedSites.length === 0) {
+    //   setError('At least one site must be assigned');
+    //   setIsSubmitting(false);
+    //   return;
+    // }
+
+    try {
+      const userData: CreateUserDTO = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        primarySite: formData.primarySite,
+        assignedSites: formData.assignedSites
+      };
+
+     await createUser(userData);
+
+     if(onUserAdded){
+      onUserAdded();
+     }
+
+     onClose();
+  }catch(err){
+    console.error("failed to create user",err);
+    setError("Failed to create user. Please try again.");
+  }finally{
+    setIsSubmitting(false);
+  }
+}
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -82,12 +188,11 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   const handleSiteCheckbox = (site: string) => {
     if (site === 'All') {
-      // If "All" is selected, set all sites including "All" itself
       setFormData(prev => ({
         ...prev,
         assignedSites: prev.assignedSites.includes('All') 
-          ? [] // If "All" was checked, uncheck everything
-          : sites // Check all sites including "All"
+          ? [] 
+          : sites
       }));
     } else {
       setFormData(prev => {
@@ -95,7 +200,6 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
           ? prev.assignedSites.filter(s => s !== site)
           : [...prev.assignedSites, site];
         
-        // Remove "All" if any individual site is unchecked
         if (prev.assignedSites.includes(site)) {
           return {
             ...prev,
@@ -103,7 +207,6 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
           };
         }
         
-        // Add "All" if all other sites are selected
         if (newAssignedSites.length === sites.length - 1 && 
             sites.every(s => s === 'All' || newAssignedSites.includes(s))) {
           return {
@@ -124,11 +227,11 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   return (
     <div 
-      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50 overflow-hidden"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto my-4"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
@@ -141,12 +244,22 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
               </p>
             </div>
             <button
-              onClick={onClose}
+              onClick={() => {
+                clearForm();
+                onClose();
+              }}
               className="text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -306,16 +419,21 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer"
+                onClick={() => {
+                  clearForm();
+                  onClose();
+                }}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50"
               >
-                Create User
+                {isSubmitting ? 'Creating...' : 'Create User'}
               </button>
             </div>
           </form>
@@ -325,4 +443,4 @@ const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
   );
 };
 
-export default AddUserModal; 
+export default AddUserModal;
