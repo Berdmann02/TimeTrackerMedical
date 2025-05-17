@@ -2,7 +2,7 @@ import axios from 'axios';
 import {API_URL} from '../config';
 
 export interface User {
-    id:number;
+    id?:number;
     first_name:string;
     last_name:string;
     email:string;
