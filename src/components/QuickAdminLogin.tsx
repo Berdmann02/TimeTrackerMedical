@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { authService } from '../services/auth.service';
+import { useAuth } from '../contexts/AuthContext';
 
 export const QuickAdminLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,22 +13,8 @@ export const QuickAdminLogin = () => {
       setIsLoading(true);
       setError(null);
       
-      // First clear any existing auth state
-      authService.logout();
-      
-      const response = await authService.login({
-        email: "test@gmail.com",
-        password: "123123"
-      });
-      
-      // Set the new token
-      authService.setToken(response.access_token);
-      
-      // Force a small delay to ensure token is set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Navigate to home page
-      window.location.href = '/';
+      await login("test@gmail.com", "123123");
+      navigate('/');
     } catch (error: any) {
       console.error('Quick login failed:', error);
       setError(error.response?.data?.message || 'Quick login failed. Please try again.');

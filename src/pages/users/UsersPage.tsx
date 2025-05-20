@@ -123,6 +123,11 @@ export default function UsersPage() {
     setIsAddUserModalOpen(true)
   }
 
+  const handleUserAdded = () => {
+    fetchUsers(); // Refresh the users list
+    setIsAddUserModalOpen(false);
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -265,28 +270,23 @@ export default function UsersPage() {
           )}
         </div>
       </div>
-      <AddUserModal 
+      <AddUserModal
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}
+        onUserAdded={handleUserAdded}
       />
       <EditUserModal
         isOpen={isEditUserModalOpen}
-        onClose={() => {
-          setIsEditUserModalOpen(false);
-          setSelectedUser(null);
-        }}
+        onClose={() => setIsEditUserModalOpen(false)}
         onUserUpdated={handleUserUpdated}
         user={selectedUser}
       />
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false)
-          setUserToDelete(null)
-        }}
+        onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
-        itemName={userToDelete ? `user ${userToDelete.email}` : 'user'}
+        itemName={userToDelete ? `${userToDelete.first_name} ${userToDelete.last_name}` : 'user'}
       />
     </div>
   )

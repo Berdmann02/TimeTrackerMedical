@@ -1,7 +1,7 @@
 import type React from "react"
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
-import { authService } from "../../services/auth.service"
+import { useAuth } from "../../contexts/AuthContext"
 import { QuickAdminLogin } from "../../components/QuickAdminLogin"
 
 interface FormData {
@@ -12,6 +12,7 @@ interface FormData {
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -63,17 +64,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await authService.login({
-        email: formData.email,
-        password: formData.password,
-      })
-
-      authService.setToken(response.access_token)
-
-      if (formData.rememberMe) {
-        // If remember me is checked, we could implement additional persistence logic here
-      }
-
+      await login(formData.email, formData.password)
       navigate("/")
     } catch (error: any) {
       console.error("Login failed:", error)
