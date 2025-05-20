@@ -17,6 +17,7 @@ interface PatientFormData {
   gender: 'M' | 'F' | 'O';
   siteId: string;
   building: string;
+  insurance: string;
   notes: string;
 }
 
@@ -57,6 +58,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
     gender: 'M',
     siteId: 'cpgsa',
     building: '',
+    insurance: '',
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,6 +103,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
         birthdate: formData.dateOfBirth,
         gender: formData.gender,
         site_name: getSiteNameById(formData.siteId),
+        insurance: formData.insurance,
         is_active: true
       };
       
@@ -293,6 +296,26 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Insurance Field */}
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="text-blue-600 w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                  <span>Insurance</span>
+                </div>
+              </label>
+              <input
+                type="text"
+                name="insurance"
+                value={formData.insurance}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Enter insurance information"
+              />
             </div>
 
             {/* Notes Field */}

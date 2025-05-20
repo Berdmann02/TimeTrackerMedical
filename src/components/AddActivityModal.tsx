@@ -22,7 +22,6 @@ interface ActivityForm {
   endTime: string;
   notes: string;
   building: string;
-  insurance: string;
   medicalChecks: {
     medicalRecords: boolean;
     bpAtGoal: boolean;
@@ -69,7 +68,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     endTime: "",
     notes: "",
     building: "",
-    insurance: "",
     medicalChecks: {
       medicalRecords: false,
       bpAtGoal: false,
@@ -229,7 +227,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         building: formData.building,
         time_spent: calculateTimeDifference(),
         notes: formData.notes,
-        insurance: formData.insurance,
         medical_checks: {
           medical_records: formData.medicalChecks.medicalRecords,
           bp_at_goal: formData.medicalChecks.bpAtGoal,
@@ -406,24 +403,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     ))}
                   </select>
                 </div>
-              </div>
-
-              {/* Insurance Field */}
-              <div className="space-y-1.5 mt-6">
-                <label className="block text-sm font-medium text-gray-700">
-                  <span className="flex items-center">
-                    <FaClipboardList className="w-4 h-4 text-gray-400 mr-2" />
-                    Insurance Information
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  name="insurance"
-                  value={formData.insurance}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm hover:bg-gray-100 transition-colors"
-                  placeholder="Enter insurance information"
-                />
               </div>
 
               {/* Medical Checklist */}
