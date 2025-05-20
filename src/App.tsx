@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { authService } from './services/auth.service';
+import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/login/LoginPage';
 import Navbar from './components/Navbar';
 import PatientsPage from "./pages/patients/PatientsPage";
@@ -9,12 +9,45 @@ import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 import UsersPage from "./pages/users/UsersPage";
 import SitesPage from "./pages/sites/SitesPage";
 import MedicalActivitiesPage from "./pages/medical-activities/MedicalActivitiesPage";
+import { LoadingScreen } from './components/LoadingScreen';
+import ReportsPage from './pages/reports/ReportsPage';
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  if (!authService.isAuthenticated()) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
+};
+
+// Admin Route wrapper component
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+  
   return (
     <>
       <Navbar />
@@ -25,13 +58,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Public Route wrapper component (for login)
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  if (authService.isAuthenticated()) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
+  
   return <>{children}</>;
 };
 
 function App() {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Routes>
       <Route
@@ -85,9 +131,9 @@ function App() {
       <Route
         path="/users"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <UsersPage />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route
@@ -103,6 +149,14 @@ function App() {
         element={
           <ProtectedRoute>
             <MedicalActivitiesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <ReportsPage />
           </ProtectedRoute>
         }
       />

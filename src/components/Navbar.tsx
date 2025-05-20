@@ -1,19 +1,19 @@
 import { useState } from "react"
-import { Menu, X, Users, LogOut, Building2, Activity } from "lucide-react"
+import { Menu, X, Users, LogOut, Building2, Activity, FileText } from "lucide-react"
 import { useNavigate, Link } from 'react-router-dom';
-import { authService } from '../services/auth.service';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const navigate = useNavigate();
+  const { logout, isAdmin } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
   }
 
   const handleLogout = () => {
-    authService.logout();
-    navigate('/login');
+    logout();
   };
 
   return (
@@ -43,12 +43,21 @@ const Navbar = () => {
               Medical Activities
             </Link>
             <Link
-              to="/users"
+              to="/reports"
               className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
             >
-              <Users className="w-5 h-5" />
-              Manage Users
+              <FileText className="w-5 h-5" />
+              Reports
             </Link>
+            {isAdmin && (
+              <Link
+                to="/users"
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <Users className="w-5 h-5" />
+                Manage Users
+              </Link>
+            )}
             <button
               onClick={handleLogout}
               className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
@@ -97,13 +106,23 @@ const Navbar = () => {
               Medical Activities
             </Link>
             <Link
-              to="/users"
+              to="/reports"
               className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2"
               onClick={toggleMenu}
             >
-              <Users className="w-5 h-5" />
-              Manage Users
+              <FileText className="w-5 h-5" />
+              Reports
             </Link>
+            {isAdmin && (
+              <Link
+                to="/users"
+                className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium flex items-center gap-2"
+                onClick={toggleMenu}
+              >
+                <Users className="w-5 h-5" />
+                Manage Users
+              </Link>
+            )}
             <button
               onClick={() => {
                 toggleMenu();

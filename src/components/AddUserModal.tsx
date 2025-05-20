@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { getAllSiteNames } from '../services/siteService';
-import type { CreateUserData } from '../services/user.service';
+import { useState, useEffect } from "react";
+import { User, Calendar, Building2, MapPin, X } from "lucide-react";
+import { createUser, type CreateUserDTO } from "../services/userService";
+import { getAllSiteNames } from "../services/siteService";
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (userData: CreateUserData) => Promise<void>;
+  onUserAdded?: () => void;
 }
 
 interface UserFormData {
@@ -15,83 +15,99 @@ interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'admin' | 'Nurse' | 'pharmacist';
+  role: "admin" | "nurse" | "pharmacist";
   primarySite: string;
   assignedSites: string[];
 }
 
-const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
-  const [formData, setFormData] = useState<UserFormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'Nurse',
-    primarySite: '',
-    assignedSites: []
-  });
+const AddUserModal = ({ isOpen, onClose, onUserAdded }: AddUserModalProps) => {
+  const initialFormData: UserFormData = {
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "nurse" as "admin" | "nurse" | "pharmacist",
+    primarySite: "",
+    assignedSites: [],
+  };
 
+  const [formData, setFormData] = useState<UserFormData>(initialFormData);
   const [sites, setSites] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sitesError, setSitesError] = useState<string | null>(null);
 
+  // Reset form when modal is opened
   useEffect(() => {
-    const fetchSites = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const siteData = await getAllSiteNames();
-        setSites(['All', ...siteData]);
-      } catch (err) {
-        setError('Failed to load sites. Please try again later.');
-        console.error('Error loading sites:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (isOpen) {
+      setFormData(initialFormData);
+      setError(null);
+      setIsSubmitting(false);
       fetchSites();
     }
   }, [isOpen]);
 
-  // Add effect to manage body scroll
+  const fetchSites = async () => {
+    setIsLoading(true);
+    setSitesError(null);
+    try {
+      const siteData = await getAllSiteNames();
+      setSites(["All", ...siteData]);
+    } catch (err) {
+      setSitesError("Failed to load sites. Please try again.");
+      console.error("Error loading sites:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
-    // Cleanup function to reset overflow when component unmounts
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setIsSubmitting(true);
+    setError(null);
+
+    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      await onSubmit({
+      const userData: CreateUserDTO = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         email: formData.email,
         password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
         role: formData.role,
-        primarySite: formData.primarySite,
-        assignedSites: formData.assignedSites
-      });
+        primarysite: formData.primarySite,
+        assignedsites: formData.assignedSites,
+      };
+
+      await createUser(userData);
+
+      if (onUserAdded) {
+        onUserAdded();
+      }
       onClose();
     } catch (error) {
-      console.error('Error creating user:', error);
-      setError('Failed to create user. Please try again.');
+      console.error("Failed to create user:", error);
+      setError(error instanceof Error ? error.message : "Failed to create user. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -99,7 +115,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
+  
   const handleSiteCheckbox = (site: string) => {
     if (site === 'All') {
       // If "All" is selected, set all sites including "All" itself
@@ -140,7 +156,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
     }
   };
 
-  if (!isOpen) return null;
+  if(!isOpen) return null;
 
   return (
     <div 
@@ -170,6 +186,12 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -277,8 +299,16 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
                     <div className="flex items-center justify-center h-full">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                     </div>
-                  ) : error ? (
-                    <div className="p-4 text-center text-red-500 text-sm">{error}</div>
+                  ) : sitesError ? (
+                    <div className="p-4 text-center">
+                      <p className="text-red-500 text-sm mb-2">{sitesError}</p>
+                      <button
+                        onClick={fetchSites}
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Try Again
+                      </button>
+                    </div>
                   ) : (
                     <div className="p-2 space-y-1">
                       {sites.map(site => (
@@ -318,7 +348,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
               >
                 <option value="admin">Admin</option>
                 <option value="pharmacist">Pharmacist</option>
-                <option value="Nurse">Nurse</option>
+                <option value="nurse">Nurse</option>
               </select>
             </div>
 
@@ -327,22 +357,32 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }: AddUserModalProps) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
               >
-                Create User
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  'Create User'
+                )}
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  );
+  )
 };
 
-export default AddUserModal; 
+
+export default AddUserModal;
