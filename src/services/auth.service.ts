@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-const API_URL = 'https://time-tracker-medical-backend.onrender.com';
-
+import { API_URL } from '../config';
 
 export interface LoginResponse {
   access_token: string;

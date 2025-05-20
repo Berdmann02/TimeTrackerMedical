@@ -219,7 +219,11 @@ export default function UsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
                           <Shield className={`h-4 w-4 ${user.role === "a" ? "text-blue-500" : "text-gray-400"} mr-1`} />
-                          <span>{user.role === "a" ? "Admin" : "User"}</span>
+                          <span>
+                            {user.role === "a" ? "Admin" : 
+                             user.role === "p" ? "Pharmacist" : 
+                             user.role === "n" ? "Nurse" : "User"}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
