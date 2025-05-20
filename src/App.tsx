@@ -10,10 +10,7 @@ import UsersPage from "./pages/users/UsersPage";
 import SitesPage from "./pages/sites/SitesPage";
 import MedicalActivitiesPage from "./pages/medical-activities/MedicalActivitiesPage";
 import { LoadingScreen } from './components/LoadingScreen';
-<<<<<<< HEAD
 import ReportsPage from './pages/reports/ReportsPage';
-=======
->>>>>>> refs/remotes/origin/main
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
