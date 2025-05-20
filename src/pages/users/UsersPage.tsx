@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import AddUserModal from "../../components/AddUserModal"
 import EditUserModal from "../../components/EditUserModal"
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
-import { getUsers } from "../../services/userService"
+import { getUsers, deleteUser } from "../../services/userService"
 import type { User as UserType } from "../../services/userService"
 
 interface UserAccount extends Omit<UserType, 'id'> {
@@ -96,18 +96,24 @@ export default function UsersPage() {
   }
 
   const handleConfirmDelete = async () => {
-    if (!userToDelete) return
+    if (!userToDelete?.id) return;
     
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      // TODO: Add actual API call here
-      setUsers(users.filter((user) => user.id !== userToDelete.id))
-      setIsDeleteModalOpen(false)
+      await deleteUser(userToDelete.id);
+      setUsers(users.filter((user) => user.id !== userToDelete.id));
+      setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting user:', error)
+      console.error('Error deleting user:', error);
+      // Show error in the modal or as a toast notification
+      if (error instanceof Error) {
+        setError(`Failed to delete user: ${error.message}`);
+      } else {
+        setError('Failed to delete user. Please try again.');
+      }
     } finally {
-      setIsDeleting(false)
-      setUserToDelete(null)
+      setIsDeleting(false);
+      setUserToDelete(null);
     }
   }
 
