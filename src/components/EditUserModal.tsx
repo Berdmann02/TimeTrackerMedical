@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { User, Shield, X } from 'lucide-react';
+import { updateUser, type User as UserType } from "../services/userService";
+import { getAllSiteNames } from "../services/siteService";
 
 interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user?: {
+  onUserUpdated?: () => void;
+  user: {
     id?: string;
-    email: string;
     firstName?: string;
     lastName?: string;
-    role: "Admin" | "Nurse" | "Pharmacist";
-    isActive?: boolean;
+    email: string;
+    role: "admin" | "nurse" | "pharmacist";
     primarySite?: string;
     assignedSites?: string[];
   } | null;
@@ -20,102 +22,113 @@ interface UserFormData {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
-  confirmPassword: string;
-  role: "Admin" | "Nurse" | "Pharmacist";
-  isActive: boolean;
+  role: "admin" | "nurse" | "pharmacist";
   primarySite: string;
   assignedSites: string[];
 }
 
-const SITE_OPTIONS = [
-  'All',
-  'Ancora',
-  'Center For Geriatrics- Keystone',
-  'Choice Health',
-  'CP El Paso',
-  'CP Greater San Antonio',
-  'CP Intermountain',
-  'Dixie Care',
-  'Finding Home Boise',
-  'Finding Home Southeast Idaho',
-  'Finding Homes Northern Utah',
-  'Finding Homes Salt Lake',
-  'Finding Homes Southern Utah',
-  'Integrity Mental Health - Boise',
-  'Jemericus',
-  'Keystone Center For Geriatrics',
-  'Keystone Healthcare',
-  'OmniaCare',
-  'Rocky Mountain Psych Pocatello',
-  'Test Site'
-];
+const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalProps) => {
+  const initialFormData: UserFormData = {
+    firstName: "",
+    lastName: "",
+    email: "",
+    role: "nurse",
+    primarySite: "",
+    assignedSites: [],
+  };
 
-const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
-  const [formData, setFormData] = useState<UserFormData>({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    password: '',
-    confirmPassword: '',
-    role: user?.role || 'Nurse',
-    isActive: user?.isActive !== false,
-    primarySite: user?.primarySite || '',
-    assignedSites: user?.assignedSites || []
-  });
+  const [formData, setFormData] = useState<UserFormData>(initialFormData);
+  const [sites, setSites] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sitesError, setSitesError] = useState<string | null>(null);
 
-  // Add effect to manage body scroll
+  // Reset and populate form when user data changes
+  useEffect(() => {
+    if (user && isOpen) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email,
+        role: user.role,
+        primarySite: user.primarySite || "",
+        assignedSites: user.assignedSites || [],
+      });
+      setError(null);
+      setIsSubmitting(false);
+      fetchSites();
+    }
+  }, [user, isOpen]);
+
+  const fetchSites = async () => {
+    setIsLoading(true);
+    setSitesError(null);
+    try {
+      const siteData = await getAllSiteNames();
+      setSites(["All", ...siteData]);
+    } catch (err) {
+      setSitesError("Failed to load sites. Please try again.");
+      console.error("Error loading sites:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
-    // Cleanup function to reset overflow when component unmounts
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
-  // Update form when user changes
-  React.useEffect(() => {
-    setFormData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      email: user?.email || '',
-      password: '',
-      confirmPassword: '',
-      role: user?.role || 'Nurse',
-      isActive: user?.isActive !== false,
-      primarySite: user?.primarySite || '',
-      assignedSites: user?.assignedSites || []
-    });
-  }, [user, isOpen]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Handle form submission
-    console.log(formData);
-    onClose();
-  };
+    if (!user?.id) return;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const userData: Partial<UserType> = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        role: formData.role,
+        primarysite: formData.primarySite,
+        assignedsites: formData.assignedSites,
+      };
+
+      await updateUser(user.id, userData);
+
+      if (onUserUpdated) {
+        onUserUpdated();
+      }
+      onClose();
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      setError(error instanceof Error ? error.message : "Failed to update user. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
   const handleSiteCheckbox = (site: string) => {
     if (site === 'All') {
       setFormData(prev => ({
         ...prev,
         assignedSites: prev.assignedSites.includes('All') 
-          ? []
-          : SITE_OPTIONS
+          ? [] 
+          : sites
       }));
     } else {
       setFormData(prev => {
@@ -130,11 +143,11 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
           };
         }
         
-        if (newAssignedSites.length === SITE_OPTIONS.length - 1 && 
-            SITE_OPTIONS.every(s => s === 'All' || newAssignedSites.includes(s))) {
+        if (newAssignedSites.length === sites.length - 1 && 
+            sites.every(s => s === 'All' || newAssignedSites.includes(s))) {
           return {
             ...prev,
-            assignedSites: SITE_OPTIONS
+            assignedSites: sites
           };
         }
         
@@ -146,7 +159,7 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
     }
   };
 
-  if (!isOpen) return null;
+  if(!isOpen) return null;
 
   return (
     <div 
@@ -154,16 +167,16 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header Section - Fixed */}
         <div className="p-6">
-          <div className="flex justify-between items-center">
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Edit User</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Modify user account details and permissions
+                Update user information
               </p>
             </div>
             <button
@@ -173,11 +186,15 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
               <X className="h-6 w-6" />
             </button>
           </div>
-        </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -212,49 +229,18 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
 
             {/* Email Field */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <User className="text-gray-400" size={18} />
-                <span>Email Address</span>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Email Address
               </label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 required
                 placeholder="user@example.com"
               />
-            </div>
-
-            {/* Password Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 h-12">
-                  <Shield className="text-gray-400" size={18} />
-                  <span>New Password (leave blank to keep current)</span>
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                />
-              </div>
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 h-12">
-                  <Shield className="text-gray-400" size={18} />
-                  <span>Confirm New Password</span>
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                />
-              </div>
             </div>
 
             {/* Site Fields */}
@@ -269,9 +255,10 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
                   required
+                  disabled={isLoading}
                 >
                   <option value="">Select a primary site</option>
-                  {SITE_OPTIONS.map(site => (
+                  {sites.filter(site => site !== 'All').map(site => (
                     <option key={site} value={site}>{site}</option>
                   ))}
                 </select>
@@ -281,22 +268,38 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
                   Assigned Sites
                 </label>
                 <div className="border border-gray-300 rounded-lg h-[180px] overflow-y-auto">
-                  <div className="p-2 space-y-1">
-                    {SITE_OPTIONS.map(site => (
-                      <label
-                        key={site}
-                        className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : sitesError ? (
+                    <div className="p-4 text-center">
+                      <p className="text-red-500 text-sm mb-2">{sitesError}</p>
+                      <button
+                        onClick={fetchSites}
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
                       >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedSites.includes(site)}
-                          onChange={() => handleSiteCheckbox(site)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                        />
-                        <span className="ml-2 text-gray-700">{site}</span>
-                      </label>
-                    ))}
-                  </div>
+                        Try Again
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-2 space-y-1">
+                      {sites.map(site => (
+                        <label
+                          key={site}
+                          className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedSites.includes(site)}
+                            onChange={() => handleSiteCheckbox(site)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                          />
+                          <span className="ml-2 text-gray-700">{site}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
                   Selected: {formData.assignedSites.length} sites
@@ -306,62 +309,48 @@ const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => {
 
             {/* Role Field */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Shield className="text-gray-400" size={18} />
-                <span>Role</span>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Role
               </label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
                 required
               >
-                <option value="Admin">Admin</option>
-                <option value="Pharmacist">Pharmacist</option>
-                <option value="Nurse">Nurse</option>
+                <option value="admin">Admin</option>
+                <option value="pharmacist">Pharmacist</option>
+                <option value="nurse">Nurse</option>
               </select>
             </div>
 
-            {/* Inactive Status Toggle */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <span className="flex items-center gap-2">
-                  <X className="text-gray-400" size={18} />
-                  Inactive Status
-                </span>
-                <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={!formData.isActive}
-                  onChange={e => setFormData(prev => ({ ...prev, isActive: !e.target.checked }))}
-                  className="ml-2 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-500">
-                  {formData.isActive ? 'User account is active' : 'User account is inactive'}
-                </span>
-              </label>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  'Update User'
+                )}
+              </button>
             </div>
           </form>
-        </div>
-
-        {/* Footer - Fixed */}
-        <div className="p-6">
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
-            >
-              Save Changes
-            </button>
-          </div>
         </div>
       </div>
     </div>

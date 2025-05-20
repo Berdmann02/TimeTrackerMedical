@@ -18,8 +18,7 @@ interface EditableUser {
   email: string;
   firstName?: string;
   lastName?: string;
-  role: "Admin" | "Nurse" | "Pharmacist";
-  isActive?: boolean;
+  role: "admin" | "nurse" | "pharmacist";
   primarySite?: string;
   assignedSites?: string[];
 }
@@ -71,21 +70,24 @@ export default function UsersPage() {
   })
 
   const handleEdit = (userId: number) => {
-    const user = users.find(u => u.id === userId)
+    const user = users.find(u => u.id === userId);
     if (user) {
       setSelectedUser({
         id: user.id?.toString(),
         email: user.email,
         firstName: user.first_name,
         lastName: user.last_name,
-        role: user.role === 'a' ? 'Admin' : 'Nurse',
-        isActive: true,
+        role: user.role === 'a' ? 'admin' : user.role === 'p' ? 'pharmacist' : 'nurse',
         primarySite: user.primarysite,
         assignedSites: user.assignedsites
-      })
-      setIsEditUserModalOpen(true)
+      });
+      setIsEditUserModalOpen(true);
     }
-  }
+  };
+
+  const handleUserUpdated = () => {
+    fetchUsers(); // Refresh the users list
+  };
 
   const handleDelete = (userId: number) => {
     const user = users.find(u => u.id === userId)
@@ -265,7 +267,11 @@ export default function UsersPage() {
       />
       <EditUserModal
         isOpen={isEditUserModalOpen}
-        onClose={() => setIsEditUserModalOpen(false)}
+        onClose={() => {
+          setIsEditUserModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={handleUserUpdated}
         user={selectedUser}
       />
       <DeleteConfirmationModal
