@@ -80,8 +80,8 @@ export default function UsersPage() {
         lastName: user.last_name,
         role: user.role === 'a' ? 'Admin' : 'Nurse',
         isActive: true,
-        primarySite: user.primarySite,
-        assignedSites: user.assignedSites
+        primarySite: user.primarysite,
+        assignedSites: user.assignedsites
       })
       setIsEditUserModalOpen(true)
     }
@@ -215,9 +215,9 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.primarySite || "Not assigned"}
+                        {user.primarysite || "Not assigned"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespac  e-nowrap text-sm text-gray-500">
                         {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

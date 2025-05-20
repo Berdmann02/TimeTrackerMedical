@@ -9,8 +9,8 @@ export interface User {
     password:string;
     role: string;
     created_at?:string;
-    primarySite:string;
-    assignedSites:string[];
+    primarysite:string;
+    assignedsites:string[];
 }
 
 export interface CreateUserDTO {
@@ -19,8 +19,8 @@ export interface CreateUserDTO {
     email:string;
     password:string;
     role:string;
-    primarySite:string;
-    assignedSites:string[];
+    primarysite:string;
+    assignedsites:string[];
 }
 
 export const getUsers = async():Promise<User[]> => {

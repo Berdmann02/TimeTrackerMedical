@@ -86,8 +86,8 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded }: AddUserModalProps) => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        primarySite: formData.primarySite,
-        assignedSites: formData.assignedSites,
+        primarysite: formData.primarySite,
+        assignedsites: formData.assignedSites,
       };
 
       await createUser(userData);
