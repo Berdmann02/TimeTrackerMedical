@@ -206,10 +206,11 @@ export default function PatientDetailsPage() {
       return {
         activityId: activity.id?.toString() || '',
         activityType: activity.activity_type || '',
-        initials: initials, // Use the generated initials
+        initials: initials,
         recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
-        totalTime: activity.time_spent !== undefined ? activity.time_spent : 
-                (activity.duration_minutes !== undefined ? activity.duration_minutes : 0)
+        totalTime: activity.time_spent ?? activity.duration_minutes ?? 0,
+        time_spent: activity.time_spent,
+        duration_minutes: activity.duration_minutes
       };
     })
   } : null
@@ -873,9 +874,10 @@ export default function PatientDetailsPage() {
                           {new Date(activity.recordDate).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {typeof activity.totalTime === 'number' 
-                            ? `${activity.totalTime.toFixed(2)} minutes` 
-                            : 'N/A'}
+                          {(() => {
+                            const timeValue = Number(activity.time_spent ?? activity.duration_minutes ?? 0);
+                            return `${timeValue.toFixed(2)} minutes`;
+                          })()}
                         </td>
                       </tr>
                     ))}

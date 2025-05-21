@@ -26,6 +26,8 @@ export interface Activity {
   initials: string
   recordDate: string
   totalTime: number
+  time_spent?: number
+  duration_minutes?: number
 }
 
 export interface PatientWithActivities {
