@@ -199,14 +199,19 @@ export default function PatientDetailsPage() {
       useAntipsychotic: patient.use_antipsychotic,
       useOpioids: patient.use_opioids
     },
-    activities: activities.map(activity => ({
-      activityId: activity.id?.toString() || '',
-      activityType: activity.activity_type || '',
-      initials: activity.user_initials || activity.personnel_initials || '',
-      recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
-      totalTime: activity.time_spent !== undefined ? activity.time_spent : 
+    activities: activities.map(activity => {
+      // Generate initials from patient's name
+      const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`.toUpperCase();
+      
+      return {
+        activityId: activity.id?.toString() || '',
+        activityType: activity.activity_type || '',
+        initials: initials, // Use the generated initials
+        recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
+        totalTime: activity.time_spent !== undefined ? activity.time_spent : 
                 (activity.duration_minutes !== undefined ? activity.duration_minutes : 0)
-    }))
+      };
+    })
   } : null
 
   const handleActivityClick = (activityId: string) => {

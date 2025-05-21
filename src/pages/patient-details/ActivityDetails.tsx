@@ -34,6 +34,8 @@ interface DetailRowProps {
     editOptions?: string[];
     editType?: 'text' | 'number' | 'boolean' | 'select' | 'datetime' | 'readonly';
     calculateTimeDifference?: () => number;
+    placeholder?: string;
+    helperText?: string;
 }
 
 // Move DetailRow component outside of the main component and wrap with memo
@@ -49,7 +51,9 @@ const DetailRow: FC<DetailRowProps> = memo(({
     onEndTimeEdit,
     editOptions = [],
     editType = 'text',
-    calculateTimeDifference = () => 0
+    calculateTimeDifference = () => 0,
+    placeholder,
+    helperText
 }) => (
     <div className="flex flex-col py-4 border-b border-gray-200">
         <div className="flex items-center mb-2">
@@ -66,6 +70,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             onChange={(e) => onEdit && onEdit(e.target.value)}
                             className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             autoFocus
+                            placeholder={placeholder}
                         />
                     )}
                     
@@ -149,6 +154,9 @@ const DetailRow: FC<DetailRowProps> = memo(({
                     )}
                 </div>
             )}
+            {helperText && (
+                <p className="text-xs text-gray-500 mt-1">{helperText}</p>
+            )}
         </div>
     </div>
 ));
@@ -189,7 +197,21 @@ const ActivityDetailsPage: FC = () => {
                 if (activityData.patient_id) {
                     try {
                         const patient = await getPatientById(activityData.patient_id);
-                        setPatientName(`${patient.first_name} ${patient.last_name}`);
+                        const fullName = `${patient.first_name} ${patient.last_name}`;
+                        setPatientName(fullName);
+                        
+                        // Generate initials from patient's name
+                        const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`.toUpperCase();
+                        
+                        // Update the activity with the generated initials
+                        setEditedActivity(prev => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                personnel_initials: initials,
+                                user_initials: initials
+                            };
+                        });
                     } catch (patientError) {
                         console.error("Error fetching patient data:", patientError);
                         // Don't fail completely if just the patient data fails
@@ -252,14 +274,15 @@ const ActivityDetailsPage: FC = () => {
         if (!isTracking || !editedActivity) return;
         
         const now = new Date().toISOString();
-        const startTime = new Date(editedActivity.service_datetime || editedActivity.created_at || '').getTime();
-        const endTime = new Date(now).getTime();
-        const durationMinutes = Math.max(0, (endTime - startTime) / (1000 * 60));
+        const startTime = editedActivity.service_datetime || editedActivity.created_at || '';
+        const endTime = now;
+        const durationMinutes = Math.max(0, (new Date(endTime).getTime() - new Date(startTime).getTime()) / (1000 * 60));
         
         setEditedActivity(prev => {
             if (!prev) return prev;
             return { 
                 ...prev, 
+                end_time: endTime,
                 time_spent: durationMinutes,
                 duration_minutes: durationMinutes
             };
@@ -270,6 +293,7 @@ const ActivityDetailsPage: FC = () => {
     const calculateTimeDifference = (): number => {
         if (!editedActivity) return 0;
         
+        // Use time_spent if available, otherwise fall back to duration_minutes
         if (editedActivity.time_spent !== undefined && typeof editedActivity.time_spent === 'number') {
             return editedActivity.time_spent;
         }
@@ -321,6 +345,28 @@ const ActivityDetailsPage: FC = () => {
 
     const handleFieldChange = (field: string, value: any) => {
         if (!editedActivity) return;
+        
+        // Special handling for personnel initials
+        if (field === 'personnel_initials' || field === 'user_initials') {
+            // If the value is a full name (contains a space), generate initials
+            if (typeof value === 'string' && value.includes(' ')) {
+                const nameParts = value.split(' ');
+                if (nameParts.length >= 2) {
+                    const firstName = nameParts[0];
+                    const lastName = nameParts[nameParts.length - 1];
+                    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+                    setEditedActivity(prev => {
+                        if (!prev) return prev;
+                        return { 
+                            ...prev, 
+                            personnel_initials: initials,
+                            user_initials: initials
+                        };
+                    });
+                    return;
+                }
+            }
+        }
         
         setEditedActivity(prev => {
             if (!prev) return prev;
@@ -524,7 +570,6 @@ const ActivityDetailsPage: FC = () => {
                                 }}
                                 onStartTimeEdit={(value) => handleFieldChange('personnel_start_time', value)}
                                 onEndTimeEdit={(value) => handleFieldChange('personnel_end_time', value)}
-                                calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
                                 icon={ClipboardCheck}
@@ -543,17 +588,13 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Clock}
                                 label="Total Time"
-                                value={(() => {
-                                    const time = calculateTimeDifference();
-                                    return typeof time === 'number' ? time : 0;
-                                })()}
+                                value={editedActivity.time_spent ?? editedActivity.duration_minutes ?? 0}
                                 isEditing={isEditing}
                                 editType="number"
                                 onEdit={(value) => {
                                     handleFieldChange('time_spent', value);
                                     handleFieldChange('duration_minutes', value);
                                 }}
-                                calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
                                 icon={ClipboardCheck}
