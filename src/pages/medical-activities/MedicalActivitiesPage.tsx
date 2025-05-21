@@ -1,19 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import AddActivityModal from '../../components/AddActivityModal';
+import { getActivityTypes } from '../../services/activityService';
+import type { Activity } from '../../services/patientService';
+import { getPatientById } from '../../services/patientService';
+import axios from 'axios';
+import { API_URL } from '../../config';
 
-// Mock data for demonstration
-const mockActivities = [
-  { id: 163134, name: 'Smith, John', initials: 'JS', pharm: true, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163133, name: 'Doe, Jane', initials: 'JD', pharm: false, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163132, name: 'Johnson, Emily', initials: 'EJ', pharm: true, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163131, name: 'Williams, Michael', initials: 'MW', pharm: false, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163130, name: 'Brown, Olivia', initials: 'OB', pharm: true, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163129, name: 'Jones, Ethan', initials: 'EJ', pharm: false, recordDate: '05/14/2025', totalTime: 6.00 },
-  { id: 163128, name: 'Garcia, Ava', initials: 'AG', pharm: true, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163127, name: 'Martinez, Mason', initials: 'MM', pharm: false, recordDate: '05/14/2025', totalTime: 6.02 },
-  { id: 163126, name: 'Davis, Sophia', initials: 'SD', pharm: true, recordDate: '05/14/2025', totalTime: 6.00 },
-];
-
+// Remove mock data and replace with state
 const sites = ['CP Greater San Antonio', 'CP Intermountain'];
 const months = [1,2,3,4,5,6,7,8,9,10,11,12];
 const years = [2023, 2024, 2025];
@@ -23,7 +18,12 @@ const monthNames = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+interface ActivityWithPatient extends Activity {
+  patient_name?: string;
+}
+
 const MedicalActivitiesPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState(sites[0]);
   const [monthFilter, setMonthFilter] = useState(5);
@@ -31,23 +31,102 @@ const MedicalActivitiesPage = () => {
   const [sortField, setSortField] = useState<string>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activities, setActivities] = useState<ActivityWithPatient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Helper function to safely create a Date
+  const getDateValue = (dateStr?: string): number => {
+    if (!dateStr) return 0;
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? 0 : date.getTime();
+  };
+
+  // Fetch all activities and their associated patient names
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get(`${API_URL}/activities`);
+        const activitiesData = response.data;
+
+        // Fetch patient names for each activity
+        const activitiesWithPatients = await Promise.all(
+          activitiesData.map(async (activity: Activity) => {
+            try {
+              const patient = await getPatientById(activity.patient_id);
+              return {
+                ...activity,
+                patient_name: `${patient.last_name}, ${patient.first_name}`
+              };
+            } catch (err) {
+              console.error(`Error fetching patient for activity ${activity.id}:`, err);
+              return {
+                ...activity,
+                patient_name: 'Unknown Patient'
+              };
+            }
+          })
+        );
+
+        setActivities(activitiesWithPatients);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching activities:', err);
+        setError('Failed to load activities');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, []);
 
   // Filtering and sorting
-  const filteredActivities = mockActivities.filter((activity) => {
+  const filteredActivities = activities.filter((activity) => {
     const matchesSearch =
-      activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (activity.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       String(activity.id).includes(searchTerm);
-    // In a real app, filter by site/month/year as well
-    return matchesSearch;
+    
+    // Filter by site if needed
+    const matchesSite = activity.site_name === siteFilter;
+    
+    // Filter by date if needed
+    const dateStr = activity.service_datetime || activity.created_at;
+    if (!dateStr) return false;
+    
+    const activityDate = new Date(dateStr);
+    if (isNaN(activityDate.getTime())) return false;
+    
+    const matchesMonth = activityDate.getMonth() + 1 === monthFilter;
+    const matchesYear = activityDate.getFullYear() === yearFilter;
+
+    return matchesSearch && matchesSite && matchesMonth && matchesYear;
   });
 
   const sortedActivities = [...filteredActivities].sort((a, b) => {
-    let aValue = a[sortField as keyof typeof a];
-    let bValue = b[sortField as keyof typeof b];
+    let aValue: any = a[sortField as keyof typeof a];
+    let bValue: any = b[sortField as keyof typeof b];
+
+    // Handle dates
+    if (sortField === 'service_datetime' || sortField === 'created_at') {
+      aValue = getDateValue(a.service_datetime || a.created_at);
+      bValue = getDateValue(b.service_datetime || b.created_at);
+    }
+
+    // Convert boolean values to strings
+    if (typeof aValue === 'boolean') aValue = aValue ? '1' : '0';
+    if (typeof bValue === 'boolean') bValue = bValue ? '1' : '0';
+
+    // Handle undefined values
+    if (aValue === undefined) aValue = '';
+    if (bValue === undefined) bValue = '';
+
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }
+    
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;
@@ -60,6 +139,70 @@ const MedicalActivitiesPage = () => {
       setSortField(field);
       setSortDirection('asc');
     }
+  };
+
+  const handleActivityAdded = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/activities`);
+      const newActivities = response.data;
+      
+      // Fetch patient names for new activities
+      const activitiesWithPatients = await Promise.all(
+        newActivities.map(async (activity: Activity) => {
+          try {
+            const patient = await getPatientById(activity.patient_id);
+            return {
+              ...activity,
+              patient_name: `${patient.last_name}, ${patient.first_name}`
+            };
+          } catch (err) {
+            console.error(`Error fetching patient for activity ${activity.id}:`, err);
+            return {
+              ...activity,
+              patient_name: 'Unknown Patient'
+            };
+          }
+        })
+      );
+
+      setActivities(activitiesWithPatients);
+    } catch (err) {
+      console.error('Error refreshing activities:', err);
+    }
+  };
+
+  // Add navigation handlers
+  const handleActivityClick = (activityId: number) => {
+    navigate(`/activity/${activityId}`);
+  };
+
+  const handlePatientClick = (patientId: number) => {
+    navigate(`/patientdetails/${patientId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-red-600 text-center">
+          <p className="text-xl font-semibold mb-2">Error</p>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (dateStr?: string): string => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
   };
 
   return (
@@ -75,14 +218,20 @@ const MedicalActivitiesPage = () => {
             Add Activity
           </button>
         </div>
-        {/* Filters and Search */}
+
+        <AddActivityModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onActivityAdded={handleActivityAdded}
+          siteName={siteFilter}
+        />
+
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
           <div className="flex flex-col space-y-4">
-            {/* Top row with search */}
             <div className="flex flex-col md:flex-row justify-between gap-4">
               <div className="flex items-center">
                 <div className="text-lg font-semibold text-gray-800">
-                  Total Activities: <span className="text-blue-600">{mockActivities.length}</span>
+                  Total Activities: <span className="text-blue-600">{activities.length}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -100,9 +249,7 @@ const MedicalActivitiesPage = () => {
                 </div>
               </div>
             </div>
-            {/* Divider */}
             <div className="border-t border-gray-200 my-4"></div>
-            {/* Filter dropdowns */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Site</label>
@@ -158,7 +305,7 @@ const MedicalActivitiesPage = () => {
             </div>
           </div>
         </div>
-        {/* Table */}
+
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -173,48 +320,48 @@ const MedicalActivitiesPage = () => {
                       </div>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('name')}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('patient_name')}>
                     <div className="flex items-center">
-                      <span>Name</span>
+                      <span>Patient Name</span>
                       <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'name' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'name' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'patient_name' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'patient_name' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
                       </div>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('initials')}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('activity_type')}>
+                    <div className="flex items-center">
+                      <span>Activity Type</span>
+                      <div className="ml-1 flex">
+                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'activity_type' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'activity_type' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                      </div>
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('user_initials')}>
                     <div className="flex items-center">
                       <span>Initials</span>
                       <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'initials' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'initials' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'user_initials' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'user_initials' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
                       </div>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('pharm')}>
-                    <div className="flex items-center">
-                      <span>Pharm?</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'pharm' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'pharm' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('recordDate')}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('service_datetime')}>
                     <div className="flex items-center">
                       <span>Record Date</span>
                       <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'recordDate' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'recordDate' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'service_datetime' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'service_datetime' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
                       </div>
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('totalTime')}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('time_spent')}>
                     <div className="flex items-center">
                       <span>Total Time</span>
                       <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'totalTime' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'totalTime' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'time_spent' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'time_spent' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
                       </div>
                     </div>
                   </th>
@@ -224,17 +371,37 @@ const MedicalActivitiesPage = () => {
                 {sortedActivities.length > 0 ? (
                   sortedActivities.map((activity) => (
                     <tr key={activity.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline">{activity.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline">{activity.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{activity.initials}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{activity.pharm ? 'Yes' : 'No'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{activity.recordDate}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{activity.totalTime.toFixed(2)}</td>
+                      <td 
+                        className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
+                        onClick={() => handleActivityClick(activity.id)}
+                      >
+                        {activity.id}
+                      </td>
+                      <td 
+                        className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
+                        onClick={() => handlePatientClick(activity.patient_id)}
+                      >
+                        {activity.patient_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {activity.activity_type}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {activity.user_initials || activity.personnel_initials}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(activity.service_datetime || activity.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {activity.time_spent !== undefined ? `${activity.time_spent.toFixed(2)} minutes` : 'N/A'}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">No activities found</td>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No activities found
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -246,4 +413,4 @@ const MedicalActivitiesPage = () => {
   );
 };
 
-export default MedicalActivitiesPage; 
+export default MedicalActivitiesPage;
