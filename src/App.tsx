@@ -11,7 +11,7 @@ import SitesPage from "./pages/sites/SitesPage";
 import MedicalActivitiesPage from "./pages/medical-activities/MedicalActivitiesPage";
 import { LoadingScreen } from './components/LoadingScreen';
 import ReportsPage from './pages/reports/ReportsPage';
-
+import SiteDetailsPage from './pages/sites/SiteDetailsPage';
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -141,6 +141,14 @@ function App() {
         element={
           <ProtectedRoute>
             <SitesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sites/:siteId"
+        element={
+          <ProtectedRoute>
+            <SiteDetailsPage />
           </ProtectedRoute>
         }
       />

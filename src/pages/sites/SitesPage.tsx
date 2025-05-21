@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Pencil, Trash2, ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import SiteModal from '../../components/SiteModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { getAllSites, createSite, updateSite, deleteSite } from '../../services/siteService';
@@ -236,7 +237,12 @@ const SitesPage = () => {
                   filteredAndSortedSites.map((site) => (
                     <tr key={site.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {site.name}
+                        <Link 
+                          to={`/sites/${site.id}`}
+                          className="text-blue-600 hover:text-blue-900 hover:underline"
+                        >
+                          {site.name}
+                        </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {site.address}
