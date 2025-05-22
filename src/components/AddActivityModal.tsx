@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  FaUser,
   FaHospital,
   FaClipboardList,
   FaClock,
@@ -13,7 +12,6 @@ import type { Patient } from "../services/patientService";
 import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
-import { useAuth } from '../contexts/AuthContext';
 
 interface ActivityForm {
   patientId: string;
@@ -55,7 +53,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   siteName,
   patients: providedPatients = [] 
 }) => {
-  const { user } = useAuth(); // Get the current user
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -225,7 +222,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     try {
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
-        user_id: user?.id || 0, // Add the user_id from the logged-in user
+        user_id: 0, // Default value since we removed user context
         activity_type: formData.activityType,
         building: formData.building,
         time_spent: calculateTimeDifference(),
@@ -316,7 +313,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">
                     <span className="flex items-center">
-                      <FaUser className="w-4 h-4 text-gray-400 mr-2" />
+                      <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
                       Patient
                     </span>
                   </label>
@@ -357,78 +354,53 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                 </div>
               </div>
 
-              {/* User Information */}
+              {/* Building and Activity Type Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* User Initials with Hover Effect */}
+                {/* Building Selection */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">
                     <span className="flex items-center">
-                      <FaUser className="w-4 h-4 text-gray-400 mr-2" />
-                      Initials
+                      <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
+                      Building
                     </span>
                   </label>
-                  <div className="relative inline-block w-full group">
-                    <input
-                      type="text"
-                      value={user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'N/A'}
-                      className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-100 focus:outline-none rounded-lg shadow-sm cursor-not-allowed"
-                      disabled
-                    />
-                    {user && (
-                      <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
-                        <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
-                          {`${user.first_name} ${user.last_name}`}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <select
+                    name="building"
+                    value={formData.building}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                    required
+                  >
+                    <option value="">Select Building</option>
+                    <option value="building-a">Building A</option>
+                    <option value="building-b">Building B</option>
+                    <option value="building-c">Building C</option>
+                  </select>
                 </div>
-              </div>
 
-              {/* Building Selection */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  <span className="flex items-center">
-                    <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
-                    Building
-                  </span>
-                </label>
-                <select
-                  name="building"
-                  value={formData.building}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                  required
-                >
-                  <option value="">Select Building</option>
-                  <option value="building-a">Building A</option>
-                  <option value="building-b">Building B</option>
-                  <option value="building-c">Building C</option>
-                </select>
-              </div>
-
-              {/* Activity Type */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  <span className="flex items-center">
-                    <FaClipboardList className="w-4 h-4 text-gray-400 mr-2" />
-                    Activity Type
-                  </span>
-                </label>
-                <select
-                  name="activityType"
-                  value={formData.activityType}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                  required
-                >
-                  <option value="">Select Activity Type</option>
-                  {activityTypes.map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                {/* Activity Type */}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <span className="flex items-center">
+                      <FaClipboardList className="w-4 h-4 text-gray-400 mr-2" />
+                      Activity Type
+                    </span>
+                  </label>
+                  <select
+                    name="activityType"
+                    value={formData.activityType}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                    required
+                  >
+                    <option value="">Select Activity Type</option>
+                    {activityTypes.map(type => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Medical Checklist */}
