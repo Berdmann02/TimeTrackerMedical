@@ -359,23 +359,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
               {/* User Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* User Name - Read Only */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <FaUser className="w-4 h-4 text-gray-400 mr-2" />
-                      User
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={user ? `${user.first_name} ${user.last_name}` : 'Not logged in'}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-100 focus:outline-none rounded-lg shadow-sm cursor-not-allowed"
-                    disabled
-                  />
-                </div>
-
-                {/* User Initials - Read Only */}
+                {/* User Initials with Hover Effect */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">
                     <span className="flex items-center">
@@ -383,12 +367,21 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                       Initials
                     </span>
                   </label>
-                  <input
-                    type="text"
-                    value={user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'N/A'}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-100 focus:outline-none rounded-lg shadow-sm cursor-not-allowed"
-                    disabled
-                  />
+                  <div className="relative inline-block w-full group">
+                    <input
+                      type="text"
+                      value={user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : 'N/A'}
+                      className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-100 focus:outline-none rounded-lg shadow-sm cursor-not-allowed"
+                      disabled
+                    />
+                    {user && (
+                      <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
+                        <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
+                          {`${user.first_name} ${user.last_name}`}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

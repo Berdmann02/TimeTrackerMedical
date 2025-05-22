@@ -38,6 +38,8 @@ interface DetailRowProps {
     calculateTimeDifference?: () => number;
     placeholder?: string;
     helperText?: string;
+    activity?: Activity;
+    userFullName?: string;
 }
 
 // Move DetailRow component outside of the main component and wrap with memo
@@ -55,7 +57,9 @@ const DetailRow: FC<DetailRowProps> = memo(({
     editType = 'text',
     calculateTimeDifference = () => 0,
     placeholder,
-    helperText
+    helperText,
+    activity,
+    userFullName
 }) => (
     <div className="flex flex-col py-4 border-b border-gray-200">
         <div className="flex items-center mb-2">
@@ -134,6 +138,17 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             'N/A'
                         ) : typeof value === 'number' ? (
                             `${value.toFixed(2)} minutes`
+                        ) : label === "Personnel Initials" ? (
+                            <div className="relative inline-block group">
+                                <span>{value}</span>
+                                {activity?.user_id && (
+                                    <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
+                                        <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
+                                            {userFullName}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             value
                         )}
@@ -172,6 +187,7 @@ const ActivityDetailsPage: FC = () => {
     const [activity, setActivity] = useState<Activity | null>(null);
     const [patientName, setPatientName] = useState<string>('');
     const [userInitials, setUserInitials] = useState<string>('');
+    const [userFullName, setUserFullName] = useState<string>('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedActivity, setEditedActivity] = useState<Activity | null>(null);
@@ -217,8 +233,10 @@ const ActivityDetailsPage: FC = () => {
                         const user = response.data;
                         console.log('Fetched User Data:', user);
                         const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+                        const fullName = `${user.first_name} ${user.last_name}`;
                         console.log('Generated User Initials:', initials);
                         setUserInitials(initials);
+                        setUserFullName(fullName);
                         
                         // Update the activity with the user's initials
                         setEditedActivity(prev => {
@@ -234,6 +252,7 @@ const ActivityDetailsPage: FC = () => {
                     } catch (userError) {
                         console.error("Error fetching user data:", userError);
                         setUserInitials('Unknown');
+                        setUserFullName('Unknown User');
                     }
                 } else {
                     console.log('No user_id found in activity data');
@@ -593,6 +612,8 @@ const ActivityDetailsPage: FC = () => {
                                 editType="readonly"
                                 onStartTimeEdit={(value) => handleFieldChange('personnel_start_time', value)}
                                 onEndTimeEdit={(value) => handleFieldChange('personnel_end_time', value)}
+                                activity={activity}
+                                userFullName={userFullName}
                             />
                             <DetailRow
                                 icon={ClipboardCheck}
