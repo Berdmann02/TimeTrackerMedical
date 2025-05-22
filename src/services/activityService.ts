@@ -37,6 +37,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
     // Map our frontend DTO to match the backend schema
     const backendActivityData = {
       patient_id: activityData.patient_id,
+      user_id: activityData.user_id,
       activity_type: activityData.activity_type,
       notes: activityData.notes || '',
       site_name: 'CP Greater San Antonio', // Default value

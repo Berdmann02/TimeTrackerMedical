@@ -20,6 +20,8 @@ import { getActivityById, deleteActivity, updateActivity, getActivityTypes } fro
 import type { Activity } from '../../services/patientService';
 import { getPatientById } from '../../services/patientService';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import axios from 'axios';
+import { API_URL } from '../../config';
 
 interface DetailRowProps {
     icon: any;
@@ -169,6 +171,7 @@ const ActivityDetailsPage: FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activity, setActivity] = useState<Activity | null>(null);
     const [patientName, setPatientName] = useState<string>('');
+    const [userInitials, setUserInitials] = useState<string>('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedActivity, setEditedActivity] = useState<Activity | null>(null);
@@ -190,6 +193,7 @@ const ActivityDetailsPage: FC = () => {
             
             try {
                 const activityData = await getActivityById(activityId);
+                console.log('Fetched Activity Data:', activityData);
                 setActivity(activityData);
                 setEditedActivity(activityData);
                 
@@ -199,23 +203,40 @@ const ActivityDetailsPage: FC = () => {
                         const patient = await getPatientById(activityData.patient_id);
                         const fullName = `${patient.first_name} ${patient.last_name}`;
                         setPatientName(fullName);
+                        console.log('Fetched Patient Data:', patient);
+                    } catch (patientError) {
+                        console.error("Error fetching patient data:", patientError);
+                    }
+                }
+
+                // Get the user information if we have a user ID
+                if (activityData.user_id) {
+                    console.log('Fetching user data for user_id:', activityData.user_id);
+                    try {
+                        const response = await axios.get(`${API_URL}/users/${activityData.user_id}`);
+                        const user = response.data;
+                        console.log('Fetched User Data:', user);
+                        const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+                        console.log('Generated User Initials:', initials);
+                        setUserInitials(initials);
                         
-                        // Generate initials from patient's name
-                        const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`.toUpperCase();
-                        
-                        // Update the activity with the generated initials
+                        // Update the activity with the user's initials
                         setEditedActivity(prev => {
                             if (!prev) return prev;
-                            return {
+                            const updated = {
                                 ...prev,
                                 personnel_initials: initials,
                                 user_initials: initials
                             };
+                            console.log('Updated Activity with User Initials:', updated);
+                            return updated;
                         });
-                    } catch (patientError) {
-                        console.error("Error fetching patient data:", patientError);
-                        // Don't fail completely if just the patient data fails
+                    } catch (userError) {
+                        console.error("Error fetching user data:", userError);
+                        setUserInitials('Unknown');
                     }
+                } else {
+                    console.log('No user_id found in activity data');
                 }
 
                 // Get activity types
@@ -403,6 +424,12 @@ const ActivityDetailsPage: FC = () => {
         }
     };
 
+    // Add logging for the DetailRow render
+    const renderDetailRow = (props: DetailRowProps) => {
+        console.log('Rendering DetailRow with props:', props);
+        return <DetailRow {...props} />;
+    };
+
     // Loading state
     if (isLoading) {
         return (
@@ -559,15 +586,11 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Users}
                                 label="Personnel Initials"
-                                value={editedActivity.personnel_initials || editedActivity.user_initials || ''}
+                                value={editedActivity.personnel_initials || editedActivity.user_initials || userInitials || ''}
                                 startTime={editedActivity.personnel_start_time}
                                 endTime={editedActivity.personnel_end_time}
-                                isEditing={isEditing}
-                                editType="text"
-                                onEdit={(value) => {
-                                    handleFieldChange('personnel_initials', value);
-                                    handleFieldChange('user_initials', value);
-                                }}
+                                isEditing={false}
+                                editType="readonly"
                                 onStartTimeEdit={(value) => handleFieldChange('personnel_start_time', value)}
                                 onEndTimeEdit={(value) => handleFieldChange('personnel_end_time', value)}
                             />
