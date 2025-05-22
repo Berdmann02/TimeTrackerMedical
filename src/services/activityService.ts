@@ -4,6 +4,7 @@ import { API_URL } from '../config';
 
 export interface CreateActivityDTO {
   patient_id: number;
+  user_id: number;
   activity_type: string;
   time_spent: number;
   building: string;

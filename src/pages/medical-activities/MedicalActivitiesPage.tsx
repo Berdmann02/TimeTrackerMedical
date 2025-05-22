@@ -18,8 +18,15 @@ const monthNames = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+}
+
 interface ActivityWithPatient extends Activity {
   patient_name?: string;
+  user?: User;
 }
 
 const MedicalActivitiesPage = () => {
@@ -34,6 +41,7 @@ const MedicalActivitiesPage = () => {
   const [activities, setActivities] = useState<ActivityWithPatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userInitials, setUserInitials] = useState<Record<number, string>>({});
 
   // Helper function to safely create a Date
   const getDateValue = (dateStr?: string): number => {
@@ -81,6 +89,26 @@ const MedicalActivitiesPage = () => {
 
     fetchActivities();
   }, []);
+
+  // Function to fetch user information
+  const fetchUserInfo = async (userId: number) => {
+    if (!userInitials[userId]) {
+      try {
+        const response = await axios.get(`${API_URL}/users/${userId}`);
+        const user = response.data;
+        setUserInitials(prev => ({
+          ...prev,
+          [userId]: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+        }));
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setUserInitials(prev => ({
+          ...prev,
+          [userId]: 'Unknown'
+        }));
+      }
+    }
+  };
 
   // Filtering and sorting
   const filteredActivities = activities.filter((activity) => {
@@ -146,17 +174,20 @@ const MedicalActivitiesPage = () => {
       const response = await axios.get(`${API_URL}/activities`);
       const newActivities = response.data;
       
-      // Fetch patient names for new activities
-      const activitiesWithPatients = await Promise.all(
+      // Fetch patient names and user info for new activities
+      const activitiesWithInfo = await Promise.all(
         newActivities.map(async (activity: Activity) => {
           try {
             const patient = await getPatientById(activity.patient_id);
+            if (activity.user_id) {
+              await fetchUserInfo(activity.user_id);
+            }
             return {
               ...activity,
               patient_name: `${patient.last_name}, ${patient.first_name}`
             };
           } catch (err) {
-            console.error(`Error fetching patient for activity ${activity.id}:`, err);
+            console.error(`Error fetching info for activity ${activity.id}:`, err);
             return {
               ...activity,
               patient_name: 'Unknown Patient'
@@ -165,7 +196,7 @@ const MedicalActivitiesPage = () => {
         })
       );
 
-      setActivities(activitiesWithPatients);
+      setActivities(activitiesWithInfo);
     } catch (err) {
       console.error('Error refreshing activities:', err);
     }
@@ -387,7 +418,7 @@ const MedicalActivitiesPage = () => {
                         {activity.activity_type}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.user_initials || activity.personnel_initials}
+                        {activity.user_id ? userInitials[activity.user_id] || 'Loading...' : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(activity.service_datetime || activity.created_at)}
