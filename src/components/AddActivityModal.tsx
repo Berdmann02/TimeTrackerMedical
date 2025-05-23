@@ -12,6 +12,7 @@ import type { Patient } from "../services/patientService";
 import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface ActivityForm {
   patientId: string;
@@ -53,6 +54,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   siteName,
   patients: providedPatients = [] 
 }) => {
+  const { user } = useAuth();
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -217,12 +219,17 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       return;
     }
     
+    if (!user?.id) {
+      alert("You must be logged in to create an activity");
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
-        user_id: 0, // Default value since we removed user context
+        user_id: user.id,
         activity_type: formData.activityType,
         building: formData.building,
         time_spent: calculateTimeDifference(),
