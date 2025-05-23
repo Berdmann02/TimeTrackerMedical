@@ -140,7 +140,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             `${value.toFixed(2)} minutes`
                         ) : label === "Personnel Initials" ? (
                             <div className="relative inline-block group">
-                                <span>{value}</span>
+                                <span>{String(value).replace('0', '')}</span>
                                 {activity?.user_id && (
                                     <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
                                         <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
@@ -241,13 +241,11 @@ const ActivityDetailsPage: FC = () => {
                         // Update the activity with the user's initials
                         setEditedActivity(prev => {
                             if (!prev) return prev;
-                            const updated = {
+                            return {
                                 ...prev,
                                 personnel_initials: initials,
                                 user_initials: initials
                             };
-                            console.log('Updated Activity with User Initials:', updated);
-                            return updated;
                         });
                     } catch (userError) {
                         console.error("Error fetching user data:", userError);
@@ -256,6 +254,8 @@ const ActivityDetailsPage: FC = () => {
                     }
                 } else {
                     console.log('No user_id found in activity data');
+                    setUserInitials('Unknown');
+                    setUserFullName('Unknown User');
                 }
 
                 // Get activity types
@@ -449,6 +449,17 @@ const ActivityDetailsPage: FC = () => {
         return <DetailRow {...props} />;
     };
 
+    // Format time spent
+    const formatTimeSpent = (activity: Activity): number => {
+        if (activity.time_spent !== undefined && activity.time_spent !== null && !isNaN(Number(activity.time_spent))) {
+            return Number(activity.time_spent);
+        }
+        if (activity.duration_minutes !== undefined && activity.duration_minutes !== null && !isNaN(Number(activity.duration_minutes))) {
+            return Number(activity.duration_minutes);
+        }
+        return 0;
+    };
+
     // Loading state
     if (isLoading) {
         return (
@@ -605,7 +616,7 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Users}
                                 label="Personnel Initials"
-                                value={editedActivity.personnel_initials || editedActivity.user_initials || userInitials || ''}
+                                value={editedActivity.personnel_initials || editedActivity.user_initials || userInitials || 'Unknown'}
                                 startTime={editedActivity.personnel_start_time}
                                 endTime={editedActivity.personnel_end_time}
                                 isEditing={false}
@@ -632,7 +643,7 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Clock}
                                 label="Total Time"
-                                value={editedActivity.time_spent ?? editedActivity.duration_minutes ?? 0}
+                                value={formatTimeSpent(editedActivity)}
                                 isEditing={isEditing}
                                 editType="number"
                                 onEdit={(value) => {

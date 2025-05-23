@@ -5,6 +5,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import { getPatientById, getPatientActivities, updatePatient } from "../../services/patientService"
 import type { Patient, Activity as ApiActivity } from "../../services/patientService"
 import AddActivityModal from "../../components/AddActivityModal"
+import axios from "axios"
+import { API_URL } from "../../config"
 
 // DetailRow component for editable fields that maintains original UI
 interface DetailRowProps {
@@ -176,6 +178,51 @@ export default function PatientDetailsPage() {
     fetchPatientData()
   }, [patientId])
 
+  // Fetch activities for the patient
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!patientId) return;
+      
+      try {
+        setIsLoading(true);
+        const response = await axios.get(`${API_URL}/activities`);
+        const allActivities = response.data;
+        
+        // Filter activities for this patient and fetch user info
+        const patientActivities = await Promise.all(
+          allActivities
+            .filter((activity: ApiActivity) => activity.patient_id === Number(patientId))
+            .map(async (activity: ApiActivity) => {
+              let userInitials = 'Unknown';
+              if (activity.user_id) {
+                try {
+                  const userResponse = await axios.get(`${API_URL}/users/${activity.user_id}`);
+                  const user = userResponse.data;
+                  userInitials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+                } catch (error) {
+                  console.error('Error fetching user:', error);
+                }
+              }
+              return {
+                ...activity,
+                user_initials: userInitials
+              };
+            })
+        );
+
+        setActivities(patientActivities);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching activities:', err);
+        setError('Failed to load activities');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, [patientId]);
+
   // Convert API data to format expected by the component
   const patientData: PatientWithActivities | null = patient ? {
     patient: {
@@ -200,13 +247,10 @@ export default function PatientDetailsPage() {
       useOpioids: patient.use_opioids
     },
     activities: activities.map(activity => {
-      // Generate initials from patient's name
-      const initials = `${patient.first_name.charAt(0)}${patient.last_name.charAt(0)}`.toUpperCase();
-      
       return {
         activityId: activity.id?.toString() || '',
         activityType: activity.activity_type || '',
-        initials: initials,
+        initials: activity.user_initials || 'N/A',
         recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
         totalTime: activity.time_spent ?? activity.duration_minutes ?? 0,
         time_spent: activity.time_spent,

@@ -58,17 +58,20 @@ const MedicalActivitiesPage = () => {
         const response = await axios.get(`${API_URL}/activities`);
         const activitiesData = response.data;
 
-        // Fetch patient names for each activity
-        const activitiesWithPatients = await Promise.all(
+        // Fetch patient names and user info for each activity
+        const activitiesWithInfo = await Promise.all(
           activitiesData.map(async (activity: Activity) => {
             try {
               const patient = await getPatientById(activity.patient_id);
+              if (activity.user_id) {
+                await fetchUserInfo(activity.user_id);
+              }
               return {
                 ...activity,
                 patient_name: `${patient.last_name}, ${patient.first_name}`
               };
             } catch (err) {
-              console.error(`Error fetching patient for activity ${activity.id}:`, err);
+              console.error(`Error fetching info for activity ${activity.id}:`, err);
               return {
                 ...activity,
                 patient_name: 'Unknown Patient'
@@ -77,7 +80,7 @@ const MedicalActivitiesPage = () => {
           })
         );
 
-        setActivities(activitiesWithPatients);
+        setActivities(activitiesWithInfo);
         setError(null);
       } catch (err) {
         console.error('Error fetching activities:', err);
@@ -96,9 +99,10 @@ const MedicalActivitiesPage = () => {
       try {
         const response = await axios.get(`${API_URL}/users/${userId}`);
         const user = response.data;
+        const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
         setUserInitials(prev => ({
           ...prev,
-          [userId]: `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+          [userId]: initials
         }));
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -108,6 +112,22 @@ const MedicalActivitiesPage = () => {
         }));
       }
     }
+  };
+
+  // Format time spent
+  const formatTimeSpent = (activity: ActivityWithPatient) => {
+    const timeSpent = activity.time_spent;
+    const durationMinutes = activity.duration_minutes;
+    
+    if (timeSpent !== undefined && timeSpent !== null && !isNaN(Number(timeSpent))) {
+      return `${Number(timeSpent).toFixed(2)} minutes`;
+    }
+    
+    if (durationMinutes !== undefined && durationMinutes !== null && !isNaN(Number(durationMinutes))) {
+      return `${Number(durationMinutes).toFixed(2)} minutes`;
+    }
+    
+    return 'N/A';
   };
 
   // Filtering and sorting
@@ -424,7 +444,7 @@ const MedicalActivitiesPage = () => {
                         {formatDate(activity.service_datetime || activity.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.time_spent !== undefined ? `${activity.time_spent.toFixed(2)} minutes` : 'N/A'}
+                        {formatTimeSpent(activity)}
                       </td>
                     </tr>
                   ))
