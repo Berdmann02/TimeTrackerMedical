@@ -8,6 +8,7 @@ export interface Site {
   city: string;
   state: string;
   zip: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
