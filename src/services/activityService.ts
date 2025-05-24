@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { Activity } from './patientService';
 import { API_URL } from '../config';
+import { getUserInitialsFromAuthUser } from '../utils/userUtils';
 
 export interface CreateActivityDTO {
   patient_id: number;
@@ -10,6 +11,7 @@ export interface CreateActivityDTO {
   building: string;
   notes?: string;
   insurance?: string;
+  user_initials?: string;
   medical_checks?: {
     medical_records: boolean;
     bp_at_goal: boolean;
@@ -49,6 +51,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       time_spent: activityData.time_spent,
       building: activityData.building,
       insurance: activityData.insurance || '',
+      user_initials: activityData.user_initials || '',
       medical_records: activityData.medical_checks?.medical_records || false,
       bp_at_goal: activityData.medical_checks?.bp_at_goal || false,
       hospital_visit: activityData.medical_checks?.hospital_visit || false,
@@ -59,6 +62,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       fall_since_last_visit: activityData.medical_checks?.fall_since_last_visit || false
     };
     
+    console.log('Sending activity data to backend:', backendActivityData);
     const response = await axios.post(`${API_URL}/activities`, backendActivityData);
     return response.data;
   } catch (error) {

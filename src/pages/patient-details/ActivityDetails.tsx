@@ -140,7 +140,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             `${value.toFixed(2)} minutes`
                         ) : label === "Personnel Initials" ? (
                             <div className="relative inline-block group">
-                                <span>{String(value).replace('0', '')}</span>
+                                <span>{activity?.user_initials || activity?.personnel_initials || String(value).replace('0', '')}</span>
                                 {activity?.user_id && (
                                     <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
                                         <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
@@ -186,8 +186,6 @@ const ActivityDetailsPage: FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activity, setActivity] = useState<Activity | null>(null);
     const [patientName, setPatientName] = useState<string>('');
-    const [userInitials, setUserInitials] = useState<string>('');
-    const [userFullName, setUserFullName] = useState<string>('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedActivity, setEditedActivity] = useState<Activity | null>(null);
@@ -223,39 +221,6 @@ const ActivityDetailsPage: FC = () => {
                     } catch (patientError) {
                         console.error("Error fetching patient data:", patientError);
                     }
-                }
-
-                // Get the user information if we have a user ID
-                if (activityData.user_id) {
-                    console.log('Fetching user data for user_id:', activityData.user_id);
-                    try {
-                        const response = await axios.get(`${API_URL}/users/${activityData.user_id}`);
-                        const user = response.data;
-                        console.log('Fetched User Data:', user);
-                        const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
-                        const fullName = `${user.first_name} ${user.last_name}`;
-                        console.log('Generated User Initials:', initials);
-                        setUserInitials(initials);
-                        setUserFullName(fullName);
-                        
-                        // Update the activity with the user's initials
-                        setEditedActivity(prev => {
-                            if (!prev) return prev;
-                            return {
-                                ...prev,
-                                personnel_initials: initials,
-                                user_initials: initials
-                            };
-                        });
-                    } catch (userError) {
-                        console.error("Error fetching user data:", userError);
-                        setUserInitials('Unknown');
-                        setUserFullName('Unknown User');
-                    }
-                } else {
-                    console.log('No user_id found in activity data');
-                    setUserInitials('Unknown');
-                    setUserFullName('Unknown User');
                 }
 
                 // Get activity types
@@ -616,7 +581,7 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Users}
                                 label="Personnel Initials"
-                                value={editedActivity.personnel_initials || editedActivity.user_initials || userInitials || 'Unknown'}
+                                value={editedActivity.personnel_initials || editedActivity.user_initials || 'Unknown'}
                                 startTime={editedActivity.personnel_start_time}
                                 endTime={editedActivity.personnel_end_time}
                                 isEditing={false}
@@ -624,7 +589,7 @@ const ActivityDetailsPage: FC = () => {
                                 onStartTimeEdit={(value) => handleFieldChange('personnel_start_time', value)}
                                 onEndTimeEdit={(value) => handleFieldChange('personnel_end_time', value)}
                                 activity={activity}
-                                userFullName={userFullName}
+                                userFullName={editedActivity.user_initials || 'Unknown'}
                             />
                             <DetailRow
                                 icon={ClipboardCheck}

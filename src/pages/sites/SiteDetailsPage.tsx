@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building, ChevronRight } from 'lucide-react';
+import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building as BuildingIcon, ChevronRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getSiteById, updateSite } from '../../services/siteService';
 import type { Site } from '../../services/siteService';
+import { AddBuildingModal } from '../../components/AddBuildingModal';
+import { getBuildingsBySiteId, deleteBuilding, type Building } from '../../services/buildingService';
 
 // DetailRow component for editable fields that maintains original UI
 interface DetailRowProps {
@@ -104,6 +106,9 @@ export default function SiteDetailsPage() {
     const [editedSite, setEditedSite] = useState<Site | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAddBuildingModalOpen, setIsAddBuildingModalOpen] = useState(false);
+    const [buildings, setBuildings] = useState<Building[]>([]);
+    const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
 
     // Add state for expandable sections
     const [expandedSections, setExpandedSections] = useState({
@@ -136,6 +141,12 @@ export default function SiteDetailsPage() {
         
         fetchSiteData();
     }, [siteId]);
+
+    useEffect(() => {
+        if (siteId && expandedSections.buildings) {
+            handleAddBuilding();
+        }
+    }, [siteId, expandedSections.buildings]);
 
     const handleEditSite = () => {
         setIsEditing(true);
@@ -179,6 +190,31 @@ export default function SiteDetailsPage() {
             ...prev,
             [section]: !prev[section]
         }));
+    };
+
+    const handleAddBuilding = async () => {
+        if (!siteId) return;
+        setIsLoadingBuildings(true);
+        try {
+            const data = await getBuildingsBySiteId(parseInt(siteId));
+            setBuildings(data);
+        } catch (err) {
+            console.error("Error fetching buildings:", err);
+        } finally {
+            setIsLoadingBuildings(false);
+        }
+    };
+
+    const handleDeleteBuilding = async (buildingId: number) => {
+        if (!confirm('Are you sure you want to delete this building?')) return;
+        
+        try {
+            await deleteBuilding(buildingId);
+            await handleAddBuilding(); // Refresh the list
+        } catch (err) {
+            console.error("Error deleting building:", err);
+            alert("Failed to delete building. Please try again.");
+        }
     };
 
     // Loading state
@@ -351,7 +387,7 @@ export default function SiteDetailsPage() {
                                 onClick={() => toggleSection('buildings')}
                             >
                                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                    <Building className="w-5 h-5 text-blue-600" />
+                                    <BuildingIcon className="w-5 h-5 text-blue-600" />
                                     Buildings
                                     {expandedSections.buildings ? (
                                         <ChevronDownIcon className="w-5 h-5 text-gray-500" />
@@ -361,6 +397,10 @@ export default function SiteDetailsPage() {
                                 </h2>
                                 {expandedSections.buildings && (
                                     <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsAddBuildingModalOpen(true);
+                                        }}
                                         className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
                                     >
                                         Add Building
@@ -376,13 +416,10 @@ export default function SiteDetailsPage() {
                                                     Building Name
                                                 </th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Type
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Status
                                                 </th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Capacity
+                                                    Created At
                                                 </th>
                                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Actions
@@ -390,11 +427,56 @@ export default function SiteDetailsPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                    No buildings found
-                                                </td>
-                                            </tr>
+                                            {isLoadingBuildings ? (
+                                                <tr>
+                                                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                        <div className="flex items-center justify-center">
+                                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                                            <span className="ml-2">Loading buildings...</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : buildings.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                        No buildings found
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                buildings.map((building) => (
+                                                    <tr key={building.id}>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                            {building.name}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                                building.is_active
+                                                                    ? "bg-green-100 text-green-800"
+                                                                    : "bg-red-100 text-red-800"
+                                                            }`}>
+                                                                {building.is_active ? "Active" : "Inactive"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            {new Date(building.created_at).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <button
+                                                                onClick={() => {/* TODO: Implement edit building */}}
+                                                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteBuilding(building.id)}
+                                                                className="text-red-600 hover:text-red-900"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -537,6 +619,14 @@ export default function SiteDetailsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Add Building Modal */}
+            <AddBuildingModal
+                isOpen={isAddBuildingModalOpen}
+                onClose={() => setIsAddBuildingModalOpen(false)}
+                siteId={parseInt(siteId || '0')}
+                onBuildingAdded={handleAddBuilding}
+            />
         </div>
     );
 }

@@ -26,7 +26,7 @@ interface User {
 
 interface ActivityWithPatient extends Activity {
   patient_name?: string;
-  user?: User;
+  user_initials?: string;
 }
 
 const MedicalActivitiesPage = () => {
@@ -41,7 +41,6 @@ const MedicalActivitiesPage = () => {
   const [activities, setActivities] = useState<ActivityWithPatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userInitials, setUserInitials] = useState<Record<number, string>>({});
 
   // Helper function to safely create a Date
   const getDateValue = (dateStr?: string): number => {
@@ -58,14 +57,11 @@ const MedicalActivitiesPage = () => {
         const response = await axios.get(`${API_URL}/activities`);
         const activitiesData = response.data;
 
-        // Fetch patient names and user info for each activity
+        // Fetch patient names for each activity
         const activitiesWithInfo = await Promise.all(
           activitiesData.map(async (activity: Activity) => {
             try {
               const patient = await getPatientById(activity.patient_id);
-              if (activity.user_id) {
-                await fetchUserInfo(activity.user_id);
-              }
               return {
                 ...activity,
                 patient_name: `${patient.last_name}, ${patient.first_name}`
@@ -92,27 +88,6 @@ const MedicalActivitiesPage = () => {
 
     fetchActivities();
   }, []);
-
-  // Function to fetch user information
-  const fetchUserInfo = async (userId: number) => {
-    if (!userInitials[userId]) {
-      try {
-        const response = await axios.get(`${API_URL}/users/${userId}`);
-        const user = response.data;
-        const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
-        setUserInitials(prev => ({
-          ...prev,
-          [userId]: initials
-        }));
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        setUserInitials(prev => ({
-          ...prev,
-          [userId]: 'Unknown'
-        }));
-      }
-    }
-  };
 
   // Format time spent
   const formatTimeSpent = (activity: ActivityWithPatient) => {
@@ -194,14 +169,11 @@ const MedicalActivitiesPage = () => {
       const response = await axios.get(`${API_URL}/activities`);
       const newActivities = response.data;
       
-      // Fetch patient names and user info for new activities
+      // Fetch patient names for new activities
       const activitiesWithInfo = await Promise.all(
         newActivities.map(async (activity: Activity) => {
           try {
             const patient = await getPatientById(activity.patient_id);
-            if (activity.user_id) {
-              await fetchUserInfo(activity.user_id);
-            }
             return {
               ...activity,
               patient_name: `${patient.last_name}, ${patient.first_name}`
@@ -438,7 +410,7 @@ const MedicalActivitiesPage = () => {
                         {activity.activity_type}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.user_id ? userInitials[activity.user_id] || 'Loading...' : 'N/A'}
+                        {activity.user_initials || activity.personnel_initials || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(activity.service_datetime || activity.created_at)}

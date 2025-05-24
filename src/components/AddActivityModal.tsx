@@ -6,6 +6,8 @@ import {
   FaStickyNote,
   FaPlay,
   FaStop,
+  FaNotesMedical,
+  FaUserMd,
 } from "react-icons/fa";
 import { getPatients } from "../services/patientService";
 import type { Patient } from "../services/patientService";
@@ -13,6 +15,7 @@ import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { getUserInitialsFromAuthUser } from '../utils/userUtils';
 
 interface ActivityForm {
   patientId: string;
@@ -227,6 +230,9 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     setIsSubmitting(true);
     
     try {
+      const userInitials = getUserInitialsFromAuthUser();
+      console.log('User initials from localStorage:', userInitials);
+      
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
         user_id: user.id,
@@ -234,6 +240,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         building: formData.building,
         time_spent: calculateTimeDifference(),
         notes: formData.notes,
+        user_initials: userInitials,
         medical_checks: {
           medical_records: formData.medicalChecks.medicalRecords,
           bp_at_goal: formData.medicalChecks.bpAtGoal,
@@ -246,6 +253,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         }
       };
       
+      console.log('Sending activity data to backend:', activityData);
       await createActivity(activityData);
       
       if (onActivityAdded) {
