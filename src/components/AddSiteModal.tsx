@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createSite } from '../services/siteService';
 import { toast } from 'react-hot-toast';
-import { X, Building2, MapPin, Mail, Phone } from 'lucide-react';
+import { X, Building2 } from 'lucide-react';
 
 interface AddSiteModalProps {
   isOpen: boolean;
@@ -15,6 +15,10 @@ interface SiteFormData {
   city: string;
   state: string;
   zip: string;
+}
+
+// This matches the expected type from the service
+interface CreateSiteDto extends SiteFormData {
   is_active: boolean;
 }
 
@@ -26,14 +30,13 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
     city: '',
     state: '',
     zip: '',
-    is_active: true,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
@@ -42,7 +45,8 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
     setIsSubmitting(true);
 
     try {
-      await createSite(formData);
+      const siteData: CreateSiteDto = { ...formData, is_active: true };
+      await createSite(siteData);
       toast.success('Site created successfully');
       onSiteAdded();
       onClose();
@@ -53,7 +57,6 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
         city: '',
         state: '',
         zip: '',
-        is_active: true,
       });
     } catch (error) {
       console.error('Error creating site:', error);
@@ -71,14 +74,17 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header Section */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Add New Site</h2>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <Building2 className="h-6 w-6 mr-2" />
+                Add New Site
+              </h2>
               <p className="mt-1 text-sm text-gray-600">
                 Please fill in all the required information to create a new site.
               </p>
@@ -91,153 +97,111 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Site Information Section */}
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-            
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Site Name */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Site Name
+              </label>
+              <input
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Enter site name"
+              />
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Site Name */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                      Site Name
-                    </span>
-                  </label>
-                  <input
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
-                    placeholder="Enter site name"
-                  />
-                </div>
+            {/* Address */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Address
+              </label>
+              <input
+                name="address"
+                type="text"
+                value={formData.address}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Enter street address"
+              />
+            </div>
 
-                {/* Address */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                      Address
-                    </span>
-                  </label>
-                  <input
-                    name="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
-                    placeholder="Enter street address"
-                  />
-                </div>
+            {/* City, State, ZIP Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  City
+                </label>
+                <input
+                  name="city"
+                  type="text"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="Enter city"
+                />
+              </div>
 
-                {/* City */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                      City
-                    </span>
-                  </label>
-                  <input
-                    name="city"
-                    type="text"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
-                    placeholder="Enter city"
-                  />
-                </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  State
+                </label>
+                <input
+                  name="state"
+                  type="text"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="Enter state"
+                />
+              </div>
 
-                {/* State */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                      State
-                    </span>
-                  </label>
-                  <input
-                    name="state"
-                    type="text"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
-                    placeholder="Enter state"
-                  />
-                </div>
-
-                {/* ZIP Code */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                      ZIP Code
-                    </span>
-                  </label>
-                  <input
-                    name="zip"
-                    type="text"
-                    value={formData.zip}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
-                    placeholder="Enter ZIP code"
-                  />
-                </div>
-
-                {/* Active Status */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                      Status
-                    </span>
-                  </label>
-                  <div className="mt-1">
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="is_active"
-                          checked={formData.is_active}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Active Site</span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  ZIP Code
+                </label>
+                <input
+                  name="zip"
+                  type="text"
+                  value={formData.zip}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="Enter ZIP code"
+                />
               </div>
             </div>
 
-            {/* Form Actions */}
-            <div className="pt-4 border-t border-gray-200">
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? "Creating..." : "Create Site"}
-                </button>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  'Create Site'
+                )}
+              </button>
             </div>
           </form>
         </div>
