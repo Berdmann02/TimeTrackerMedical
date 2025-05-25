@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddActivityModal from '../../components/AddActivityModal';
-import { getActivityTypes } from '../../services/activityService';
+import { getActivityTypes, getActivityById } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
 import { getPatientById } from '../../services/patientService';
-import axios from 'axios';
-import { API_URL } from '../../config';
 
 // Remove mock data and replace with state
 const sites = ['CP Greater San Antonio', 'CP Intermountain'];
@@ -54,8 +52,7 @@ const MedicalActivitiesPage = () => {
     const fetchActivities = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`${API_URL}/activities`);
-        const activitiesData = response.data;
+        const activitiesData = await getActivityById('all') as Activity[];
 
         // Fetch patient names for each activity
         const activitiesWithInfo = await Promise.all(
@@ -166,12 +163,11 @@ const MedicalActivitiesPage = () => {
 
   const handleActivityAdded = async () => {
     try {
-      const response = await axios.get(`${API_URL}/activities`);
-      const newActivities = response.data;
+      const activitiesData = await getActivityById('all') as Activity[];
       
       // Fetch patient names for new activities
       const activitiesWithInfo = await Promise.all(
-        newActivities.map(async (activity: Activity) => {
+        activitiesData.map(async (activity: Activity) => {
           try {
             const patient = await getPatientById(activity.patient_id);
             return {

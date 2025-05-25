@@ -24,8 +24,12 @@ export interface CreateActivityDTO {
   };
 }
 
-export const getActivityById = async (id: number | string): Promise<Activity> => {
+export const getActivityById = async (id: number | string): Promise<Activity | Activity[]> => {
   try {
+    if (id === 'all') {
+      const response = await axios.get(`${API_URL}/activities`);
+      return response.data;
+    }
     const response = await axios.get(`${API_URL}/activities/${id}`);
     return response.data;
   } catch (error) {
