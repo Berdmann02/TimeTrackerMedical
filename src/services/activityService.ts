@@ -38,6 +38,17 @@ export const getActivityById = async (id: number | string): Promise<Activity | A
   }
 };
 
+// New optimized function to get activities with patient and user details
+export const getActivitiesWithDetails = async (): Promise<any[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/activities/with-details`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching activities with details:', error);
+    throw error;
+  }
+};
+
 export const createActivity = async (activityData: CreateActivityDTO): Promise<Activity> => {
   try {
     // Map our frontend DTO to match the backend schema

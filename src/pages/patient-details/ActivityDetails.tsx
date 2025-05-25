@@ -208,6 +208,12 @@ const ActivityDetailsPage: FC = () => {
             try {
                 const activityData = await getActivityById(activityId);
                 console.log('Fetched Activity Data:', activityData);
+                
+                // Ensure we have a single activity, not an array
+                if (Array.isArray(activityData)) {
+                    throw new Error('Expected single activity but received array');
+                }
+                
                 setActivity(activityData);
                 setEditedActivity(activityData);
                 

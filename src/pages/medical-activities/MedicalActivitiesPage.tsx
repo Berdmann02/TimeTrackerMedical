@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddActivityModal from '../../components/AddActivityModal';
-import { getActivityTypes, getActivityById } from '../../services/activityService';
+import { getActivityTypes, getActivityById, getActivitiesWithDetails } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
-import { getPatientById } from '../../services/patientService';
 
 // Remove mock data and replace with state
 const sites = ['CP Greater San Antonio', 'CP Intermountain'];
@@ -52,28 +51,10 @@ const MedicalActivitiesPage = () => {
     const fetchActivities = async () => {
       try {
         setIsLoading(true);
-        const activitiesData = await getActivityById('all') as Activity[];
+        const activitiesData = await getActivitiesWithDetails();
 
-        // Fetch patient names for each activity
-        const activitiesWithInfo = await Promise.all(
-          activitiesData.map(async (activity: Activity) => {
-            try {
-              const patient = await getPatientById(activity.patient_id);
-              return {
-                ...activity,
-                patient_name: `${patient.last_name}, ${patient.first_name}`
-              };
-            } catch (err) {
-              console.error(`Error fetching info for activity ${activity.id}:`, err);
-              return {
-                ...activity,
-                patient_name: 'Unknown Patient'
-              };
-            }
-          })
-        );
-
-        setActivities(activitiesWithInfo);
+        // Data already includes patient names and user initials from the backend join
+        setActivities(activitiesData);
         setError(null);
       } catch (err) {
         console.error('Error fetching activities:', err);
@@ -163,28 +144,10 @@ const MedicalActivitiesPage = () => {
 
   const handleActivityAdded = async () => {
     try {
-      const activitiesData = await getActivityById('all') as Activity[];
+      const activitiesData = await getActivitiesWithDetails();
       
-      // Fetch patient names for new activities
-      const activitiesWithInfo = await Promise.all(
-        activitiesData.map(async (activity: Activity) => {
-          try {
-            const patient = await getPatientById(activity.patient_id);
-            return {
-              ...activity,
-              patient_name: `${patient.last_name}, ${patient.first_name}`
-            };
-          } catch (err) {
-            console.error(`Error fetching info for activity ${activity.id}:`, err);
-            return {
-              ...activity,
-              patient_name: 'Unknown Patient'
-            };
-          }
-        })
-      );
-
-      setActivities(activitiesWithInfo);
+      // Data already includes patient names and user initials from the backend join
+      setActivities(activitiesData);
     } catch (err) {
       console.error('Error refreshing activities:', err);
     }
