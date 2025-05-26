@@ -369,7 +369,7 @@ const MedicalActivitiesPage = () => {
                         {activity.activity_type}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.user_initials || activity.personnel_initials || 'N/A'}
+                        {activity.user_initials  || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(activity.service_datetime || activity.created_at)}
