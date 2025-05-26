@@ -186,7 +186,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors duration-200"
                   required
                   placeholder="Enter patient's first name"
                 />
@@ -205,7 +205,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors duration-200"
                   required
                   placeholder="Enter patient's last name"
                 />
@@ -224,7 +224,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="dateOfBirth"
                   value={formData.dateOfBirth}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer"
                   required
                 />
               </div>
@@ -241,7 +241,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer"
                   required
                 >
                   <option value="M">Male</option>
@@ -262,7 +262,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="siteId"
                   value={formData.siteId}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer"
                   required
                 >
                   {siteOptions.map(site => (
@@ -285,7 +285,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="building"
                   value={formData.building}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer"
                   disabled={!formData.siteId}
                 >
                   <option value="">Select a building</option>
@@ -313,7 +313,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                 name="insurance"
                 value={formData.insurance}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                 placeholder="Enter insurance information"
               />
             </div>
@@ -334,7 +334,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                 value={formData.notes}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                 placeholder="Enter any relevant notes for the patient..."
               />
             </div>

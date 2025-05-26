@@ -164,18 +164,217 @@ const MedicalActivitiesPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+        <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+          <div className="flex justify-between items-center mb-4 flex-shrink-0">
+            <h1 className="text-3xl font-bold text-gray-900">Medical Activities</h1>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Activity
+            </button>
+          </div>
+
+          <AddActivityModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onActivityAdded={handleActivityAdded}
+            siteName={siteFilter === 'All' ? 'CP Greater San Antonio' : siteFilter}
+          />
+
+          <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
+            <div className="flex flex-col space-y-3">
+              {/* Top row with search */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="relative w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Filter dropdowns - more compact layout */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
+                  <div className="relative">
+                    <select
+                      value={siteFilter}
+                      onChange={(e) => setSiteFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      {sites.map((site) => (
+                        <option key={site} value={site}>{site}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
+                  <div className="relative">
+                    <select
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      {months.map((month, index) => (
+                        <option key={month} value={month}>{monthNames[index]}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
+                  <div className="relative">
+                    <select
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Loading state for table */}
+          <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center max-h-[60vh]">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <div className="text-gray-500">Loading activities data...</div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-red-600 text-center">
-          <p className="text-xl font-semibold mb-2">Error</p>
-          <p>{error}</p>
+      <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+        <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+          <div className="flex justify-between items-center mb-4 flex-shrink-0">
+            <h1 className="text-3xl font-bold text-gray-900">Medical Activities</h1>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Activity
+            </button>
+          </div>
+
+          <AddActivityModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onActivityAdded={handleActivityAdded}
+            siteName={siteFilter === 'All' ? 'CP Greater San Antonio' : siteFilter}
+          />
+
+          <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
+            <div className="flex flex-col space-y-3">
+              {/* Top row with search */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="relative w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Filter dropdowns - more compact layout */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
+                  <div className="relative">
+                    <select
+                      value={siteFilter}
+                      onChange={(e) => setSiteFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      {sites.map((site) => (
+                        <option key={site} value={site}>{site}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
+                  <div className="relative">
+                    <select
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      {months.map((month, index) => (
+                        <option key={month} value={month}>{monthNames[index]}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
+                  <div className="relative">
+                    <select
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Error display */}
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 max-h-[60vh] flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-xl font-semibold mb-2">Error</p>
+              <p>{error}</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -188,9 +387,9 @@ const MedicalActivitiesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
+    <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+      <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <h1 className="text-3xl font-bold text-gray-900">Medical Activities</h1>
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -208,7 +407,7 @@ const MedicalActivitiesPage = () => {
           siteName={siteFilter === 'All' ? 'CP Greater San Antonio' : siteFilter}
         />
 
-        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
           <div className="flex flex-col space-y-3">
             {/* Top row with search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -283,10 +482,11 @@ const MedicalActivitiesPage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+        <div className="bg-white rounded-lg border border-gray-200 flex flex-col max-h-[60vh] min-h-0">
+          {/* Scrollable Table with Fixed Header */}
+          <div className="flex-1 overflow-auto min-h-0">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('id')}>
                     <div className="flex items-center">
@@ -383,6 +583,31 @@ const MedicalActivitiesPage = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Table Footer - Fixed */}
+          <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Previous
+              </button>
+              <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{sortedActivities.length}</span> of{" "}
+                  <span className="font-medium">{sortedActivities.length}</span> results
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">
+                  Scroll to view more activities
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

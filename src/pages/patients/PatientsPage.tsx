@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import AddPatientModal from "../../components/AddPatientModal"
@@ -95,65 +95,68 @@ export default function PatientsPage() {
     return field;
   };
 
-  // Filter and sort data
-  const filteredPatients = patients.filter((patient) => {
-    const fullName = getFullName(patient);
-    const matchesSearch =
-      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      String(patient.id).toLowerCase().includes(searchTerm.toLowerCase());
+  // Memoized filter and sort data for better performance
+  const filteredAndSortedPatients = useMemo(() => {
+    // Filter patients
+    const filtered = patients.filter((patient) => {
+      const fullName = getFullName(patient);
+      const matchesSearch =
+        fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        String(patient.id).toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesGender = genderFilter === "all" || patient.gender === genderFilter;
-    
-    // Site filter
-    const matchesSite = siteFilter === "all" || patient.site_name === siteFilter;
-    
-    // Building filter
-    const matchesBuilding = buildingFilter === "all" || patient.building === buildingFilter;
-    
-    // Month and year filters from birthdate
-    const birthdate = patient.birthdate ? new Date(patient.birthdate) : null;
-    const matchesMonth =
-      monthFilter === "all" ||
-      (birthdate && birthdate.getMonth() + 1 === Number.parseInt(monthFilter));
-    
-    const matchesYear =
-      yearFilter === "all" || 
-      (birthdate && birthdate.getFullYear() === Number.parseInt(yearFilter));
-    
-    // Active status
-    const matchesActive = showInactive || patient.is_active;
-
-    return (
-      matchesSearch && matchesGender && matchesSite && matchesMonth && matchesYear && matchesActive && matchesBuilding
-    );
-  });
-
-  // Sort patients
-  const sortedPatients = [...filteredPatients].sort((a, b) => {
-    if (!sortField) return 0;
-
-    // Special handling for 'name' field
-    if (sortField === 'name') {
-      const aName = getFullName(a);
-      const bName = getFullName(b);
+      const matchesGender = genderFilter === "all" || patient.gender === genderFilter;
       
-      if (aName < bName) return sortDirection === "asc" ? -1 : 1;
-      if (aName > bName) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    }
-    
-    const actualSortField = getSortField(sortField);
-    if (!actualSortField) return 0;
-    
-    const aValue = a[actualSortField];
-    const bValue = b[actualSortField];
+      // Site filter
+      const matchesSite = siteFilter === "all" || patient.site_name === siteFilter;
+      
+      // Building filter
+      const matchesBuilding = buildingFilter === "all" || patient.building === buildingFilter;
+      
+      // Month and year filters from birthdate
+      const birthdate = patient.birthdate ? new Date(patient.birthdate) : null;
+      const matchesMonth =
+        monthFilter === "all" ||
+        (birthdate && birthdate.getMonth() + 1 === Number.parseInt(monthFilter));
+      
+      const matchesYear =
+        yearFilter === "all" || 
+        (birthdate && birthdate.getFullYear() === Number.parseInt(yearFilter));
+      
+      // Active status
+      const matchesActive = showInactive || patient.is_active;
 
-    if (aValue && bValue) {
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
+      return (
+        matchesSearch && matchesGender && matchesSite && matchesMonth && matchesYear && matchesActive && matchesBuilding
+      );
+    });
+
+    // Sort patients
+    return [...filtered].sort((a, b) => {
+      if (!sortField) return 0;
+
+      // Special handling for 'name' field
+      if (sortField === 'name') {
+        const aName = getFullName(a);
+        const bName = getFullName(b);
+        
+        if (aName < bName) return sortDirection === "asc" ? -1 : 1;
+        if (aName > bName) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      }
+      
+      const actualSortField = getSortField(sortField);
+      if (!actualSortField) return 0;
+      
+      const aValue = a[actualSortField];
+      const bValue = b[actualSortField];
+
+      if (aValue && bValue) {
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [patients, searchTerm, genderFilter, siteFilter, buildingFilter, monthFilter, yearFilter, showInactive, sortField, sortDirection]);
 
   // Handle sort
   const handleSort = (field: keyof Patient | "name") => {
@@ -219,10 +222,10 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+      <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
         {/* Header with title and Add Patient button */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
           <button
             onClick={() => setIsAddPatientModalOpen(true)}
@@ -234,7 +237,7 @@ export default function PatientsPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
           <div className="flex flex-col space-y-3">
             {/* Top row with show inactive toggle and search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -354,7 +357,7 @@ export default function PatientsPage() {
 
         {/* Error display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 flex-shrink-0">
             <p>{error}</p>
             <button 
               onClick={fetchPatientsData} 
@@ -367,17 +370,21 @@ export default function PatientsPage() {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center">
-            <div className="text-gray-500">Loading patients data...</div>
+          <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center max-h-[60vh]">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <div className="text-gray-500">Loading patients data...</div>
+            </div>
           </div>
         )}
 
         {/* Table - only show when not loading and no error */}
         {!isLoading && !error && (
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          <div className="bg-white rounded-lg border border-gray-200 flex flex-col max-h-[60vh] min-h-0">
+            {/* Scrollable Table with Fixed Header */}
+            <div className="flex-1 overflow-auto min-h-0">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th
                       scope="col"
@@ -490,8 +497,8 @@ export default function PatientsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedPatients.length > 0 ? (
-                    sortedPatients.map((patient) => (
+                  {filteredAndSortedPatients.length > 0 ? (
+                    filteredAndSortedPatients.map((patient) => (
                       <tr
                         key={patient.id}
                         className="hover:bg-gray-50 transition-colors"
@@ -525,7 +532,7 @@ export default function PatientsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         No patients found matching your filters
                       </td>
                     </tr>
@@ -534,8 +541,8 @@ export default function PatientsPage() {
               </table>
             </div>
 
-            {/* Table Footer */}
-            <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+            {/* Table Footer - Fixed */}
+            <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                   Previous
@@ -547,49 +554,14 @@ export default function PatientsPage() {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">1</span> to{" "}
-                    <span className="font-medium">{sortedPatients.length}</span> of{" "}
-                    <span className="font-medium">{sortedPatients.length}</span> results
+                    Showing <span className="font-medium">{filteredAndSortedPatients.length}</span> of{" "}
+                    <span className="font-medium">{filteredAndSortedPatients.length}</span> results
                   </p>
                 </div>
                 <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                      <span className="sr-only">Previous</span>
-                      <svg
-                        className="h-5 w-5"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                    <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                      1
-                    </button>
-                    <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                      <span className="sr-only">Next</span>
-                      <svg
-                        className="h-5 w-5"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </nav>
+                  <p className="text-xs text-gray-500">
+                    Scroll to view more patients
+                  </p>
                 </div>
               </div>
             </div>
