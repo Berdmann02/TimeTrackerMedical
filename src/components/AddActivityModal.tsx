@@ -83,6 +83,27 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   const [isTracking, setIsTracking] = useState(false);
 
+  // Create initial form state function
+  const getInitialFormState = (): ActivityForm => ({
+    patientId: initialPatientId || "",
+    siteId: siteName === "CP Intermountain" ? "cp-intermountain" : "cp-san-antonio",
+    activityType: "",
+    startTime: "",
+    endTime: "",
+    notes: "",
+    building: "",
+    medicalChecks: {
+      medicalRecords: false,
+      bpAtGoal: false,
+      hospitalVisit: false,
+      a1cAtGoal: false,
+      benzodiazepines: false,
+      antipsychotics: false,
+      opioids: false,
+      fallSinceLastVisit: false
+    }
+  });
+
   // Update patients state when providedPatients changes
   useEffect(() => {
     if (providedPatients.length > 0) {
@@ -91,14 +112,19 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     }
   }, [providedPatients]);
 
-  // Reset form when modal opens or when initialPatientId changes
+  // Reset form completely when modal opens
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      patientId: initialPatientId || "",
-      siteId: siteName === "CP Intermountain" ? "cp-intermountain" : "cp-san-antonio",
-    }));
-  }, [initialPatientId, siteName, isOpen]);
+    if (isOpen) {
+      // Reset all form data to initial state
+      setFormData(getInitialFormState());
+      // Reset tracking state
+      setIsTracking(false);
+      // Clear any errors
+      setError(null);
+      // Reset submission state
+      setIsSubmitting(false);
+    }
+  }, [isOpen, initialPatientId, siteName]);
 
   // Fetch activity types and patients if needed
   useEffect(() => {
