@@ -221,63 +221,56 @@ export default function PatientsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">All Patients</h1>
+        {/* Header with title and Add Patient button */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
+          <button
+            onClick={() => setIsAddPatientModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Add Patient
+          </button>
+        </div>
 
         {/* Filters and Search */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
-          <div className="flex flex-col space-y-4">
-            {/* Top row with total patients and search */}
-            <div className="flex flex-col md:flex-row justify-between gap-4">
-              <div className="flex items-center space-x-6">
-                <div className="text-lg font-semibold text-gray-800">
-                  Total Active Patients: <span className="text-blue-600">{patients.filter(p => p.is_active).length}</span>
+        <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+          <div className="flex flex-col space-y-3">
+            {/* Top row with show inactive toggle and search */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div className="relative w-full md:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon className="h-5 w-5 text-gray-400" />
                 </div>
-                <label className="inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showInactive}
-                    onChange={() => setShowInactive(!showInactive)}
-                    className="sr-only peer"
-                  />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive Patients</span>
-                </label>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsAddPatientModalOpen(true)}
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  <PlusIcon className="h-4 w-4 mr-1.5" />
-                  Add Patient
-                </button>
-                <div className="relative w-full md:w-64">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={() => setShowInactive(!showInactive)}
+                  className="sr-only peer"
+                />
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive Patients</span>
+              </label>
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-gray-200 my-4"></div>
-
-            {/* Filter dropdowns */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Filter dropdowns - more compact layout */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Site</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
                 <div className="relative">
                   <select
                     value={siteFilter}
                     onChange={(e) => setSiteFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Sites</option>
                     <option value="CP Greater San Antonio">CP Greater San Antonio</option>
@@ -288,18 +281,18 @@ export default function PatientsPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                   </div>
                 </div>
               </div>
 
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Building</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Building</label>
                 <div className="relative">
                   <select
                     value={buildingFilter}
                     onChange={(e) => setBuildingFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Buildings</option>
                     {buildings.map((building) => (
@@ -309,18 +302,18 @@ export default function PatientsPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                   </div>
                 </div>
               </div>
 
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
                 <div className="relative">
                   <select
                     value={monthFilter}
                     onChange={(e) => setMonthFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Months</option>
                     {months.map((month, index) => (
@@ -330,18 +323,18 @@ export default function PatientsPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                   </div>
                 </div>
               </div>
 
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
                 <div className="relative">
                   <select
                     value={yearFilter}
                     onChange={(e) => setYearFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Years</option>
                     {years.map((year) => (
@@ -351,7 +344,7 @@ export default function PatientsPage() {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                   </div>
                 </div>
               </div>

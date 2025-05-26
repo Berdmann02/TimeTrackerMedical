@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Menu, X, Users, LogOut, Building2, Activity, FileText, UserCheck, User, ChevronDown } from "lucide-react"
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +9,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, isAdmin, user } = useAuth();
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -42,6 +43,20 @@ const Navbar = () => {
     
     return `${baseClasses} ${isActivePath(path) ? activeClasses : inactiveClasses}`;
   };
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, []);
 
   return (
     <nav className="bg-white shadow-md w-full">
@@ -94,7 +109,7 @@ const Navbar = () => {
             )}
             
             {/* User Profile Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={toggleProfile}
                 className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none cursor-pointer"
