@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import type { FC } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
+import {
     Clock,
     User,
     Building2,
@@ -19,6 +19,8 @@ import {
 import { getActivityById, deleteActivity, updateActivity, getActivityTypes } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
 import { getPatientById } from '../../services/patientService';
+import { getSites, type Site } from '../../services/siteService';
+import { getBuildingsBySiteId, type Building } from '../../services/buildingService';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import axios from 'axios';
 import { API_URL } from '../../config';
@@ -79,7 +81,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             placeholder={placeholder}
                         />
                     )}
-                    
+
                     {editType === 'number' && (
                         <input
                             type="number"
@@ -94,7 +96,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             autoFocus
                         />
                     )}
-                    
+
                     {editType === 'select' && (
                         <select
                             value={value as string || ''}
@@ -107,7 +109,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             ))}
                         </select>
                     )}
-                    
+
                     {editType === 'datetime' && (
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -181,7 +183,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
 const ActivityDetailsPage: FC = () => {
     const { activityId } = useParams<{ activityId: string }>();
     const navigate = useNavigate();
-    
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activity, setActivity] = useState<Activity | null>(null);
@@ -193,6 +195,8 @@ const ActivityDetailsPage: FC = () => {
     const [activityTypes, setActivityTypes] = useState<string[]>([]);
     const [isTracking, setIsTracking] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [sites, setSites] = useState<Site[]>([]);
+    const [buildings, setBuildings] = useState<Building[]>([]);
 
     useEffect(() => {
         const fetchActivityData = async () => {
@@ -201,41 +205,49 @@ const ActivityDetailsPage: FC = () => {
                 setIsLoading(false);
                 return;
             }
-            
-            setIsLoading(true);
-            setError(null);
-            
+
             try {
+                setIsLoading(true);
+                setError(null);
+
+                // Fetch activity data
                 const activityData = await getActivityById(activityId);
-                console.log('Fetched Activity Data:', activityData);
                 
-                // Ensure we have a single activity, not an array
                 if (Array.isArray(activityData)) {
-                    throw new Error('Expected single activity but received array');
+                    setError("Unexpected data format");
+                    return;
                 }
-                
+
                 setActivity(activityData);
                 setEditedActivity(activityData);
-                
-                // Get the patient name if we have a patient ID
+
+                // Fetch patient name
                 if (activityData.patient_id) {
                     try {
-                        const patient = await getPatientById(activityData.patient_id);
-                        const fullName = `${patient.first_name} ${patient.last_name}`;
-                        setPatientName(fullName);
-                        console.log('Fetched Patient Data:', patient);
-                    } catch (patientError) {
-                        console.error("Error fetching patient data:", patientError);
+                        const patientData = await getPatientById(activityData.patient_id);
+                        setPatientName(`${patientData.first_name} ${patientData.last_name}`);
+                    } catch (patientErr) {
+                        console.error("Error fetching patient data:", patientErr);
+                        setPatientName("Unknown Patient");
                     }
                 }
 
-                // Get activity types
+                // Fetch activity types
                 try {
                     const types = await getActivityTypes();
                     setActivityTypes(types);
-                } catch (typesError) {
-                    console.error("Error fetching activity types:", typesError);
+                } catch (typesErr) {
+                    console.error("Error fetching activity types:", typesErr);
                 }
+
+                // Fetch sites
+                try {
+                    const sitesData = await getSites();
+                    setSites(sitesData);
+                } catch (sitesErr) {
+                    console.error("Error fetching sites:", sitesErr);
+                }
+
             } catch (err) {
                 console.error("Error fetching activity data:", err);
                 setError("Failed to load activity data. Please try again.");
@@ -243,9 +255,29 @@ const ActivityDetailsPage: FC = () => {
                 setIsLoading(false);
             }
         };
-        
+
         fetchActivityData();
     }, [activityId]);
+
+    // Load buildings when activity site changes or when editing starts
+    useEffect(() => {
+        const loadBuildings = async () => {
+            if (!editedActivity?.site_name || !sites.length) return;
+
+            try {
+                // Find the site by name to get its ID
+                const selectedSite = sites.find(site => site.name === editedActivity.site_name);
+                if (selectedSite) {
+                    const buildingsData = await getBuildingsBySiteId(selectedSite.id);
+                    setBuildings(buildingsData);
+                }
+            } catch (err) {
+                console.error("Error fetching buildings:", err);
+            }
+        };
+
+        loadBuildings();
+    }, [editedActivity?.site_name, sites]);
 
     const handleEdit = () => {
         // Prevent scrolling when entering edit mode
@@ -268,14 +300,14 @@ const ActivityDetailsPage: FC = () => {
 
     const handleStartTime = () => {
         if (!editedActivity) return;
-        
+
         const now = new Date().toISOString();
         setEditedActivity(prev => {
             if (!prev) return prev;
-            return { 
-                ...prev, 
+            return {
+                ...prev,
                 service_datetime: now,
-                created_at: now 
+                created_at: now
             };
         });
         setIsTracking(true);
@@ -283,16 +315,16 @@ const ActivityDetailsPage: FC = () => {
 
     const handleEndTime = () => {
         if (!isTracking || !editedActivity) return;
-        
+
         const now = new Date().toISOString();
         const startTime = editedActivity.service_datetime || editedActivity.created_at || '';
         const endTime = now;
         const durationMinutes = Math.max(0, (new Date(endTime).getTime() - new Date(startTime).getTime()) / (1000 * 60));
-        
+
         setEditedActivity(prev => {
             if (!prev) return prev;
-            return { 
-                ...prev, 
+            return {
+                ...prev,
                 end_time: endTime,
                 time_spent: durationMinutes,
                 duration_minutes: durationMinutes
@@ -303,31 +335,31 @@ const ActivityDetailsPage: FC = () => {
 
     const calculateTimeDifference = (): number => {
         if (!editedActivity) return 0;
-        
+
         // Use time_spent if available, otherwise fall back to duration_minutes
         if (editedActivity.time_spent !== undefined && typeof editedActivity.time_spent === 'number') {
             return editedActivity.time_spent;
         }
-        
+
         if (editedActivity.duration_minutes !== undefined && typeof editedActivity.duration_minutes === 'number') {
             return editedActivity.duration_minutes;
         }
-        
+
         return 0;
     };
 
     const handleSave = async () => {
         if (!activityId || !editedActivity) return;
-        
+
         setIsSaving(true);
-        
+
         try {
             // Create properly formatted data for backend
-            const timeSpent = typeof editedActivity.time_spent === 'number' ? 
-                editedActivity.time_spent : 
-                (typeof editedActivity.duration_minutes === 'number' ? 
+            const timeSpent = typeof editedActivity.time_spent === 'number' ?
+                editedActivity.time_spent :
+                (typeof editedActivity.duration_minutes === 'number' ?
                     editedActivity.duration_minutes : 0);
-            
+
             // Simplify to include only the fields the backend expects
             const updateData = {
                 id: Number(activityId),
@@ -340,7 +372,7 @@ const ActivityDetailsPage: FC = () => {
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
                 duration_minutes: timeSpent
             };
-            
+
             console.log('Updating activity with data:', updateData);
             const updatedActivity = await updateActivity(activityId, updateData);
             setActivity(updatedActivity);
@@ -356,7 +388,7 @@ const ActivityDetailsPage: FC = () => {
 
     const handleFieldChange = (field: string, value: any) => {
         if (!editedActivity) return;
-        
+
         // Special handling for personnel initials
         if (field === 'personnel_initials' || field === 'user_initials') {
             // If the value is a full name (contains a space), generate initials
@@ -368,8 +400,8 @@ const ActivityDetailsPage: FC = () => {
                     const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
                     setEditedActivity(prev => {
                         if (!prev) return prev;
-                        return { 
-                            ...prev, 
+                        return {
+                            ...prev,
                             personnel_initials: initials,
                             user_initials: initials
                         };
@@ -378,7 +410,7 @@ const ActivityDetailsPage: FC = () => {
                 }
             }
         }
-        
+
         setEditedActivity(prev => {
             if (!prev) return prev;
             return { ...prev, [field]: value };
@@ -387,11 +419,11 @@ const ActivityDetailsPage: FC = () => {
 
     const handleDelete = async () => {
         if (!activityId || !activity) return;
-        
+
         try {
             setIsDeleting(true);
             await deleteActivity(activityId);
-            
+
             // Navigate back to patient details
             if (activity.patient_id) {
                 navigate(`/patientdetails/${activity.patient_id}`);
@@ -451,7 +483,7 @@ const ActivityDetailsPage: FC = () => {
                     <div className="text-red-600 mb-4 text-5xl">!</div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Activity</h2>
                     <p className="text-gray-600 mb-4">{error || "Activity data not found"}</p>
-                    <button 
+                    <button
                         onClick={() => navigate('/patients')}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                     >
@@ -515,9 +547,8 @@ const ActivityDetailsPage: FC = () => {
                                     <button
                                         onClick={() => setShowDeleteModal(true)}
                                         disabled={isDeleting}
-                                        className={`inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium ${
-                                            isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
-                                        } bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
+                                        className={`inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium ${isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
+                                            } bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Delete
@@ -560,7 +591,7 @@ const ActivityDetailsPage: FC = () => {
                                 endTime={editedActivity.site_end_time}
                                 isEditing={isEditing}
                                 editType="select"
-                                editOptions={['CP Greater San Antonio', 'CP Intermountain']}
+                                editOptions={sites.map(site => site.name)}
                                 onEdit={(value) => handleFieldChange('site_name', value)}
                                 onStartTimeEdit={(value) => handleFieldChange('site_start_time', value)}
                                 onEndTimeEdit={(value) => handleFieldChange('site_end_time', value)}
@@ -569,18 +600,10 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Building2}
                                 label="Building"
-                                value="Main Medical Center"
+                                value={editedActivity.building || 'Main Medical Center'}
                                 isEditing={isEditing}
                                 editType="select"
-                                editOptions={[
-                                    'Main Medical Center',
-                                    'North Wing',
-                                    'South Wing',
-                                    'East Wing',
-                                    'West Wing',
-                                    'Emergency Department',
-                                    'Outpatient Clinic'
-                                ]}
+                                editOptions={buildings.map(building => building.name)}
                                 onEdit={(value) => handleFieldChange('building', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />

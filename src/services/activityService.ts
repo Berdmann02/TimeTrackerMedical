@@ -9,6 +9,7 @@ export interface CreateActivityDTO {
   activity_type: string;
   time_spent: number;
   building: string;
+  site_name?: string;
   notes?: string;
   insurance?: string;
   user_initials?: string;
@@ -57,7 +58,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       user_id: activityData.user_id,
       activity_type: activityData.activity_type,
       notes: activityData.notes || '',
-      site_name: 'CP Greater San Antonio', // Default value
+      site_name: activityData.site_name || 'CP Greater San Antonio', // Use dynamic value or fallback
       // Use both field names to ensure compatibility
       service_datetime: new Date().toISOString(),
       created_at: new Date().toISOString(),

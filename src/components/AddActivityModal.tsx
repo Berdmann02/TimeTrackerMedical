@@ -13,6 +13,8 @@ import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { getSites, type Site } from "../services/siteService";
+import { getBuildingsBySiteId, type Building } from "../services/buildingService";
 
 interface ActivityForm {
   patientId: string;
@@ -57,13 +59,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const { user } = useAuth();
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(providedPatients.length === 0);
   
   const [formData, setFormData] = useState<ActivityForm>({
     patientId: initialPatientId || "",
-    siteId: siteName === "CP Intermountain" ? "cp-intermountain" : "cp-san-antonio",
+    siteId: "",
     activityType: "",
     startTime: "",
     endTime: "",
@@ -86,7 +90,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   // Create initial form state function
   const getInitialFormState = (): ActivityForm => ({
     patientId: initialPatientId || "",
-    siteId: siteName === "CP Intermountain" ? "cp-intermountain" : "cp-san-antonio",
+    siteId: "",
     activityType: "",
     startTime: "",
     endTime: "",
@@ -112,6 +116,67 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     }
   }, [providedPatients]);
 
+  // Load initial data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadInitialData();
+    }
+  }, [isOpen]);
+
+  // Load buildings when site changes
+  useEffect(() => {
+    if (formData.siteId) {
+      loadBuildingsForSite(parseInt(formData.siteId));
+    } else {
+      setBuildings([]);
+      setFormData(prev => ({ ...prev, building: "" }));
+    }
+  }, [formData.siteId]);
+
+  // Set initial site if siteName is provided
+  useEffect(() => {
+    if (siteName && sites.length > 0) {
+      const matchingSite = sites.find(site => site.name === siteName);
+      if (matchingSite) {
+        setFormData(prev => ({ ...prev, siteId: matchingSite.id.toString() }));
+      }
+    }
+  }, [siteName, sites]);
+
+  const loadInitialData = async () => {
+    setIsLoadingData(true);
+    setError(null);
+    
+    try {
+      const [sitesData, activityTypesData, patientsData] = await Promise.all([
+        getSites(),
+        getActivityTypes(),
+        providedPatients.length > 0 ? Promise.resolve(providedPatients) : getPatients()
+      ]);
+      
+      setSites(sitesData.filter(site => site.is_active));
+      setActivityTypes(activityTypesData);
+      if (providedPatients.length === 0) {
+        setPatients(patientsData);
+      }
+    } catch (err) {
+      console.error("Error loading initial data:", err);
+      setError("Failed to load required data. Please try again.");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const loadBuildingsForSite = async (siteId: number) => {
+    try {
+      const buildingsData = await getBuildingsBySiteId(siteId);
+      setBuildings(buildingsData.filter(building => building.is_active));
+    } catch (err) {
+      console.error("Error loading buildings:", err);
+      setError("Failed to load buildings for selected site.");
+    }
+  };
+
   // Reset form completely when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -125,35 +190,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setIsSubmitting(false);
     }
   }, [isOpen, initialPatientId, siteName]);
-
-  // Fetch activity types and patients if needed
-  useEffect(() => {
-    if (!isOpen) return; // Only fetch data when modal is open
-    
-    const fetchData = async () => {
-      setError(null);
-      
-      try {
-        // Always fetch activity types
-        const activityTypesData = await getActivityTypes();
-        setActivityTypes(activityTypesData);
-        
-        // Only fetch patients if we don't have them already
-        if (patients.length === 0) {
-          setIsLoadingData(true);
-          const patientsData = await getPatients();
-          setPatients(patientsData);
-          setIsLoadingData(false);
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load required data. Please try again.");
-        setIsLoadingData(false);
-      }
-    };
-    
-    fetchData();
-  }, [isOpen, patients.length]);
 
   // Lock/unlock body scroll when modal opens/closes
   useEffect(() => {
@@ -235,7 +271,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.patientId || !formData.activityType || !formData.building) {
+    if (!formData.patientId || !formData.activityType || !formData.building || !formData.siteId) {
       alert("Please fill in all required fields");
       return;
     }
@@ -253,11 +289,16 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     setIsSubmitting(true);
     
     try {
+      // Find the selected site name
+      const selectedSite = sites.find(site => site.id.toString() === formData.siteId);
+      const siteName = selectedSite ? selectedSite.name : '';
+      
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
         user_id: user.id,
         activity_type: formData.activityType,
         building: formData.building,
+        site_name: siteName,
         time_spent: calculateTimeDifference(),
         notes: formData.notes,
         medical_checks: {
@@ -381,8 +422,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
                     required
                   >
-                    <option value="cp-san-antonio">CP Greater San Antonio</option>
-                    <option value="cp-intermountain">CP Intermountain</option>
+                    <option value="">Select Site</option>
+                    {sites.map(site => (
+                      <option key={site.id} value={site.id}>
+                        {site.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -405,9 +450,11 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     required
                   >
                     <option value="">Select Building</option>
-                    <option value="building-a">Building A</option>
-                    <option value="building-b">Building B</option>
-                    <option value="building-c">Building C</option>
+                    {buildings.map(building => (
+                      <option key={building.id} value={building.name}>
+                        {building.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
