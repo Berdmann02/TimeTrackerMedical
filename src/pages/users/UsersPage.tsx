@@ -6,6 +6,7 @@ import EditUserModal from "../../components/EditUserModal"
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
 import { getUsers, deleteUser } from "../../services/userService"
 import type { User as UserType } from "../../services/userService"
+import { useAuth } from "../../contexts/AuthContext"
 
 interface UserAccount extends Omit<UserType, 'id'> {
   id?: number;
@@ -25,6 +26,7 @@ interface EditableUser {
 
 export default function UsersPage() {
   const navigate = useNavigate()
+  const { user: currentUser } = useAuth()
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false)
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<EditableUser | null>(null)
@@ -60,14 +62,33 @@ export default function UsersPage() {
     }
   }
 
-  // Filter users based on search and role
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
-    return matchesSearch && matchesRole
-  })
+  // Filter and sort users - current user first, then alphabetically
+  const filteredUsers = users
+    .filter((user) => {
+      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           user.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesRole = roleFilter === "all" || user.role === roleFilter
+      return matchesSearch && matchesRole
+    })
+    .sort((a, b) => {
+      // Current user always comes first
+      const aIsCurrentUser = currentUser && a.email === currentUser.email
+      const bIsCurrentUser = currentUser && b.email === currentUser.email
+      
+      if (aIsCurrentUser && !bIsCurrentUser) return -1
+      if (!aIsCurrentUser && bIsCurrentUser) return 1
+      
+      // If neither or both are current user, sort alphabetically by name
+      const aName = `${a.first_name} ${a.last_name}`
+      const bName = `${b.first_name} ${b.last_name}`
+      return aName.localeCompare(bName)
+    })
+
+  // Helper function to check if user is the current user
+  const isCurrentUser = (user: UserAccount) => {
+    return currentUser && user.email === currentUser.email
+  }
 
   const handleEdit = (userId: number) => {
     const user = users.find(u => u.id === userId);
@@ -168,7 +189,8 @@ export default function UsersPage() {
                 >
                   <option value="all">All Roles</option>
                   <option value="a">Admin</option>
-                  <option value="U">User</option>
+                  <option value="n">Nurse</option>
+                  <option value="p">Pharmacist</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <Shield className="h-4 w-4 text-gray-400" />
@@ -211,11 +233,16 @@ export default function UsersPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${isCurrentUser(user) ? 'bg-blue-50' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <div className="flex items-center">
                           <User className="h-5 w-5 text-gray-400 mr-2" />
-                          {`${user.first_name} ${user.last_name}`}
+                          <span>{`${user.first_name} ${user.last_name}`}</span>
+                          {isCurrentUser(user) && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              You
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -234,7 +261,7 @@ export default function UsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.primarysite || "Not assigned"}
                       </td>
-                      <td className="px-6 py-4 whitespac  e-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
