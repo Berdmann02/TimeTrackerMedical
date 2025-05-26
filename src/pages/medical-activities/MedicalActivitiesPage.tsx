@@ -6,12 +6,12 @@ import { getActivityTypes, getActivityById, getActivitiesWithDetails } from '../
 import type { Activity } from '../../services/patientService';
 
 // Remove mock data and replace with state
-const sites = ['CP Greater San Antonio', 'CP Intermountain'];
-const months = [1,2,3,4,5,6,7,8,9,10,11,12];
-const years = [2023, 2024, 2025];
+const sites = ['All', 'CP Greater San Antonio', 'CP Intermountain'];
+const months = ['All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+const years = ['All', '2023', '2024', '2025'];
 
 const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
+  'All', 'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
@@ -29,9 +29,9 @@ interface ActivityWithPatient extends Activity {
 const MedicalActivitiesPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [siteFilter, setSiteFilter] = useState(sites[0]);
-  const [monthFilter, setMonthFilter] = useState(5);
-  const [yearFilter, setYearFilter] = useState(2025);
+  const [siteFilter, setSiteFilter] = useState('All');
+  const [monthFilter, setMonthFilter] = useState('All');
+  const [yearFilter, setYearFilter] = useState('All');
   const [sortField, setSortField] = useState<string>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -90,17 +90,17 @@ const MedicalActivitiesPage = () => {
       String(activity.id).includes(searchTerm);
     
     // Filter by site if needed
-    const matchesSite = activity.site_name === siteFilter;
+    const matchesSite = siteFilter === 'All' || activity.site_name === siteFilter;
     
     // Filter by date if needed
     const dateStr = activity.service_datetime || activity.created_at;
-    if (!dateStr) return false;
+    if (!dateStr) return matchesSearch && matchesSite;
     
     const activityDate = new Date(dateStr);
-    if (isNaN(activityDate.getTime())) return false;
+    if (isNaN(activityDate.getTime())) return matchesSearch && matchesSite;
     
-    const matchesMonth = activityDate.getMonth() + 1 === monthFilter;
-    const matchesYear = activityDate.getFullYear() === yearFilter;
+    const matchesMonth = monthFilter === 'All' || activityDate.getMonth() + 1 === Number(monthFilter);
+    const matchesYear = yearFilter === 'All' || activityDate.getFullYear() === Number(yearFilter);
 
     return matchesSearch && matchesSite && matchesMonth && matchesYear;
   });
@@ -205,7 +205,7 @@ const MedicalActivitiesPage = () => {
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onActivityAdded={handleActivityAdded}
-          siteName={siteFilter}
+          siteName={siteFilter === 'All' ? 'CP Greater San Antonio' : siteFilter}
         />
 
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
@@ -255,11 +255,11 @@ const MedicalActivitiesPage = () => {
                 <div className="relative">
                   <select
                     value={monthFilter}
-                    onChange={(e) => setMonthFilter(Number(e.target.value))}
+                    onChange={(e) => setMonthFilter(e.target.value)}
                     className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
-                    {months.map((month) => (
-                      <option key={month} value={month}>{monthNames[month-1]}</option>
+                    {months.map((month, index) => (
+                      <option key={month} value={month}>{monthNames[index]}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -272,7 +272,7 @@ const MedicalActivitiesPage = () => {
                 <div className="relative">
                   <select
                     value={yearFilter}
-                    onChange={(e) => setYearFilter(Number(e.target.value))}
+                    onChange={(e) => setYearFilter(e.target.value)}
                     className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
                     {years.map((year) => (
