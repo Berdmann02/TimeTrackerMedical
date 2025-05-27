@@ -5,6 +5,8 @@ import AddPatientModal from "../../components/AddPatientModal"
 import AddActivityModal from "../../components/AddActivityModal"
 import { getPatients } from "../../services/patientService"
 import type { Patient } from "../../services/patientService"
+import { getSites, type Site } from "../../services/siteService"
+import { getBuildingsBySiteId, type Building } from "../../services/buildingService"
 
 export default function PatientsPage() {
   const navigate = useNavigate()
@@ -29,6 +31,12 @@ export default function PatientsPage() {
   const [showInactive, setShowInactive] = useState(false)
   const [buildingFilter, setBuildingFilter] = useState<string>("all")
 
+  // State for dynamic filter data
+  const [sites, setSites] = useState<Site[]>([])
+  const [buildings, setBuildings] = useState<Building[]>([])
+  const [isLoadingSites, setIsLoadingSites] = useState(false)
+  const [isLoadingBuildings, setIsLoadingBuildings] = useState(false)
+
   // Fetch patients data
   const fetchPatientsData = async () => {
     setIsLoading(true);
@@ -45,13 +53,59 @@ export default function PatientsPage() {
     }
   };
 
+  // Fetch sites data
+  const fetchSitesData = async () => {
+    setIsLoadingSites(true);
+    try {
+      const data = await getSites();
+      setSites(data.filter(site => site.is_active));
+    } catch (err) {
+      console.error('Error fetching sites:', err);
+    } finally {
+      setIsLoadingSites(false);
+    }
+  };
+
+  // Fetch buildings data for selected site
+  const fetchBuildingsData = async (siteName: string) => {
+    if (siteName === "all") {
+      setBuildings([]);
+      setBuildingFilter("all");
+      return;
+    }
+
+    setIsLoadingBuildings(true);
+    try {
+      // Find the site by name to get its ID
+      const selectedSite = sites.find(site => site.name === siteName);
+      if (selectedSite) {
+        const data = await getBuildingsBySiteId(selectedSite.id);
+        setBuildings(data.filter(building => building.is_active));
+      }
+    } catch (err) {
+      console.error('Error fetching buildings:', err);
+    } finally {
+      setIsLoadingBuildings(false);
+    }
+  };
+
   // Initial data load
   useEffect(() => {
     fetchPatientsData();
+    fetchSitesData();
   }, []);
 
-  // Sample data for filters
-  const sites = ["CP Intermountain"]
+  // Load buildings when site filter changes
+  useEffect(() => {
+    if (siteFilter !== "all") {
+      fetchBuildingsData(siteFilter);
+    } else {
+      setBuildings([]);
+      setBuildingFilter("all");
+    }
+  }, [siteFilter, sites]);
+
+  // Static data for filters that don't need to be dynamic
   const months = [
     "January",
     "February",
@@ -67,22 +121,6 @@ export default function PatientsPage() {
     "December",
   ]
   const years = [2020, 2021, 2022, 2023, 2024, 2025]
-  const buildings = [
-    "Building A",
-    "Building B",
-    "Building C",
-    "Building D",
-    "Main Building",
-    "North Wing",
-    "South Wing",
-    "East Wing",
-    "West Wing",
-    "Administrative Building",
-    "Medical Center",
-    "Outpatient Center",
-    "Emergency Department",
-    "Surgery Center"
-  ]
 
   // Helper to get full name from first and last name
   const getFullName = (patient: Patient) => {
@@ -273,18 +311,22 @@ export default function PatientsPage() {
                   <select
                     value={siteFilter}
                     onChange={(e) => setSiteFilter(e.target.value)}
-                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    disabled={isLoadingSites}
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="all">All Sites</option>
-                    <option value="CP Greater San Antonio">CP Greater San Antonio</option>
                     {sites.map((site) => (
-                      <option key={site} value={site}>
-                        {site}
+                      <option key={site.id} value={site.name}>
+                        {site.name}
                       </option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    {isLoadingSites ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                    ) : (
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -295,17 +337,24 @@ export default function PatientsPage() {
                   <select
                     value={buildingFilter}
                     onChange={(e) => setBuildingFilter(e.target.value)}
-                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    disabled={siteFilter === "all" || isLoadingBuildings}
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    <option value="all">All Buildings</option>
+                    <option value="all">
+                      {siteFilter === "all" ? "Select a site first" : "All Buildings"}
+                    </option>
                     {buildings.map((building) => (
-                      <option key={building} value={building}>
-                        {building}
+                      <option key={building.id} value={building.name}>
+                        {building.name}
                       </option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    {isLoadingBuildings ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                    ) : (
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    )}
                   </div>
                 </div>
               </div>
