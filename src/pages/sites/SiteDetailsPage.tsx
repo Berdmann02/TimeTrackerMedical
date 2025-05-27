@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building as BuildingIcon, ChevronRight } from 'lucide-react';
+import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building as BuildingIcon, ChevronRight, Plus, SearchIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getSiteById, updateSite } from '../../services/siteService';
 import type { Site } from '../../services/siteService';
@@ -112,6 +112,7 @@ export default function SiteDetailsPage() {
     const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
     const [buildings, setBuildings] = useState<Building[]>([]);
     const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
+    const [buildingSearchTerm, setBuildingSearchTerm] = useState('');
 
     // Add state for expandable sections
     const [expandedSections, setExpandedSections] = useState({
@@ -234,13 +235,35 @@ export default function SiteDetailsPage() {
         handleAddBuilding(); // Refresh the buildings list
     };
 
+    // Filter buildings based on search term
+    const filteredBuildings = buildings.filter(building =>
+        building.name.toLowerCase().includes(buildingSearchTerm.toLowerCase())
+    );
+
     // Loading state
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading site data...</p>
+            <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+                <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => navigate('/sites')}
+                                className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                title="Back to All Sites"
+                            >
+                                <ChevronLeft className="h-5 w-5" />
+                            </button>
+                            <h1 className="text-3xl font-bold text-gray-900">Site Details</h1>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center max-h-[60vh]">
+                        <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                            <div className="text-gray-500">Loading site data...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -249,26 +272,43 @@ export default function SiteDetailsPage() {
     // Error state
     if (error || !site) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md">
-                    <div className="text-red-600 mb-4 text-5xl">!</div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Site</h2>
-                    <p className="text-gray-600 mb-4">{error || "Site data not found"}</p>
-                    <button 
-                        onClick={() => navigate('/sites')}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                    >
-                        Return to Sites List
-                    </button>
+            <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+                <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => navigate('/sites')}
+                                className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                title="Back to All Sites"
+                            >
+                                <ChevronLeft className="h-5 w-5" />
+                            </button>
+                            <h1 className="text-3xl font-bold text-gray-900">Site Details</h1>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 max-h-[60vh] flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="text-red-600 mb-4 text-5xl">!</div>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Site</h2>
+                            <p className="text-gray-600 mb-4">{error || "Site data not found"}</p>
+                            <button 
+                                onClick={() => navigate('/sites')}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                                Return to Sites List
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
-                <div className="flex items-center justify-between mb-6">
+        <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+            <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+                <div className="flex items-center justify-between mb-4 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/sites')}
@@ -277,7 +317,7 @@ export default function SiteDetailsPage() {
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
-                        <h1 className="text-2xl font-bold text-gray-900">Site Details</h1>
+                        <h1 className="text-3xl font-bold text-gray-900">Site Details</h1>
                     </div>
                     <div className="flex space-x-3">
                         {isEditing ? (
@@ -285,14 +325,14 @@ export default function SiteDetailsPage() {
                                 <button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Save className="h-4 w-4 mr-2" />
                                     {isSaving ? "Saving..." : "Save Changes"}
                                 </button>
                                 <button
                                     onClick={handleCancelEdit}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
+                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer"
                                 >
                                     <X className="h-4 w-4 mr-2" />
                                     Cancel
@@ -301,7 +341,7 @@ export default function SiteDetailsPage() {
                         ) : (
                             <button
                                 onClick={handleEditSite}
-                                className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
                             >
                                 <Pencil className="w-4 h-4 mr-2" />
                                 Edit Site
@@ -311,96 +351,94 @@ export default function SiteDetailsPage() {
                 </div>
 
                 {/* Site Information Card */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                    <div className="p-6">
-                        <div className="space-y-6">
-                            {/* Basic Information */}
-                            <div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                        <Building2 className="w-5 h-5 text-blue-600" />
-                                        Basic Information
-                                    </h2>
-                                    {isEditing ? (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm text-gray-600">Inactive</span>
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={editedSite?.is_active}
-                                                onClick={() => handleFieldChange('is_active', !editedSite?.is_active)}
+                <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
+                    <div className="space-y-6">
+                        {/* Basic Information */}
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <Building2 className="w-5 h-5 text-blue-600" />
+                                    Basic Information
+                                </h2>
+                                {isEditing ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-600">Inactive</span>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={editedSite?.is_active}
+                                            onClick={() => handleFieldChange('is_active', !editedSite?.is_active)}
+                                            className={`${
+                                                editedSite?.is_active ? 'bg-blue-600' : 'bg-gray-200'
+                                            } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                                        >
+                                            <span
+                                                aria-hidden="true"
                                                 className={`${
-                                                    editedSite?.is_active ? 'bg-blue-600' : 'bg-gray-200'
-                                                } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-                                            >
-                                                <span
-                                                    aria-hidden="true"
-                                                    className={`${
-                                                        editedSite?.is_active ? 'translate-x-5' : 'translate-x-0'
-                                                    } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-                                                />
-                                            </button>
-                                            <span className="text-sm text-gray-600">Active</span>
-                                        </div>
-                                    ) : (
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            site.is_active
-                                                ? "bg-green-100 text-green-800"
-                                                : "bg-red-100 text-red-800"
-                                        }`}>
-                                            {site.is_active ? "Active" : "Inactive"}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <DetailRow
-                                        label="Name"
-                                        value={isEditing ? editedSite?.name : site.name}
-                                        isEditing={isEditing}
-                                        editType="text"
-                                        onEdit={(value) => handleFieldChange('name', value)}
-                                    />
-                                    <DetailRow
-                                        label="Address"
-                                        value={isEditing ? editedSite?.address : site.address}
-                                        isEditing={isEditing}
-                                        editType="text"
-                                        onEdit={(value) => handleFieldChange('address', value)}
-                                    />
-                                    <DetailRow
-                                        label="City"
-                                        value={isEditing ? editedSite?.city : site.city}
-                                        isEditing={isEditing}
-                                        editType="text"
-                                        onEdit={(value) => handleFieldChange('city', value)}
-                                    />
-                                    <DetailRow
-                                        label="State"
-                                        value={isEditing ? editedSite?.state : site.state}
-                                        isEditing={isEditing}
-                                        editType="text"
-                                        onEdit={(value) => handleFieldChange('state', value)}
-                                    />
-                                    <DetailRow
-                                        label="ZIP"
-                                        value={isEditing ? editedSite?.zip : site.zip}
-                                        isEditing={isEditing}
-                                        editType="text"
-                                        onEdit={(value) => handleFieldChange('zip', value)}
-                                    />
-                                </div>
+                                                    editedSite?.is_active ? 'translate-x-5' : 'translate-x-0'
+                                                } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                                            />
+                                        </button>
+                                        <span className="text-sm text-gray-600">Active</span>
+                                    </div>
+                                ) : (
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        site.is_active
+                                            ? "bg-green-100 text-green-800"
+                                            : "bg-red-100 text-red-800"
+                                    }`}>
+                                        {site.is_active ? "Active" : "Inactive"}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <DetailRow
+                                    label="Name"
+                                    value={isEditing ? editedSite?.name : site.name}
+                                    isEditing={isEditing}
+                                    editType="text"
+                                    onEdit={(value) => handleFieldChange('name', value)}
+                                />
+                                <DetailRow
+                                    label="Address"
+                                    value={isEditing ? editedSite?.address : site.address}
+                                    isEditing={isEditing}
+                                    editType="text"
+                                    onEdit={(value) => handleFieldChange('address', value)}
+                                />
+                                <DetailRow
+                                    label="City"
+                                    value={isEditing ? editedSite?.city : site.city}
+                                    isEditing={isEditing}
+                                    editType="text"
+                                    onEdit={(value) => handleFieldChange('city', value)}
+                                />
+                                <DetailRow
+                                    label="State"
+                                    value={isEditing ? editedSite?.state : site.state}
+                                    isEditing={isEditing}
+                                    editType="text"
+                                    onEdit={(value) => handleFieldChange('state', value)}
+                                />
+                                <DetailRow
+                                    label="ZIP"
+                                    value={isEditing ? editedSite?.zip : site.zip}
+                                    isEditing={isEditing}
+                                    editType="text"
+                                    onEdit={(value) => handleFieldChange('zip', value)}
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Expandable Tables Section */}
+                {/* Buildings Section */}
                 <div className="space-y-6">
                     {/* Buildings Table */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="p-6">
+                    <div className="bg-white rounded-lg border border-gray-200">
+                        <div className={`p-4 ${expandedSections.buildings ? 'border-b border-gray-200' : ''}`}>
                             <div 
-                                className="flex justify-between items-center mb-6 cursor-pointer"
+                                className="flex justify-between items-center cursor-pointer"
                                 onClick={() => toggleSection('buildings')}
                             >
                                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -418,82 +456,99 @@ export default function SiteDetailsPage() {
                                             e.stopPropagation();
                                             setIsAddBuildingModalOpen(true);
                                         }}
-                                        className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
                                     >
+                                        <Plus className="h-4 w-4 mr-2" />
                                         Add Building
                                     </button>
                                 )}
                             </div>
+                            
                             {expandedSections.buildings && (
-                                <div className="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Building Name
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Created At
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {isLoadingBuildings ? (
-                                                <tr>
-                                                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                        <div className="flex items-center justify-center">
-                                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                                                            <span className="ml-2">Loading buildings...</span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ) : buildings.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                        No buildings found
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                buildings.map((building) => (
-                                                    <tr key={building.id}>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {building.name}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {new Date(building.created_at).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            <button
-                                                                onClick={() => handleEditBuilding(building)}
-                                                                className="text-blue-600 hover:text-blue-900 mr-4 cursor-pointer"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteBuilding(building.id)}
-                                                                className="text-red-600 hover:text-red-900 cursor-pointer"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
+                                <div className="relative w-full md:w-64 mt-4">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <SearchIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search buildings..."
+                                        value={buildingSearchTerm}
+                                        onChange={(e) => setBuildingSearchTerm(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
                                 </div>
                             )}
                         </div>
+                        
+                        {expandedSections.buildings && (
+                            <div className="overflow-auto max-h-[50vh]">
+                                <table className="min-w-full">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Building Name
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Created At
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {isLoadingBuildings ? (
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                    <div className="flex items-center justify-center">
+                                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                                        <span className="ml-2">Loading buildings...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : filteredBuildings.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                    {buildingSearchTerm ? 'No buildings found matching your search' : 'No buildings found'}
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredBuildings.map((building) => (
+                                                <tr key={building.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {building.name}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {new Date(building.created_at).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <button
+                                                            onClick={() => handleEditBuilding(building)}
+                                                            className="text-blue-600 hover:text-blue-900 mr-4 cursor-pointer transition-colors"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteBuilding(building.id)}
+                                                            className="text-red-600 hover:text-red-900 cursor-pointer transition-colors"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
 
                     {/* Employees Table */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="p-6">
+                    <div className="bg-white rounded-lg border border-gray-200">
+                        <div className={`p-4 ${expandedSections.employees ? 'border-b border-gray-200' : ''}`}>
                             <div 
-                                className="flex justify-between items-center mb-6 cursor-pointer"
+                                className="flex justify-between items-center cursor-pointer"
                                 onClick={() => toggleSection('employees')}
                             >
                                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -507,52 +562,54 @@ export default function SiteDetailsPage() {
                                 </h2>
                                 {expandedSections.employees && (
                                     <button
-                                        className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
                                     >
+                                        <Plus className="h-4 w-4 mr-2" />
                                         Add Employee
                                     </button>
                                 )}
                             </div>
-                            {expandedSections.employees && (
-                                <div className="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Name
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Role
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Department
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                    No employees found
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
                         </div>
+                        
+                        {expandedSections.employees && (
+                            <div className="overflow-auto max-h-[50vh]">
+                                <table className="min-w-full">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Name
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Role
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Department
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                No employees found
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
 
                     {/* Patients Table */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="p-6">
+                    <div className="bg-white rounded-lg border border-gray-200">
+                        <div className={`p-4 ${expandedSections.patients ? 'border-b border-gray-200' : ''}`}>
                             <div 
-                                className="flex justify-between items-center mb-6 cursor-pointer"
+                                className="flex justify-between items-center cursor-pointer"
                                 onClick={() => toggleSection('patients')}
                             >
                                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -581,46 +638,48 @@ export default function SiteDetailsPage() {
                                         </div>
 
                                         <button
-                                            className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
                                         >
+                                            <Plus className="h-4 w-4 mr-2" />
                                             Add Patient
                                         </button>
                                     </div>
                                 )}
                             </div>
-                            {expandedSections.patients && (
-                                <div className="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Name
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Building
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Last Activity
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                    No patients found
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
                         </div>
+                        
+                        {expandedSections.patients && (
+                            <div className="overflow-auto max-h-[50vh]">
+                                <table className="min-w-full">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Name
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Building
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Last Activity
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                No patients found
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
