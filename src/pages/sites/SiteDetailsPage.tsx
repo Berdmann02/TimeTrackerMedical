@@ -264,9 +264,9 @@ export default function SiteDetailsPage() {
     // Loading state
     if (isLoading) {
         return (
-            <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-                <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
-                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100">
+                <div className="px-4 py-6 max-w-7xl mx-auto w-full">
+                    <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => navigate('/sites')}
@@ -293,9 +293,9 @@ export default function SiteDetailsPage() {
     // Error state
     if (error || !site) {
         return (
-            <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-                <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
-                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100">
+                <div className="px-4 py-6 max-w-7xl mx-auto w-full">
+                    <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => navigate('/sites')}
@@ -327,9 +327,9 @@ export default function SiteDetailsPage() {
     }
 
     return (
-        <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-            <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
-                <div className="flex items-center justify-between mb-4 flex-shrink-0">
+        <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100">
+            <div className="px-4 py-6 max-w-7xl mx-auto w-full">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/sites')}
@@ -372,7 +372,7 @@ export default function SiteDetailsPage() {
                 </div>
 
                 {/* Site Information Card */}
-                <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
                     <div className="space-y-6">
                         {/* Basic Information */}
                         <div>
@@ -502,7 +502,7 @@ export default function SiteDetailsPage() {
                         </div>
                         
                         {expandedSections.buildings && (
-                            <div className="overflow-auto max-h-[50vh] table-container">
+                            <div className="overflow-auto max-h-96 table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
@@ -596,7 +596,7 @@ export default function SiteDetailsPage() {
                         </div>
                         
                         {expandedSections.employees && (
-                            <div className="overflow-auto max-h-[50vh] table-container">
+                            <div className="overflow-auto max-h-96 table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
@@ -673,7 +673,7 @@ export default function SiteDetailsPage() {
                         </div>
                         
                         {expandedSections.patients && (
-                            <div className="overflow-auto max-h-[50vh] table-container">
+                            <div className="overflow-auto max-h-96 table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>

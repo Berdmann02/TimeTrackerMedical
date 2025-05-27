@@ -2,7 +2,7 @@ import type React from "react"
 import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
-import { QuickAdminLogin } from "../../components/QuickAdminLogin"
+import { QuickAdminLogin } from "../../components/layout/QuickAdminLogin"
 
 interface FormData {
   email: string
