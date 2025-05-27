@@ -64,7 +64,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-            <img src="/public/logo.png" alt="MediTrack Time Logo" className="w-32 h-32 object-contain mb-6" />
+              <span className="text-blue-600 font-bold text-xl">MediTrackTime</span>
             </Link>
           </div>
 

@@ -5,6 +5,7 @@ import { getSiteById, updateSite } from '../../services/siteService';
 import type { Site } from '../../services/siteService';
 import { AddBuildingModal } from '../../components/AddBuildingModal';
 import { EditBuildingModal } from '../../components/EditBuildingModal';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { getBuildingsBySiteId, deleteBuilding, type Building } from '../../services/buildingService';
 
 // DetailRow component for editable fields that maintains original UI
@@ -113,6 +114,9 @@ export default function SiteDetailsPage() {
     const [buildings, setBuildings] = useState<Building[]>([]);
     const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
     const [buildingSearchTerm, setBuildingSearchTerm] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [buildingToDelete, setBuildingToDelete] = useState<Building | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Add state for expandable sections
     const [expandedSections, setExpandedSections] = useState({
@@ -218,6 +222,23 @@ export default function SiteDetailsPage() {
         } catch (err) {
             console.error("Error deleting building:", err);
             alert("Failed to delete building. Please try again.");
+        }
+    };
+
+    const confirmDeleteBuilding = async () => {
+        if (!buildingToDelete) return;
+        
+        setIsDeleting(true);
+        try {
+            await deleteBuilding(buildingToDelete.id);
+            await handleAddBuilding(); // Refresh the list
+            setIsDeleteModalOpen(false);
+            setBuildingToDelete(null);
+        } catch (err) {
+            console.error("Error deleting building:", err);
+            alert("Failed to delete building. Please try again.");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -529,7 +550,10 @@ export default function SiteDetailsPage() {
                                                             Edit
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteBuilding(building.id)}
+                                                            onClick={() => {
+                                                                setBuildingToDelete(building);
+                                                                setIsDeleteModalOpen(true);
+                                                            }}
                                                             className="text-red-600 hover:text-red-900 cursor-pointer transition-colors"
                                                         >
                                                             Delete
@@ -698,6 +722,18 @@ export default function SiteDetailsPage() {
                 onClose={handleCloseEditModal}
                 building={selectedBuilding}
                 onBuildingUpdated={handleBuildingUpdated}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setBuildingToDelete(null);
+                }}
+                onConfirm={confirmDeleteBuilding}
+                isDeleting={isDeleting}
+                itemName={buildingToDelete?.name || 'building'}
             />
         </div>
     );
