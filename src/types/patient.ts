@@ -18,6 +18,7 @@ export interface Patient {
   fallSinceLastVisit?: boolean
   useAntipsychotic?: boolean
   useOpioids?: boolean
+  notes?: string
 }
 
 export interface Activity {

@@ -13,17 +13,13 @@ import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { getSites, type Site } from "../services/siteService";
-import { getBuildingsBySiteId, type Building } from "../services/buildingService";
 
 interface ActivityForm {
   patientId: string;
-  siteId: string;
   activityType: string;
   startTime: string;
   endTime: string;
   notes: string;
-  building: string;
   medicalChecks: {
     medicalRecords: boolean;
     bpAtGoal: boolean;
@@ -42,7 +38,6 @@ interface AddActivityModalProps {
   onActivityAdded?: () => void;
   patientId?: string;
   patientName?: string;
-  siteName?: string;
   // Optional patients list to avoid loading
   patients?: Patient[];
 }
@@ -53,26 +48,21 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   onActivityAdded,
   patientId: initialPatientId,
   patientName,
-  siteName,
   patients: providedPatients = [] 
 }) => {
   const { user } = useAuth();
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
-  const [buildings, setBuildings] = useState<Building[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(providedPatients.length === 0);
   
   const [formData, setFormData] = useState<ActivityForm>({
     patientId: initialPatientId || "",
-    siteId: "",
     activityType: "",
     startTime: "",
     endTime: "",
     notes: "",
-    building: "",
     medicalChecks: {
       medicalRecords: false,
       bpAtGoal: false,
@@ -90,12 +80,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   // Create initial form state function
   const getInitialFormState = (): ActivityForm => ({
     patientId: initialPatientId || "",
-    siteId: "",
     activityType: "",
     startTime: "",
     endTime: "",
     notes: "",
-    building: "",
     medicalChecks: {
       medicalRecords: false,
       bpAtGoal: false,
@@ -123,38 +111,16 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     }
   }, [isOpen]);
 
-  // Load buildings when site changes
-  useEffect(() => {
-    if (formData.siteId) {
-      loadBuildingsForSite(parseInt(formData.siteId));
-    } else {
-      setBuildings([]);
-      setFormData(prev => ({ ...prev, building: "" }));
-    }
-  }, [formData.siteId]);
-
-  // Set initial site if siteName is provided
-  useEffect(() => {
-    if (siteName && sites.length > 0) {
-      const matchingSite = sites.find(site => site.name === siteName);
-      if (matchingSite) {
-        setFormData(prev => ({ ...prev, siteId: matchingSite.id.toString() }));
-      }
-    }
-  }, [siteName, sites]);
-
   const loadInitialData = async () => {
     setIsLoadingData(true);
     setError(null);
     
     try {
-      const [sitesData, activityTypesData, patientsData] = await Promise.all([
-        getSites(),
+      const [activityTypesData, patientsData] = await Promise.all([
         getActivityTypes(),
         providedPatients.length > 0 ? Promise.resolve(providedPatients) : getPatients()
       ]);
       
-      setSites(sitesData.filter(site => site.is_active));
       setActivityTypes(activityTypesData);
       if (providedPatients.length === 0) {
         setPatients(patientsData);
@@ -164,16 +130,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setError("Failed to load required data. Please try again.");
     } finally {
       setIsLoadingData(false);
-    }
-  };
-
-  const loadBuildingsForSite = async (siteId: number) => {
-    try {
-      const buildingsData = await getBuildingsBySiteId(siteId);
-      setBuildings(buildingsData.filter(building => building.is_active));
-    } catch (err) {
-      console.error("Error loading buildings:", err);
-      setError("Failed to load buildings for selected site.");
     }
   };
 
@@ -189,7 +145,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       // Reset submission state
       setIsSubmitting(false);
     }
-  }, [isOpen, initialPatientId, siteName]);
+  }, [isOpen, initialPatientId]);
 
   // Lock/unlock body scroll when modal opens/closes
   useEffect(() => {
@@ -271,7 +227,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.patientId || !formData.activityType || !formData.building || !formData.siteId) {
+    if (!formData.patientId || !formData.activityType) {
       alert("Please fill in all required fields");
       return;
     }
@@ -289,16 +245,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Find the selected site name
-      const selectedSite = sites.find(site => site.id.toString() === formData.siteId);
-      const siteName = selectedSite ? selectedSite.name : '';
-      
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
         user_id: user.id,
         activity_type: formData.activityType,
-        building: formData.building,
-        site_name: siteName,
+        building: "",
+        site_name: "",
         time_spent: calculateTimeDifference(),
         notes: formData.notes,
         medical_checks: {
@@ -381,9 +333,9 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Patient and Site Section */}
+              {/* Patient and Activity Type Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Patient - Always allow selection */}
+                {/* Patient Selection */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700">
                     <span className="flex items-center">
@@ -402,57 +354,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     {patients.map(patient => (
                       <option key={patient.id} value={patient.id}>
                         {patient.last_name}, {patient.first_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Site */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
-                      Site Location
-                    </span>
-                  </label>
-                  <select
-                    name="siteId"
-                    value={formData.siteId}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                    required
-                  >
-                    <option value="">Select Site</option>
-                    {sites.map(site => (
-                      <option key={site.id} value={site.id}>
-                        {site.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Building and Activity Type Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Building Selection */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
-                      Building
-                    </span>
-                  </label>
-                  <select
-                    name="building"
-                    value={formData.building}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                    required
-                  >
-                    <option value="">Select Building</option>
-                    {buildings.map(building => (
-                      <option key={building.id} value={building.name}>
-                        {building.name}
                       </option>
                     ))}
                   </select>

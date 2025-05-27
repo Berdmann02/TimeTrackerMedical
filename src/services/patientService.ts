@@ -23,6 +23,7 @@ export interface Patient {
   fall_since_last_visit?: boolean;
   use_antipsychotic?: boolean;
   use_opioids?: boolean;
+  notes?: string | null;
 }
 
 export interface Activity {

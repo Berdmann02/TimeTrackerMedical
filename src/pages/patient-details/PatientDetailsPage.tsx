@@ -15,7 +15,7 @@ interface DetailRowProps {
     value: string | boolean | number | null | undefined;
     isEditing?: boolean;
     onEdit?: (value: any) => void;
-    editType?: 'text' | 'date' | 'select' | 'checkbox' | 'readonly';
+    editType?: 'text' | 'date' | 'select' | 'checkbox' | 'readonly' | 'textarea';
     editOptions?: string[];
     className?: string;
 }
@@ -44,13 +44,21 @@ const DetailRow: React.FC<DetailRowProps> = memo(({
     const renderEditField = () => {
         if (!isEditing || editType === 'readonly') {
             return (
-                <p className={`text-gray-900 ${className}`}>
+                <p className={`text-gray-900 ${className} whitespace-pre-wrap`}>
                     {renderValue()}
                 </p>
             );
         }
 
         switch (editType) {
+            case 'textarea':
+                return (
+                    <textarea
+                        value={value as string || ''}
+                        onChange={(e) => onEdit && onEdit(e.target.value)}
+                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 h-full min-h-[100px] resize-none"
+                    />
+                );
             case 'text':
                 return (
                     <input
@@ -425,10 +433,10 @@ export default function PatientDetailsPage() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
+                <div className="grid grid-cols-4 gap-6">
+                  <div className="col-span-1">
                     {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-4">
                         <DetailRow
                           label="First Name"
                           value={editedPatient?.first_name}
@@ -452,60 +460,80 @@ export default function PatientDetailsPage() {
                         </p>
                       </div>
                     )}
+                    <div className="mt-6">
+                      <DetailRow
+                        label="Birth Date"
+                        value={isEditing ? editedPatient?.birthdate : patientData?.patient.birthDate}
+                        isEditing={isEditing}
+                        editType="date"
+                        onEdit={(value) => handleFieldChange('birthdate', value)}
+                      />
+                    </div>
                   </div>
-                  <DetailRow
-                    label="Birth Date"
-                    value={isEditing ? editedPatient?.birthdate : patientData?.patient.birthDate}
-                    isEditing={isEditing}
-                    editType="date"
-                    onEdit={(value) => handleFieldChange('birthdate', value)}
-                  />
-                  <DetailRow
-                    label="Gender"
-                    value={isEditing ? editedPatient?.gender : patientData?.patient.gender}
-                    isEditing={isEditing}
-                    editType="select"
-                    editOptions={['Male', 'Female', 'Other']}
-                    onEdit={(value) => handleFieldChange('gender', value)}
-                  />
-                  <DetailRow
-                    label="Site Name"
-                    value={isEditing ? editedPatient?.site_name : patientData?.patient.siteName}
-                    isEditing={isEditing}
-                    editType="select"
-                    editOptions={['CP Greater San Antonio', 'CP Intermountain']}
-                    onEdit={(value) => handleFieldChange('site_name', value)}
-                  />
-                  <DetailRow
-                    label="Building"
-                    value={isEditing ? editedPatient?.building : patientData?.patient.building}
-                    isEditing={isEditing}
-                    editType="select"
-                    editOptions={[
-                      'Building A',
-                      'Building B',
-                      'Building C',
-                      'Building D',
-                      'Main Building',
-                      'North Wing',
-                      'South Wing',
-                      'East Wing',
-                      'West Wing',
-                      'Administrative Building',
-                      'Medical Center',
-                      'Outpatient Center',
-                      'Emergency Department',
-                      'Surgery Center'
-                    ]}
-                    onEdit={(value) => handleFieldChange('building', value)}
-                  />
-                  <DetailRow
-                    label="Insurance"
-                    value={isEditing ? editedPatient?.insurance : patientData?.patient.insurance}
-                    isEditing={isEditing}
-                    editType="text"
-                    onEdit={(value) => handleFieldChange('insurance', value)}
-                  />
+                  <div className="col-span-1">
+                    <DetailRow
+                      label="Site Name"
+                      value={isEditing ? editedPatient?.site_name : patientData?.patient.siteName}
+                      isEditing={isEditing}
+                      editType="select"
+                      editOptions={['CP Greater San Antonio', 'CP Intermountain']}
+                      onEdit={(value) => handleFieldChange('site_name', value)}
+                    />
+                    <div className="mt-6">
+                      <DetailRow
+                        label="Building"
+                        value={isEditing ? editedPatient?.building : patientData?.patient.building}
+                        isEditing={isEditing}
+                        editType="select"
+                        editOptions={[
+                          'Building A',
+                          'Building B',
+                          'Building C',
+                          'Building D',
+                          'Main Building',
+                          'North Wing',
+                          'South Wing',
+                          'East Wing',
+                          'West Wing',
+                          'Administrative Building',
+                          'Medical Center',
+                          'Outpatient Center',
+                          'Emergency Department',
+                          'Surgery Center'
+                        ]}
+                        onEdit={(value) => handleFieldChange('building', value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-1">
+                    <DetailRow
+                      label="Gender"
+                      value={isEditing ? editedPatient?.gender : patientData?.patient.gender}
+                      isEditing={isEditing}
+                      editType="select"
+                      editOptions={['Male', 'Female', 'Other']}
+                      onEdit={(value) => handleFieldChange('gender', value)}
+                    />
+                    <div className="mt-6">
+                      <DetailRow
+                        label="Insurance"
+                        value={isEditing ? editedPatient?.insurance : patientData?.patient.insurance}
+                        isEditing={isEditing}
+                        editType="text"
+                        onEdit={(value) => handleFieldChange('insurance', value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-1 row-span-2">
+                    <DetailRow
+                      label="Notes"
+                      value={isEditing ? editedPatient?.notes : patientData?.patient.notes}
+                      isEditing={isEditing}
+                      editType="textarea"
+                      onEdit={(value) => handleFieldChange('notes', value)}
+                      className="h-full"
+                    />
+                  </div>
                 </div>
               </div>
 
