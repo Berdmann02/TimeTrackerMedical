@@ -95,8 +95,8 @@ export default function UsersPage() {
       
       switch (sortField) {
         case 'name':
-          aValue = `${a.first_name} ${a.last_name}`
-          bValue = `${b.first_name} ${b.last_name}`
+          aValue = `${a.first_name.charAt(0).toUpperCase() + a.first_name.slice(1).toLowerCase()} ${a.last_name.charAt(0).toUpperCase() + a.last_name.slice(1).toLowerCase()}`
+          bValue = `${b.first_name.charAt(0).toUpperCase() + b.first_name.slice(1).toLowerCase()} ${b.last_name.charAt(0).toUpperCase() + b.last_name.slice(1).toLowerCase()}`
           break
         case 'email':
           aValue = a.email
@@ -115,8 +115,8 @@ export default function UsersPage() {
           bValue = b.created_at ? new Date(b.created_at).getTime() : 0
           break
         default:
-          aValue = `${a.first_name} ${a.last_name}`
-          bValue = `${b.first_name} ${b.last_name}`
+          aValue = `${a.first_name.charAt(0).toUpperCase() + a.first_name.slice(1).toLowerCase()} ${a.last_name.charAt(0).toUpperCase() + a.last_name.slice(1).toLowerCase()}`
+          bValue = `${b.first_name.charAt(0).toUpperCase() + b.first_name.slice(1).toLowerCase()} ${b.last_name.charAt(0).toUpperCase() + b.last_name.slice(1).toLowerCase()}`
       }
       
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -380,7 +380,7 @@ export default function UsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <div className="flex items-center">
                           <User className="h-5 w-5 text-gray-400 mr-2" />
-                          <span>{`${user.first_name} ${user.last_name}`}</span>
+                          <span>{`${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()} ${user.last_name.charAt(0).toUpperCase() + user.last_name.slice(1).toLowerCase()}`}</span>
                           {isCurrentUser(user) && (
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                               You
@@ -482,7 +482,7 @@ export default function UsersPage() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
-        itemName={userToDelete ? `${userToDelete.first_name} ${userToDelete.last_name}` : 'user'}
+        itemName={userToDelete ? `${userToDelete.first_name.charAt(0).toUpperCase() + userToDelete.first_name.slice(1).toLowerCase()} ${userToDelete.last_name.charAt(0).toUpperCase() + userToDelete.last_name.slice(1).toLowerCase()}` : 'user'}
       />
     </div>
   )
