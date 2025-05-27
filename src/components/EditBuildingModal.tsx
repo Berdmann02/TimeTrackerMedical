@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { Building2 } from 'lucide-react';
+import { Building2, X } from 'lucide-react';
 import { updateBuilding, type Building } from '../services/buildingService';
 
 // Helper function to capitalize first letter of each word
@@ -29,6 +27,19 @@ export const EditBuildingModal: React.FC<EditBuildingModalProps> = ({
   const [buildingName, setBuildingName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Add effect to manage body scroll
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Update form when building prop changes
   useEffect(() => {
@@ -76,69 +87,91 @@ export const EditBuildingModal: React.FC<EditBuildingModalProps> = ({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-md w-full rounded-lg bg-white shadow-xl">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <Dialog.Title className="text-lg font-medium text-gray-900">
-              Edit Building
-            </Dialog.Title>
+    <div 
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
+      onClick={handleClose}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header Section */}
+        <div className="p-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-gray-400" />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Edit Building
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Modify building details
+                </p>
+              </div>
+            </div>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none"
+              className="text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <X className="h-6 w-6" />
             </button>
           </div>
+        </div>
 
-          <div className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  <span className="flex items-center">
-                    <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                    Building Name
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={buildingName}
-                  onChange={(e) => setBuildingName(capitalizeWords(e.target.value))}
-                  className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
-                  required
-                  placeholder="Enter building name"
-                />
+        {/* Form Content */}
+        <div className="p-6 pt-0 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
+            )}
 
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSubmitting ? 'Updating...' : 'Update Building'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </Dialog.Panel>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Building Name
+              </label>
+              <input
+                type="text"
+                value={buildingName}
+                onChange={(e) => setBuildingName(capitalizeWords(e.target.value))}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                required
+                placeholder="Enter building name"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  'Update Building'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </Dialog>
+    </div>
   );
 }; 

@@ -468,13 +468,13 @@ export default function SiteDetailsPage() {
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             <button
                                                                 onClick={() => handleEditBuilding(building)}
-                                                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                                                className="text-blue-600 hover:text-blue-900 mr-4 cursor-pointer"
                                                             >
                                                                 Edit
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteBuilding(building.id)}
-                                                                className="text-red-600 hover:text-red-900"
+                                                                className="text-red-600 hover:text-red-900 cursor-pointer"
                                                             >
                                                                 Delete
                                                             </button>
