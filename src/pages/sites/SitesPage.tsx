@@ -38,6 +38,13 @@ const SitesPage: React.FC = () => {
   // Get unique states for filter
   const states = Array.from(new Set(sites.map(site => site.state))).sort();
 
+  // Helper function to capitalize site names
+  const capitalizeSiteName = (name: string) => {
+    return name.split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+  };
+
   // Filtering and sorting
   const filteredSites = sites.filter((site) => {
     const matchesSearch =
@@ -328,7 +335,7 @@ const SitesPage: React.FC = () => {
                       onClick={() => handleSiteClick(site.id)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-900 hover:underline">
-                        {site.name}
+                        {capitalizeSiteName(site.name)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{site.address}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{site.city}</td>
