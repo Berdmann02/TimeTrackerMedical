@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { User, Calendar, Building2, MapPin, X } from 'lucide-react';
-import {createPatient,type CreatePatientDTO} from '../services/patientService';
-
-
+import { createPatient, type CreatePatientDTO } from '../services/patientService';
+import { getSites, type Site } from '../services/siteService';
+import { getBuildingsBySiteId, type Building } from '../services/buildingService';
 
 interface AddPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPatientAdded?: () => void;
+  defaultSite?: string;
 }
 
 interface PatientFormData {
@@ -21,48 +22,74 @@ interface PatientFormData {
   notes: string;
 }
 
-const siteOptions = [
-  { id: 'cpgsa', name: 'CP Greater San Antonio' },
-  { id: 'cpim', name: 'CP Intermountain' }
-];
-
-const buildingOptions = {
-  cpgsa: [
-    { id: 'med1', name: 'Medical Building 1' },
-    { id: 'med2', name: 'Medical Building 2' },
-    { id: 'rehab1', name: 'Rehabilitation Center' },
-    { id: 'spec1', name: 'Specialty Care Center' },
-    { id: 'emer1', name: 'Emergency Care Unit' },
-    { id: 'peds1', name: 'Pediatric Center' }
-  ],
-  cpim: [
-    { id: 'main', name: 'Main Hospital' },
-    { id: 'clinic1', name: 'Outpatient Clinic' },
-    { id: 'therapy', name: 'Therapy Center' },
-    { id: 'diag1', name: 'Diagnostic Center' },
-    { id: 'surg1', name: 'Surgical Center' },
-    { id: 'rehab2', name: 'Rehabilitation Wing' }
-  ]
-};
-
-const getSiteNameById = (siteId: string): string => {
-  const site = siteOptions.find(site => site.id === siteId);
-  return site ? site.name : '';
-};
-
-const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalProps) => {
+const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPatientModalProps) => {
   const [formData, setFormData] = useState<PatientFormData>({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
     gender: 'M',
-    siteId: 'cpgsa',
+    siteId: defaultSite || '',
     building: '',
     insurance: '',
     notes: ''
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [isLoadingSites, setIsLoadingSites] = useState(false);
+  const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
+
+  // Fetch sites
+  useEffect(() => {
+    const fetchSites = async () => {
+      setIsLoadingSites(true);
+      try {
+        const sitesData = await getSites();
+        setSites(sitesData.filter(site => site.is_active));
+        
+        // If defaultSite is provided, find its ID and set it
+        if (defaultSite) {
+          const defaultSiteObj = sitesData.find(site => site.name === defaultSite);
+          if (defaultSiteObj) {
+            setFormData(prev => ({
+              ...prev,
+              siteId: defaultSiteObj.id.toString()
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching sites:', err);
+        setError('Failed to load sites. Please try again.');
+      } finally {
+        setIsLoadingSites(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchSites();
+    }
+  }, [isOpen, defaultSite]);
+
+  // Fetch buildings when site changes
+  useEffect(() => {
+    const fetchBuildings = async () => {
+      if (!formData.siteId) return;
+      
+      setIsLoadingBuildings(true);
+      try {
+        const buildingsData = await getBuildingsBySiteId(parseInt(formData.siteId));
+        setBuildings(buildingsData.filter(building => building.is_active));
+      } catch (err) {
+        console.error('Error fetching buildings:', err);
+      } finally {
+        setIsLoadingBuildings(false);
+      }
+    };
+
+    fetchBuildings();
+  }, [formData.siteId]);
 
   // Update scroll lock effect
   useEffect(() => {
@@ -90,6 +117,16 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
     };
   }, [isOpen]);
 
+  // Update formData when defaultSite changes
+  useEffect(() => {
+    if (defaultSite) {
+      setFormData(prev => ({
+        ...prev,
+        siteId: defaultSite
+      }));
+    }
+  }, [defaultSite]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -102,7 +139,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
         last_name: formData.lastName,
         birthdate: formData.dateOfBirth,
         gender: formData.gender,
-        site_name: getSiteNameById(formData.siteId),
+        site_name: sites.find(site => site.id.toString() === formData.siteId)?.name || '',
         insurance: formData.insurance,
         is_active: true
       };
@@ -262,10 +299,12 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="siteId"
                   value={formData.siteId}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
+                  disabled={isLoadingSites}
                 >
-                  {siteOptions.map(site => (
+                  <option value="">Select a site</option>
+                  {sites.map(site => (
                     <option key={site.id} value={site.id}>
                       {site.name}
                     </option>
@@ -285,12 +324,12 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded }: AddPatientModalPro
                   name="building"
                   value={formData.building}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer"
-                  disabled={!formData.siteId}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={!formData.siteId || isLoadingBuildings}
                 >
                   <option value="">Select a building</option>
-                  {formData.siteId && buildingOptions[formData.siteId as keyof typeof buildingOptions].map(building => (
-                    <option key={building.id} value={building.id}>
+                  {buildings.map(building => (
+                    <option key={building.id} value={building.name}>
                       {building.name}
                     </option>
                   ))}
