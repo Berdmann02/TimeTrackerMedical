@@ -567,13 +567,17 @@ export default function PatientsPage() {
                           {getGenderDisplay(patient.gender)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <button
-                            onClick={() => handleAddActivity(patient)}
-                            className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
-                          >
-                            <PlusIcon className="h-3 w-3 mr-1" />
-                            Add Activity
-                          </button>
+                          {patient.is_active ? (
+                            <button
+                              onClick={() => handleAddActivity(patient)}
+                              className="inline-flex items-center px-2.5 py-1.5 border border-blue-500 text-xs font-medium rounded text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                            >
+                              <PlusIcon className="h-3 w-3 mr-1" />
+                              Add Activity
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">Patient Inactive</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.site_name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.building || '-'}</td>

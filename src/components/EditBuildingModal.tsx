@@ -4,6 +4,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Building2 } from 'lucide-react';
 import { updateBuilding, type Building } from '../services/buildingService';
 
+// Helper function to capitalize first letter of each word
+const capitalizeWords = (str: string): string => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 interface EditBuildingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -103,7 +112,7 @@ export const EditBuildingModal: React.FC<EditBuildingModalProps> = ({
                 <input
                   type="text"
                   value={buildingName}
-                  onChange={(e) => setBuildingName(e.target.value)}
+                  onChange={(e) => setBuildingName(capitalizeWords(e.target.value))}
                   className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-text hover:bg-gray-100 transition-colors"
                   required
                   placeholder="Enter building name"

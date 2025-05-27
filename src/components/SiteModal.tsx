@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Building2, X } from 'lucide-react';
 import type { Site, CreateSiteDto, UpdateSiteDto } from '../services/siteService';
 
+// Helper function to capitalize first letter of each word
+const capitalizeWords = (str: string): string => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 interface SiteModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -66,9 +75,13 @@ const SiteModal = ({ isOpen, onClose, site, mode, onSubmit }: SiteModalProps) =>
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+    
+    // Apply capitalization to the site name
+    const processedValue = name === 'name' ? capitalizeWords(value) : value;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : processedValue
     }));
   };
 

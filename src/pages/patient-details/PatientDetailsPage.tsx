@@ -729,13 +729,15 @@ export default function PatientDetailsPage() {
                   </div>
                 </div>
 
-                <button
-                  className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
-                  onClick={handleAddActivity}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Activity
-                </button>
+                {patientData?.patient.isActivePatient && (
+                  <button
+                    className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                    onClick={handleAddActivity}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Activity
+                  </button>
+                )}
               </div>
             </div>
             
