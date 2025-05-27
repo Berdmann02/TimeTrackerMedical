@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building as BuildingIcon, ChevronRight, Plus, SearchIcon } from 'lucide-react';
+import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building as BuildingIcon, ChevronRight, Plus, SearchIcon, Trash } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getSiteById, updateSite } from '../../services/siteService';
 import type { Site } from '../../services/siteService';
@@ -7,6 +7,10 @@ import { AddBuildingModal } from '../../components/AddBuildingModal';
 import { EditBuildingModal } from '../../components/EditBuildingModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { getBuildingsBySiteId, deleteBuilding, type Building } from '../../services/buildingService';
+import { getUsersBySite, type User } from '../../services/userService';
+import AddUserModal from '../../components/AddUserModal';
+import EditUserModal from '../../components/EditUserModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 // DetailRow component for editable fields that maintains original UI
 interface DetailRowProps {
@@ -98,9 +102,21 @@ const DetailRow: React.FC<DetailRowProps> = React.memo(({
     );
 });
 
+// Add type for transformed user
+interface TransformedUser {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    email: string;
+    role: "admin" | "nurse" | "pharmacist";
+    primarySite?: string;
+    assignedSites?: string[];
+}
+
 export default function SiteDetailsPage() {
     const navigate = useNavigate();
     const { siteId } = useParams<{ siteId: string }>();
+    const { user: currentUser } = useAuth();
     
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -117,12 +133,55 @@ export default function SiteDetailsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [buildingToDelete, setBuildingToDelete] = useState<Building | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+    const [userSearchTerm, setUserSearchTerm] = useState('');
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+    const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<TransformedUser | null>(null);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [isDeletingUser, setIsDeletingUser] = useState(false);
 
     // Add state for expandable sections
     const [expandedSections, setExpandedSections] = useState({
         buildings: true,
-        employees: true,
+        users: true,
         patients: true
+    });
+
+    // Helper function to check if user is the current user - moved up here
+    const isCurrentUser = (user: User) => {
+        return currentUser && user.email === currentUser.email;
+    };
+
+    // Function to get full role name
+    const getFullRoleName = (role: string): string => {
+        switch (role.toLowerCase()) {
+            case 'a':
+                return 'Admin';
+            case 'p':
+                return 'Pharmacist';
+            case 'n':
+                return 'Nurse';
+            default:
+                return role;
+        }
+    };
+
+    // Filter users based on search term
+    const filteredUsers = users.filter(user =>
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+    ).sort((a, b) => {
+        // Current user always comes first
+        const aIsCurrentUser = isCurrentUser(a);
+        const bIsCurrentUser = isCurrentUser(b);
+        
+        if (aIsCurrentUser && !bIsCurrentUser) return -1;
+        if (!aIsCurrentUser && bIsCurrentUser) return 1;
+        
+        // If neither is current user, maintain alphabetical order
+        return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
     });
 
     useEffect(() => {
@@ -155,6 +214,25 @@ export default function SiteDetailsPage() {
             handleAddBuilding();
         }
     }, [siteId, expandedSections.buildings]);
+
+    // Add useEffect for fetching users
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (!site?.name || !expandedSections.users) return;
+            
+            setIsLoadingUsers(true);
+            try {
+                const siteUsers = await getUsersBySite(site.name);
+                setUsers(siteUsers);
+            } catch (err) {
+                console.error("Error fetching users:", err);
+            } finally {
+                setIsLoadingUsers(false);
+            }
+        };
+
+        fetchUsers();
+    }, [site?.name, expandedSections.users]);
 
     const handleEditSite = () => {
         setIsEditing(true);
@@ -254,6 +332,51 @@ export default function SiteDetailsPage() {
 
     const handleBuildingUpdated = () => {
         handleAddBuilding(); // Refresh the buildings list
+    };
+
+    // User handlers
+    const handleEditUser = (user: User) => {
+        const transformedUser = {
+            id: user.id?.toString(),
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+            role: user.role as "admin" | "nurse" | "pharmacist",
+            primarySite: user.primarysite,
+            assignedSites: user.assignedsites
+        };
+        setSelectedUser(transformedUser);
+        setIsEditUserModalOpen(true);
+    };
+
+    const handleCloseEditUserModal = () => {
+        setIsEditUserModalOpen(false);
+        setSelectedUser(null);
+    };
+
+    const handleUserUpdated = () => {
+        // Refresh the users list
+        if (site?.name) {
+            getUsersBySite(site.name).then(setUsers);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        
+        setIsDeletingUser(true);
+        try {
+            // Add your delete user API call here
+            // await deleteUser(userToDelete.id);
+            await handleUserUpdated(); // Refresh the list
+            setIsDeleteModalOpen(false);
+            setUserToDelete(null);
+        } catch (err) {
+            console.error("Error deleting user:", err);
+            alert("Failed to delete user. Please try again.");
+        } finally {
+            setIsDeletingUser(false);
+        }
     };
 
     // Filter buildings based on search term
@@ -543,21 +666,25 @@ export default function SiteDetailsPage() {
                                                         {new Date(building.created_at).toLocaleDateString()}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        <button
-                                                            onClick={() => handleEditBuilding(building)}
-                                                            className="text-blue-600 hover:text-blue-900 mr-4 cursor-pointer transition-colors"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setBuildingToDelete(building);
-                                                                setIsDeleteModalOpen(true);
-                                                            }}
-                                                            className="text-red-600 hover:text-red-900 cursor-pointer transition-colors"
-                                                        >
-                                                            Delete
-                                                        </button>
+                                                        <div className="flex space-x-3">
+                                                            <button
+                                                                onClick={() => handleEditBuilding(building)}
+                                                                className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
+                                                                title="Edit building"
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setBuildingToDelete(building);
+                                                                    setIsDeleteModalOpen(true);
+                                                                }}
+                                                                className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
+                                                                title="Delete building"
+                                                            >
+                                                                <Trash className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))
@@ -568,34 +695,53 @@ export default function SiteDetailsPage() {
                         )}
                     </div>
 
-                    {/* Employees Table */}
+                    {/* Users Table */}
                     <div className="bg-white rounded-lg border border-gray-200">
-                        <div className={`p-4 ${expandedSections.employees ? 'border-b border-gray-200' : ''}`}>
+                        <div className={`p-4 ${expandedSections.users ? 'border-b border-gray-200' : ''}`}>
                             <div 
                                 className="flex justify-between items-center cursor-pointer"
-                                onClick={() => toggleSection('employees')}
+                                onClick={() => toggleSection('users')}
                             >
                                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                     <Users className="w-5 h-5 text-blue-600" />
-                                    Employees
-                                    {expandedSections.employees ? (
+                                    Users
+                                    {expandedSections.users ? (
                                         <ChevronDownIcon className="w-5 h-5 text-gray-500" />
                                     ) : (
                                         <ChevronRight className="w-5 h-5 text-gray-500" />
                                     )}
                                 </h2>
-                                {expandedSections.employees && (
+                                {expandedSections.users && (
                                     <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsAddUserModalOpen(true);
+                                        }}
                                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Add Employee
+                                        Add User
                                     </button>
                                 )}
                             </div>
+                            
+                            {expandedSections.users && (
+                                <div className="relative w-full md:w-64 mt-4">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <SearchIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search users..."
+                                        value={userSearchTerm}
+                                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
+                                </div>
+                            )}
                         </div>
                         
-                        {expandedSections.employees && (
+                        {expandedSections.users && (
                             <div className="overflow-auto max-h-96 table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
@@ -604,13 +750,13 @@ export default function SiteDetailsPage() {
                                                 Name
                                             </th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Email
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Role
                                             </th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Department
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
+                                                Site Type
                                             </th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Actions
@@ -618,11 +764,67 @@ export default function SiteDetailsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                No employees found
-                                            </td>
-                                        </tr>
+                                        {isLoadingUsers ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                    <div className="flex items-center justify-center">
+                                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                                        <span className="ml-2">Loading users...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : filteredUsers.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                    {userSearchTerm ? 'No users found matching your search' : 'No users found'}
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredUsers.map((user) => (
+                                                <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${isCurrentUser(user) ? 'bg-blue-50' : ''}`}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        <div className="flex items-center">
+                                                            {`${user.first_name} ${user.last_name}`}
+                                                            {isCurrentUser(user) && (
+                                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                                    You
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {user.email}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {getFullRoleName(user.role)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {user.primarysite === site?.name ? 'Primary' : 'Assigned'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <div className="flex space-x-3">
+                                                            <button
+                                                                onClick={() => handleEditUser(user)}
+                                                                className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
+                                                                title="Edit user"
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setUserToDelete(user);
+                                                                    setIsDeleteModalOpen(true);
+                                                                }}
+                                                                className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
+                                                                title="Delete user"
+                                                            >
+                                                                <Trash className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -724,16 +926,32 @@ export default function SiteDetailsPage() {
                 onBuildingUpdated={handleBuildingUpdated}
             />
 
-            {/* Delete Confirmation Modal */}
+            {/* Add User Modal */}
+            <AddUserModal
+                isOpen={isAddUserModalOpen}
+                onClose={() => setIsAddUserModalOpen(false)}
+                onUserAdded={handleUserUpdated}
+                defaultPrimarySite={site?.name}
+            />
+
+            {/* Edit User Modal */}
+            <EditUserModal
+                isOpen={isEditUserModalOpen}
+                onClose={handleCloseEditUserModal}
+                user={selectedUser}
+                onUserUpdated={handleUserUpdated}
+            />
+
+            {/* Delete User Confirmation Modal */}
             <DeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
+                isOpen={isDeleteModalOpen && userToDelete !== null}
                 onClose={() => {
                     setIsDeleteModalOpen(false);
-                    setBuildingToDelete(null);
+                    setUserToDelete(null);
                 }}
-                onConfirm={confirmDeleteBuilding}
-                isDeleting={isDeleting}
-                itemName={buildingToDelete?.name || 'building'}
+                onConfirm={handleDeleteUser}
+                isDeleting={isDeletingUser}
+                itemName={userToDelete ? `user ${userToDelete.first_name} ${userToDelete.last_name}` : 'user'}
             />
         </div>
     );

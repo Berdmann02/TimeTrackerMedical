@@ -7,6 +7,7 @@ interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUserAdded?: () => void;
+  defaultPrimarySite?: string;
 }
 
 interface UserFormData {
@@ -20,7 +21,7 @@ interface UserFormData {
   assignedSites: string[];
 }
 
-const AddUserModal = ({ isOpen, onClose, onUserAdded }: AddUserModalProps) => {
+const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddUserModalProps) => {
   const initialFormData: UserFormData = {
     firstName: "",
     lastName: "",
@@ -28,8 +29,8 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded }: AddUserModalProps) => {
     password: "",
     confirmPassword: "",
     role: "nurse" as "admin" | "nurse" | "pharmacist",
-    primarySite: "",
-    assignedSites: [],
+    primarySite: defaultPrimarySite || "",
+    assignedSites: defaultPrimarySite ? [defaultPrimarySite] : [],
   };
 
   const [formData, setFormData] = useState<UserFormData>(initialFormData);

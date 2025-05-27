@@ -85,4 +85,17 @@ export const deleteUser = async (id:number| string): Promise<void> => {
     }
 }
 
+export const getUsersBySite = async (siteName: string): Promise<User[]> => {
+    try {
+        const allUsers = await getUsers();
+        return allUsers.filter(user => 
+            user.primarysite === siteName || 
+            user.assignedsites.includes(siteName)
+        );
+    } catch (error) {
+        console.error(`Error fetching users for site ${siteName}:`, error);
+        throw error;
+    }
+}
+
 
