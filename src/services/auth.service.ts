@@ -77,12 +77,12 @@ class AuthService {
 
   // Check if user is nurse
   isNurse(): boolean {
-    return this.getUserRole() === 'nurse';
+    return this.getUserRole() === 'n';
   }
 
   // Check if user is pharmacist
   isPharmacist(): boolean {
-    return this.getUserRole() === 'pharmacist';
+    return this.getUserRole() === 'p';
   }
 
   // Get stored token

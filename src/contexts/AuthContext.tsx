@@ -17,6 +17,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isNurse: boolean;
+  isPharmacist: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -73,6 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isAdmin: authService.isAdmin(),
+        isNurse: authService.isNurse(),
+        isPharmacist: authService.isPharmacist(),
         isLoading,
         login,
         logout

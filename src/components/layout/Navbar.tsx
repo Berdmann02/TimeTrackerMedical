@@ -8,7 +8,7 @@ const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, isAdmin, user } = useAuth();
+  const { logout, isAdmin, isNurse, isPharmacist, user } = useAuth();
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
@@ -134,6 +134,16 @@ const Navbar = () => {
                           Administrator
                         </span>
                       )}
+                      {isNurse && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mt-1">
+                          Nurse
+                        </span>
+                      )}
+                      {isPharmacist && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
+                          Pharmacist
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={handleLogout}
@@ -228,6 +238,16 @@ const Navbar = () => {
                     {isAdmin && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                         Administrator
+                      </span>
+                    )}
+                    {isNurse && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mt-1">
+                        Nurse
+                      </span>
+                    )}
+                    {isPharmacist && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
+                        Pharmacist
                       </span>
                     )}
                   </div>
