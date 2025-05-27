@@ -151,9 +151,9 @@ export default function SiteDetailsPage() {
 
     // Add state for expandable sections
     const [expandedSections, setExpandedSections] = useState({
-        buildings: true,
-        users: true,
-        patients: true
+        buildings: false,
+        users: false,
+        patients: false
     });
 
     // Helper function to check if user is the current user - moved up here
@@ -632,10 +632,10 @@ export default function SiteDetailsPage() {
                 </div>
 
                 {/* Buildings Section */}
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="bg-white rounded-lg border border-gray-200 mb-4">
                     <div className={`p-6 ${expandedSections.buildings ? 'border-b border-gray-200' : ''}`}>
                         <div 
-                            className="flex justify-between items-center cursor-pointer mb-6"
+                            className="flex justify-between items-center cursor-pointer"
                             onClick={() => toggleSection('buildings')}
                         >
                             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -672,9 +672,12 @@ export default function SiteDetailsPage() {
                                 </div>
                             )}
                         </div>
+                    </div>
                         
-                        {expandedSections.buildings && (
-                            <div className="overflow-auto max-h-96 table-container">
+                    {expandedSections.buildings && (
+                        <div className="flex flex-col max-h-[60vh] min-h-0">
+                            {/* Scrollable Table with Fixed Header */}
+                            <div className="flex-1 overflow-auto min-h-0 table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
@@ -741,15 +744,35 @@ export default function SiteDetailsPage() {
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Table Footer - Fixed */}
+                            <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                                <div className="flex-1 flex justify-between sm:hidden">
+                                    <span className="text-sm text-gray-700">Buildings</span>
+                                </div>
+                                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-700">
+                                            Showing <span className="font-medium">{filteredBuildings.length}</span> of{" "}
+                                            <span className="font-medium">{filteredBuildings.length}</span> buildings
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">
+                                            Scroll to view more buildings
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Users Section */}
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div className="bg-white rounded-lg border border-gray-200 mb-4">
                     <div className={`p-6 ${expandedSections.users ? 'border-b border-gray-200' : ''}`}>
                         <div 
-                            className="flex justify-between items-center cursor-pointer mb-6"
+                            className="flex justify-between items-center cursor-pointer"
                             onClick={() => toggleSection('users')}
                         >
                             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -786,9 +809,12 @@ export default function SiteDetailsPage() {
                                 </div>
                             )}
                         </div>
+                    </div>
                         
-                        {expandedSections.users && (
-                            <div className="overflow-auto max-h-96 table-container">
+                    {expandedSections.users && (
+                        <div className="flex flex-col max-h-[60vh] min-h-0">
+                            {/* Scrollable Table with Fixed Header */}
+                            <div className="flex-1 overflow-auto min-h-0 table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
@@ -876,13 +902,33 @@ export default function SiteDetailsPage() {
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Table Footer - Fixed */}
+                            <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                                <div className="flex-1 flex justify-between sm:hidden">
+                                    <span className="text-sm text-gray-700">Users</span>
+                                </div>
+                                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-700">
+                                            Showing <span className="font-medium">{filteredUsers.length}</span> of{" "}
+                                            <span className="font-medium">{filteredUsers.length}</span> users
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">
+                                            Scroll to view more users
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Patients Section */}
                 <div className="bg-white rounded-lg border border-gray-200">
-                    <div className={`p-4 ${expandedSections.patients ? 'border-b border-gray-200' : ''}`}>
+                    <div className={`p-6 ${expandedSections.patients ? 'border-b border-gray-200' : ''}`}>
                         <div 
                             className="flex justify-between items-center cursor-pointer"
                             onClick={() => toggleSection('patients')}
@@ -941,73 +987,96 @@ export default function SiteDetailsPage() {
                     </div>
                     
                     {expandedSections.patients && (
-                        <div className="overflow-auto max-h-96 table-container">
-                            <table className="min-w-full">
-                                <thead className="bg-gray-50 sticky top-0 z-10">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Name
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Building
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Last Activity
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {isLoadingPatients ? (
+                        <div className="flex flex-col max-h-[60vh] min-h-0">
+                            {/* Scrollable Table with Fixed Header */}
+                            <div className="flex-1 overflow-auto min-h-0 table-container">
+                                <table className="min-w-full">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                <div className="flex items-center justify-center">
-                                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                                                    <span className="ml-2">Loading patients...</span>
-                                                </div>
-                                            </td>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Name
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Building
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Last Activity
+                                            </th>
                                         </tr>
-                                    ) : filteredPatients.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
-                                                {patientSearchTerm || patientStatusFilter !== 'all' 
-                                                    ? 'No patients found matching your search criteria' 
-                                                    : 'No patients found for this site'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredPatients.map((patient) => (
-                                            <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                    <button
-                                                        onClick={() => navigate(`/patientdetails/${patient.id}`)}
-                                                        className="text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                                                    >
-                                                        {`${patient.first_name} ${patient.last_name}`}
-                                                    </button>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {patient.building || 'Not assigned'}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                        patient.is_active
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {patient.is_active ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {new Date(patient.created_at).toLocaleDateString()}
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {isLoadingPatients ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                    <div className="flex items-center justify-center">
+                                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                                        <span className="ml-2">Loading patients...</span>
+                                                    </div>
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                        ) : filteredPatients.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                                                    {patientSearchTerm || patientStatusFilter !== 'all' 
+                                                        ? 'No patients found matching your search criteria' 
+                                                        : 'No patients found for this site'}
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredPatients.map((patient) => (
+                                                <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        <button
+                                                            onClick={() => navigate(`/patientdetails/${patient.id}`)}
+                                                            className="text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                                        >
+                                                            {`${patient.first_name} ${patient.last_name}`}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {patient.building || 'Not assigned'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                            patient.is_active
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-red-100 text-red-800'
+                                                        }`}>
+                                                            {patient.is_active ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {new Date(patient.created_at).toLocaleDateString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Table Footer - Fixed */}
+                            <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                                <div className="flex-1 flex justify-between sm:hidden">
+                                    <span className="text-sm text-gray-700">Patients</span>
+                                </div>
+                                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-700">
+                                            Showing <span className="font-medium">{filteredPatients.length}</span> of{" "}
+                                            <span className="font-medium">{filteredPatients.length}</span> patients
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">
+                                            Scroll to view more patients
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
