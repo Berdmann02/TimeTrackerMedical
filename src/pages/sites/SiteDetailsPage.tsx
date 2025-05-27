@@ -810,16 +810,18 @@ export default function SiteDetailsPage() {
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setUserToDelete(user);
-                                                                    setIsDeleteModalOpen(true);
-                                                                }}
-                                                                className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
-                                                                title="Delete user"
-                                                            >
-                                                                <Trash className="h-4 w-4" />
-                                                            </button>
+                                                            {!isCurrentUser(user) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setUserToDelete(user);
+                                                                        setIsDeleteModalOpen(true);
+                                                                    }}
+                                                                    className="text-red-600 hover:text-red-900 transition-colors cursor-pointer"
+                                                                    title="Delete user"
+                                                                >
+                                                                    <Trash className="h-4 w-4" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
