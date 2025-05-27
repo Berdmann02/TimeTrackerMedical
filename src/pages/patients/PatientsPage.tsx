@@ -431,7 +431,7 @@ export default function PatientsPage() {
         {!isLoading && !error && (
           <div className="bg-white rounded-lg border border-gray-200 flex flex-col max-h-[60vh] min-h-0">
             {/* Scrollable Table with Fixed Header */}
-            <div className="flex-1 overflow-auto min-h-0">
+            <div className="flex-1 overflow-auto min-h-0 table-container">
               <table className="min-w-full">
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>

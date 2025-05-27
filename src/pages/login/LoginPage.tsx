@@ -79,7 +79,7 @@ export default function LoginPage() {
       <div className="container mx-auto px-4 py-8 max-w-md">
         <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-lg">
           <div className="flex flex-col items-center mb-8">
-            <img src="/public/logo.png" alt="MediTrack Time Logo" className="w-36 h-36 object-contain mb-4" />
+            <img src="/public/logo.png" alt="MediTrack Time Logo" className="w-32 h-32 object-contain mb-6" />
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
               <p className="mt-2 text-sm text-gray-600">Sign in to your account to continue</p>

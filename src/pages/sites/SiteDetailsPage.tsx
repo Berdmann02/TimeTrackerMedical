@@ -481,7 +481,7 @@ export default function SiteDetailsPage() {
                         </div>
                         
                         {expandedSections.buildings && (
-                            <div className="overflow-auto max-h-[50vh]">
+                            <div className="overflow-auto max-h-[50vh] table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
@@ -572,7 +572,7 @@ export default function SiteDetailsPage() {
                         </div>
                         
                         {expandedSections.employees && (
-                            <div className="overflow-auto max-h-[50vh]">
+                            <div className="overflow-auto max-h-[50vh] table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
@@ -649,7 +649,7 @@ export default function SiteDetailsPage() {
                         </div>
                         
                         {expandedSections.patients && (
-                            <div className="overflow-auto max-h-[50vh]">
+                            <div className="overflow-auto max-h-[50vh] table-container">
                                 <table className="min-w-full">
                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                         <tr>
