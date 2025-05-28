@@ -140,6 +140,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPa
         birthdate: formData.dateOfBirth,
         gender: formData.gender,
         site_name: sites.find(site => site.id.toString() === formData.siteId)?.name || '',
+        building: formData.building || undefined,
         insurance: formData.insurance,
         is_active: true
       };

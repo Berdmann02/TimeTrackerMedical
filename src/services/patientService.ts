@@ -59,6 +59,7 @@ export interface CreatePatientDTO {
   birthdate: string;
   gender: string;
   site_name: string;
+  building?: string;
   is_active: boolean;
   phone_number?: string;
   contact_name?: string;
