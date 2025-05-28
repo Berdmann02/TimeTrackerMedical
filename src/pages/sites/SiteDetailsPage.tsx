@@ -286,13 +286,37 @@ export default function SiteDetailsPage() {
         setIsSaving(true);
         
         try {
-            const updatedSite = await updateSite(parseInt(siteId, 10), editedSite);
+            // Only send editable fields, exclude read-only fields
+            const updateData = {
+                name: editedSite.name,
+                address: editedSite.address,
+                city: editedSite.city,
+                state: editedSite.state,
+                zip: editedSite.zip,
+                is_active: editedSite.is_active
+            };
+            
+            console.log('Updating site with data:', updateData);
+            const updatedSite = await updateSite(parseInt(siteId, 10), updateData);
+            console.log('Site updated successfully:', updatedSite);
+            
             setSite(updatedSite);
             setEditedSite(updatedSite);
             setIsEditing(false);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error updating site:", err);
-            alert("Failed to update site. Please try again.");
+            
+            // Provide more specific error messages
+            let errorMessage = "Failed to update site. Please try again.";
+            if (err.response?.status === 404) {
+                errorMessage = "Site not found. Please refresh the page and try again.";
+            } else if (err.response?.status === 400) {
+                errorMessage = "Invalid site data. Please check your inputs and try again.";
+            } else if (err.response?.data?.message) {
+                errorMessage = `Failed to update site: ${err.response.data.message}`;
+            }
+            
+            alert(errorMessage);
         } finally {
             setIsSaving(false);
         }

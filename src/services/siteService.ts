@@ -57,7 +57,7 @@ export const getSiteByName = async (name: string): Promise<Site> => {
 
 export const updateSite = async (id: number, data: Partial<CreateSiteDto>): Promise<Site> => {
   try {
-    const response = await axios.patch(`${API_URL}/sites/${id}`, data);
+    const response = await axios.put(`${API_URL}/sites/${id}`, data);
     return response.data;
   } catch (error) {
     console.error('Error updating site:', error);
