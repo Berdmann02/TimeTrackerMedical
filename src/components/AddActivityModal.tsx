@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaHospital,
   FaClipboardList,
@@ -38,6 +38,7 @@ interface AddActivityModalProps {
   onActivityAdded?: () => void;
   patientId?: string;
   patientName?: string;
+  siteName?: string;
   // Optional patients list to avoid loading
   patients?: Patient[];
 }
@@ -48,6 +49,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   onActivityAdded,
   patientId: initialPatientId,
   patientName,
+  siteName,
   patients: providedPatients = [] 
 }) => {
   const { user } = useAuth();
@@ -56,6 +58,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(providedPatients.length === 0);
+  const prevIsOpen = useRef(isOpen);
   
   const [formData, setFormData] = useState<ActivityForm>({
     patientId: initialPatientId || "",
@@ -104,12 +107,21 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     }
   }, [providedPatients]);
 
-  // Load initial data when modal opens
+  // Load initial data when modal opens and reset form when modal closes
   useEffect(() => {
-    if (isOpen) {
+    // If modal was open and is now closed, reset the form
+    if (prevIsOpen.current && !isOpen) {
+      setFormData(getInitialFormState());
+      setIsTracking(false);
+      setError(null);
+      setIsSubmitting(false);
+    }
+    // If modal is opened, load initial data
+    if (isOpen && !prevIsOpen.current) {
       loadInitialData();
     }
-  }, [isOpen]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, initialPatientId]);
 
   const loadInitialData = async () => {
     setIsLoadingData(true);
@@ -132,20 +144,6 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setIsLoadingData(false);
     }
   };
-
-  // Reset form completely when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      // Reset all form data to initial state
-      setFormData(getInitialFormState());
-      // Reset tracking state
-      setIsTracking(false);
-      // Clear any errors
-      setError(null);
-      // Reset submission state
-      setIsSubmitting(false);
-    }
-  }, [isOpen, initialPatientId]);
 
   // Lock/unlock body scroll when modal opens/closes
   useEffect(() => {
@@ -250,7 +248,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         user_id: user.id,
         activity_type: formData.activityType,
         building: "",
-        site_name: "",
+        site_name: siteName || "",
         time_spent: calculateTimeDifference(),
         notes: formData.notes,
         medical_checks: {
@@ -345,7 +343,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     name="patientId"
                     value={formData.patientId}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
                     required
                   >
                     <option value="">Select Patient</option>
@@ -369,7 +367,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     name="activityType"
                     value={formData.activityType}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
                     required
                   >
                     <option value="">Select Activity Type</option>
@@ -623,7 +621,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                           name="startTime"
                           value={formData.startTime.slice(0, 16)} // Format for datetime-local input
                           onChange={handleInputChange}
-                          className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
+                          className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
                         />
                       </div>
                     )}
@@ -658,7 +656,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                           name="endTime"
                           value={formData.endTime.slice(0, 16)} // Format for datetime-local input
                           onChange={handleInputChange}
-                          className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
+                          className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
                         />
                       </div>
                     )}
@@ -688,7 +686,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                   value={formData.notes}
                   onChange={handleInputChange}
                   rows={3}
-                  className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm resize-none hover:bg-gray-100 transition-colors"
+                  className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm resize-none hover:bg-gray-100 transition-colors"
                   placeholder="Add any relevant details or observations..."
                 />
               </div>

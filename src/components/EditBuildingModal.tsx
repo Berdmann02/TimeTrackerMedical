@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Building2, X } from 'lucide-react';
 import { updateBuilding, type Building } from '../services/buildingService';
 
@@ -27,6 +27,17 @@ export const EditBuildingModal: React.FC<EditBuildingModalProps> = ({
   const [buildingName, setBuildingName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const prevIsOpen = useRef(isOpen);
+
+  // Reset error when modal is closed
+  useEffect(() => {
+    // If modal was open and is now closed, reset error
+    if (prevIsOpen.current && !isOpen) {
+      setError(null);
+      setIsSubmitting(false);
+    }
+    prevIsOpen.current = isOpen;
+  }, [isOpen]);
 
   // Add effect to manage body scroll
   useEffect(() => {
@@ -83,7 +94,6 @@ export const EditBuildingModal: React.FC<EditBuildingModalProps> = ({
   };
 
   const handleClose = () => {
-    setError(null);
     onClose();
   };
 
@@ -136,7 +146,7 @@ export const EditBuildingModal: React.FC<EditBuildingModalProps> = ({
                 type="text"
                 value={buildingName}
                 onChange={(e) => setBuildingName(capitalizeWords(e.target.value))}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                 required
                 placeholder="Enter building name"
               />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createSite } from '../services/siteService';
 import { toast } from 'react-hot-toast';
 import { X, Building2 } from 'lucide-react';
@@ -33,13 +33,27 @@ interface CreateSiteDto extends SiteFormData {
 
 const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdded }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<SiteFormData>({
+  const prevIsOpen = useRef(isOpen);
+  
+  const initialFormData: SiteFormData = {
     name: '',
     address: '',
     city: '',
     state: '',
     zip: '',
-  });
+  };
+
+  const [formData, setFormData] = useState<SiteFormData>(initialFormData);
+
+  // Reset form when modal is closed
+  useEffect(() => {
+    // If modal was open and is now closed, reset the form
+    if (prevIsOpen.current && !isOpen) {
+      setFormData(initialFormData);
+      setIsSubmitting(false);
+    }
+    prevIsOpen.current = isOpen;
+  }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,14 +77,6 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
       toast.success('Site created successfully');
       onSiteAdded();
       onClose();
-      // Reset form
-      setFormData({
-        name: '',
-        address: '',
-        city: '',
-        state: '',
-        zip: '',
-      });
     } catch (error) {
       console.error('Error creating site:', error);
       toast.error('Failed to create site');
@@ -93,7 +99,6 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                <Building2 className="h-6 w-6 mr-2" />
                 Add New Site
               </h2>
               <p className="mt-1 text-sm text-gray-600">
@@ -120,7 +125,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                 placeholder="Enter site name"
               />
             </div>
@@ -136,7 +141,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
                 value={formData.address}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                 placeholder="Enter street address"
               />
             </div>
@@ -153,7 +158,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
                   value={formData.city}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   placeholder="Enter city"
                 />
               </div>
@@ -168,7 +173,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
                   value={formData.state}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   placeholder="Enter state"
                 />
               </div>
@@ -183,7 +188,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onSiteAdde
                   value={formData.zip}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   placeholder="Enter ZIP code"
                 />
               </div>
