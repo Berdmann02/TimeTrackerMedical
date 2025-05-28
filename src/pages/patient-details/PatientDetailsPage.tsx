@@ -1,10 +1,11 @@
 import { useState, useEffect, memo } from "react"
-import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon } from "lucide-react"
+import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate, useParams } from "react-router-dom"
 import { getPatientById, getPatientActivities, updatePatient } from "../../services/patientService"
 import type { Patient, Activity as ApiActivity } from "../../services/patientService"
 import AddActivityModal from "../../components/AddActivityModal"
+import StatusHistoryModal from "../../components/StatusHistoryModal"
 import axios from "axios"
 import { API_URL } from "../../config"
 
@@ -123,6 +124,88 @@ const DetailRow: React.FC<DetailRowProps> = memo(({
     );
 });
 
+// Add this interface before LastUpdatedModalProps
+interface StatusUpdate {
+  field: string;
+  activityId: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+interface LastUpdatedModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  updates: StatusUpdate[];
+}
+
+const LastUpdatedModal: React.FC<LastUpdatedModalProps> = ({ isOpen, onClose, updates }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="p-6">
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <Clock className="h-6 w-6 mr-2" />
+                Status Update History
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                View the history of updates to patient status fields and associated activities.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 transition-colors cursor-pointer"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Updates List */}
+          <div className="space-y-4">
+            {updates.map((update, index) => (
+              <div 
+                key={index} 
+                className="p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">{update.field}</h3>
+                    <p className="text-sm text-gray-600 mt-1">Updated by {update.updatedBy}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-blue-600">Activity #{update.activityId}</p>
+                    <p className="text-sm text-gray-500 mt-1">{update.updatedAt}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
   const { patientId } = useParams<{ patientId: string }>()
@@ -135,6 +218,7 @@ export default function PatientDetailsPage() {
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLastUpdatedModalOpen, setIsLastUpdatedModalOpen] = useState(false)
 
   // Add new state variables for activity sorting and filtering
   const [activitySortField, setActivitySortField] = useState<"activityId" | "activityType" | "initials" | "recordDate" | "totalTime" | null>(null)
@@ -148,6 +232,28 @@ export default function PatientDetailsPage() {
     "July", "August", "September", "October", "November", "December"
   ]
   const years = [2020, 2021, 2022, 2023, 2024, 2025]
+
+  // Add this mock data - would be replaced with real data later
+  const statusUpdates: StatusUpdate[] = [
+    {
+      field: "BP at Goal",
+      activityId: "12345",
+      updatedAt: "2024-03-15",
+      updatedBy: "Dr. Smith"
+    },
+    {
+      field: "Medical Records",
+      activityId: "12346",
+      updatedAt: "2024-03-14",
+      updatedBy: "Nurse Johnson"
+    },
+    {
+      field: "Fall Since Last Visit",
+      activityId: "12347",
+      updatedAt: "2024-03-13",
+      updatedBy: "Dr. Brown"
+    }
+  ];
 
   // Fetch patient data and activities
   useEffect(() => {
@@ -538,10 +644,20 @@ export default function PatientDetailsPage() {
               </div>
 
               <div className="border-t border-gray-200 pt-6">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                  <Heart className="w-5 h-5 text-blue-600" />
-                  Patient Status
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-blue-600" />
+                    Patient Status
+                  </h2>
+                  <button
+                    onClick={() => setIsLastUpdatedModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md transition-colors"
+                  >
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    <span>Last Updated</span>
+                    <span className="text-blue-600 font-medium">#{statusUpdates[0].activityId}</span>
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Medical Status */}
                   <div>
@@ -922,6 +1038,13 @@ export default function PatientDetailsPage() {
         </div>
       </div>
 
+      {/* Last Updated Modal */}
+      <StatusHistoryModal
+        isOpen={isLastUpdatedModalOpen}
+        onClose={() => setIsLastUpdatedModalOpen(false)}
+        updates={statusUpdates}
+      />
+
       {/* Add Activity Modal */}
       <AddActivityModal
         isOpen={isAddActivityModalOpen}
@@ -929,7 +1052,6 @@ export default function PatientDetailsPage() {
         onActivityAdded={handleActivityAdded}
         patientId={patientId}
         patientName={patientFullName}
-        siteName={patientData.patient.siteName}
       />
     </div>
   )

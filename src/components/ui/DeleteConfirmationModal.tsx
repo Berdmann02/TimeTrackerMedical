@@ -34,11 +34,9 @@ export const DeleteConfirmationModal = ({
   return (
     <div 
       className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
-      onClick={onClose}
     >
       <div 
         className="bg-white rounded-lg shadow-xl w-full max-w-md"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header Section */}
