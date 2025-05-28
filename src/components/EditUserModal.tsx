@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Shield, X } from 'lucide-react';
 import { updateUser, type User as UserType } from "../services/userService";
 import { getAllSiteNames } from "../services/siteService";
@@ -43,6 +43,20 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sitesError, setSitesError] = useState<string | null>(null);
+  const prevIsOpen = useRef(isOpen);
+
+  // Reset form when modal is closed
+  useEffect(() => {
+    // If modal was open and is now closed, reset the form
+    if (prevIsOpen.current && !isOpen) {
+      setFormData(initialFormData);
+      setError(null);
+      setIsSubmitting(false);
+      setSites([]);
+      setSitesError(null);
+    }
+    prevIsOpen.current = isOpen;
+  }, [isOpen]);
 
   // Reset and populate form when user data changes
   useEffect(() => {
@@ -204,7 +218,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   required
                   placeholder="John"
                 />
@@ -218,7 +232,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   required
                   placeholder="Doe"
                 />
@@ -235,7 +249,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                 required
                 placeholder="user@example.com"
               />
@@ -251,7 +265,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                   name="primarySite"
                   value={formData.primarySite}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
                   required
                   disabled={isLoading}
                 >
@@ -291,7 +305,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                             type="checkbox"
                             checked={formData.assignedSites.includes(site)}
                             onChange={() => handleSiteCheckbox(site)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
                           />
                           <span className="ml-2 text-gray-700">{site}</span>
                         </label>
@@ -314,7 +328,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 cursor-pointer appearance-none"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
                 required
               >
                 <option value="admin">Admin</option>
