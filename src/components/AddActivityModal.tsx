@@ -182,6 +182,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
           ...prev,
           [name]: isoString
         }));
+      } else {
+        // Handle empty value
+        setFormData(prev => ({
+          ...prev,
+          [name]: ""
+        }));
       }
     } else {
       // Default handling for other inputs
@@ -243,6 +249,19 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     } else {
       return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
     }
+  };
+
+  // Helper function to format ISO string to datetime-local format
+  const formatDateTimeLocal = (isoString: string): string => {
+    if (!isoString) return "";
+    
+    const date = new Date(isoString);
+    // Get local timezone offset and adjust
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    
+    // Format to YYYY-MM-DDTHH:MM (datetime-local format)
+    return localDate.toISOString().slice(0, 16);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -644,7 +663,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                         <input
                           type="datetime-local"
                           name="startTime"
-                          value={formData.startTime.slice(0, 16)} // Format for datetime-local input
+                          value={formatDateTimeLocal(formData.startTime)}
                           onChange={handleInputChange}
                           className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
                         />
@@ -679,7 +698,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                         <input
                           type="datetime-local"
                           name="endTime"
-                          value={formData.endTime.slice(0, 16)} // Format for datetime-local input
+                          value={formatDateTimeLocal(formData.endTime)}
                           onChange={handleInputChange}
                           className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
                         />
