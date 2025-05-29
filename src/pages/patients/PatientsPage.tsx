@@ -26,8 +26,14 @@ export default function PatientsPage() {
   const [sortField, setSortField] = useState<keyof Patient | "name" | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [siteFilter, setSiteFilter] = useState<string>("all")
-  const [monthFilter, setMonthFilter] = useState<string>("all")
-  const [yearFilter, setYearFilter] = useState<string>("all")
+  
+  // Get current date for default filters
+  const currentDate = new Date();
+  const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() returns 0-11, so add 1
+  const currentYear = currentDate.getFullYear().toString();
+  
+  const [monthFilter, setMonthFilter] = useState<string>(currentMonth)
+  const [yearFilter, setYearFilter] = useState<string>(currentYear)
   const [showInactive, setShowInactive] = useState(false)
   const [buildingFilter, setBuildingFilter] = useState<string>("all")
 

@@ -30,8 +30,14 @@ const MedicalActivitiesPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState('All');
-  const [monthFilter, setMonthFilter] = useState('All');
-  const [yearFilter, setYearFilter] = useState('All');
+  
+  // Get current date for default filters
+  const currentDate = new Date();
+  const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() returns 0-11, so add 1
+  const currentYear = currentDate.getFullYear().toString();
+  
+  const [monthFilter, setMonthFilter] = useState(currentMonth);
+  const [yearFilter, setYearFilter] = useState(currentYear);
   const [sortField, setSortField] = useState<string>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
