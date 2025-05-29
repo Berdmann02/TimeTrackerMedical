@@ -79,6 +79,8 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   });
 
   const [isTracking, setIsTracking] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [hasStopped, setHasStopped] = useState(false);
 
   // Create initial form state function
   const getInitialFormState = (): ActivityForm => ({
@@ -113,6 +115,8 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     if (prevIsOpen.current && !isOpen) {
       setFormData(getInitialFormState());
       setIsTracking(false);
+      setHasStarted(false);
+      setHasStopped(false);
       setError(null);
       setIsSubmitting(false);
     }
@@ -201,6 +205,8 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     // Allow restarting even after stopping (having an end time)
     setFormData((prev) => ({ ...prev, startTime: now, endTime: "" }));
     setIsTracking(true);
+    setHasStarted(true);
+    setHasStopped(false);
   };
 
   const handleEndTime = () => {
@@ -209,6 +215,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       const now = new Date().toISOString();
       setFormData((prev) => ({ ...prev, endTime: now }));
       setIsTracking(false);
+      setHasStopped(true);
     }
   };
 
@@ -614,15 +621,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                       <button
                         type="button"
                         onClick={handleStartTime}
-                        disabled={isTracking}
+                        disabled={hasStarted}
                         className={`inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-all cursor-pointer ${
-                          isTracking
+                          hasStarted
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
                         }`}
                       >
                         <FaPlay className="w-4 h-4 mr-2" />
-                        Start Time
+                        {hasStarted ? "Started" : "Start Time"}
                       </button>
                     </div>
                     
@@ -649,15 +656,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                       <button
                         type="button"
                         onClick={handleEndTime}
-                        disabled={!isTracking}
+                        disabled={!hasStarted || hasStopped}
                         className={`inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-all cursor-pointer ${
-                          !isTracking
+                          !hasStarted || hasStopped
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : "bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
                         }`}
                       >
                         <FaStop className="w-4 h-4 mr-2" />
-                        Stop Time
+                        {hasStopped ? "Stopped" : "Stop Time"}
                       </button>
                     </div>
                     
