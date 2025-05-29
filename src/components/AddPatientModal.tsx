@@ -292,6 +292,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPa
                   value={formData.building}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
+                  required
                   disabled={!formData.siteId || isLoadingBuildings}
                 >
                   <option value="">Select a building</option>
