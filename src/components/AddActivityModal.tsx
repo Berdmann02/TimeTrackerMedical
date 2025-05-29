@@ -52,7 +52,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   siteName,
   patients: providedPatients = [] 
 }) => {
-  const { user } = useAuth();
+  const { user, isPharmacist } = useAuth();
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -403,207 +403,209 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                 </div>
               </div>
 
-              {/* Medical Checklist */}
-              <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center mb-6 pb-4 border-b border-gray-200">
-                  <FaClipboardList className="w-5 h-5 text-gray-500 mr-2" />
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Medical Checklist
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  {/* Left Column */}
-                  <div className="space-y-4">
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.medicalRecords"
-                          checked={formData.medicalChecks.medicalRecords}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                medicalRecords: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Medical Records</span>
-                      </div>
-                    </label>
-
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.bpAtGoal"
-                          checked={formData.medicalChecks.bpAtGoal}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                bpAtGoal: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">BP at Goal</span>
-                      </div>
-                    </label>
-
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.hospitalVisit"
-                          checked={formData.medicalChecks.hospitalVisit}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                hospitalVisit: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Hospital Visit Since Last Review</span>
-                      </div>
-                    </label>
-
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.a1cAtGoal"
-                          checked={formData.medicalChecks.a1cAtGoal}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                a1cAtGoal: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">A1C at Goal</span>
-                      </div>
-                    </label>
+              {/* Medical Checklist - Only show for pharmacists */}
+              {isPharmacist && (
+                <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center mb-6 pb-4 border-b border-gray-200">
+                    <FaClipboardList className="w-5 h-5 text-gray-500 mr-2" />
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Medical Checklist
+                    </h3>
                   </div>
 
-                  {/* Right Column */}
-                  <div className="space-y-4">
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.benzodiazepines"
-                          checked={formData.medicalChecks.benzodiazepines}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                benzodiazepines: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Benzodiazepines</span>
-                      </div>
-                    </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    {/* Left Column */}
+                    <div className="space-y-4">
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.medicalRecords"
+                            checked={formData.medicalChecks.medicalRecords}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  medicalRecords: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">Medical Records</span>
+                        </div>
+                      </label>
 
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.antipsychotics"
-                          checked={formData.medicalChecks.antipsychotics}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                antipsychotics: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Antipsychotics</span>
-                      </div>
-                    </label>
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.bpAtGoal"
+                            checked={formData.medicalChecks.bpAtGoal}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  bpAtGoal: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">BP at Goal</span>
+                        </div>
+                      </label>
 
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.opioids"
-                          checked={formData.medicalChecks.opioids}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                opioids: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Opioids</span>
-                      </div>
-                    </label>
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.hospitalVisit"
+                            checked={formData.medicalChecks.hospitalVisit}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  hospitalVisit: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">Hospital Visit Since Last Review</span>
+                        </div>
+                      </label>
 
-                    <label className="relative flex items-start">
-                      <div className="flex items-center h-5">
-                        <input
-                          type="checkbox"
-                          name="medicalChecks.fallSinceLastVisit"
-                          checked={formData.medicalChecks.fallSinceLastVisit}
-                          onChange={(e) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              medicalChecks: {
-                                ...prev.medicalChecks,
-                                fallSinceLastVisit: e.target.checked
-                              }
-                            }));
-                          }}
-                          className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <span className="text-gray-700">Fall Since Last Visit</span>
-                      </div>
-                    </label>
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.a1cAtGoal"
+                            checked={formData.medicalChecks.a1cAtGoal}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  a1cAtGoal: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">A1C at Goal</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-4">
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.benzodiazepines"
+                            checked={formData.medicalChecks.benzodiazepines}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  benzodiazepines: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">Benzodiazepines</span>
+                        </div>
+                      </label>
+
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.antipsychotics"
+                            checked={formData.medicalChecks.antipsychotics}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  antipsychotics: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">Antipsychotics</span>
+                        </div>
+                      </label>
+
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.opioids"
+                            checked={formData.medicalChecks.opioids}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  opioids: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">Opioids</span>
+                        </div>
+                      </label>
+
+                      <label className="relative flex items-start">
+                        <div className="flex items-center h-5">
+                          <input
+                            type="checkbox"
+                            name="medicalChecks.fallSinceLastVisit"
+                            checked={formData.medicalChecks.fallSinceLastVisit}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                medicalChecks: {
+                                  ...prev.medicalChecks,
+                                  fallSinceLastVisit: e.target.checked
+                                }
+                              }));
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="ml-3 text-sm">
+                          <span className="text-gray-700">Fall Since Last Visit</span>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Time Tracking */}
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
