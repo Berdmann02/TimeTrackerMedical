@@ -220,6 +220,7 @@ const ActivityDetailsPage: FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activity, setActivity] = useState<Activity | null>(null);
+    const [patient, setPatient] = useState<any>(null);
     const [patientName, setPatientName] = useState<string>('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -254,10 +255,11 @@ const ActivityDetailsPage: FC = () => {
                 setActivity(activityData);
                 setEditedActivity(activityData);
 
-                // Fetch patient name
+                // Fetch patient data
                 if (activityData.patient_id) {
                     try {
                         const patientData = await getPatientById(activityData.patient_id);
+                        setPatient(patientData);
                         setPatientName(`${patientData.first_name} ${patientData.last_name}`);
                     } catch (patientErr) {
                         console.error("Error fetching patient data:", patientErr);
@@ -393,7 +395,7 @@ const ActivityDetailsPage: FC = () => {
                 (typeof editedActivity.duration_minutes === 'number' ?
                     editedActivity.duration_minutes : 0);
 
-            // Simplify to include only the fields the backend expects
+            // Use patient's actual site and building information
             const updateData = {
                 id: Number(activityId),
                 patient_id: editedActivity.patient_id,
@@ -401,7 +403,8 @@ const ActivityDetailsPage: FC = () => {
                 personnel_initials: editedActivity.personnel_initials || editedActivity.user_initials || '',
                 pharm_flag: Boolean(editedActivity.pharm_flag || editedActivity.is_pharmacist),
                 notes: editedActivity.notes || '',
-                site_name: editedActivity.site_name || 'CP Greater San Antonio',
+                site_name: patient?.site_name || editedActivity.site_name || '',
+                building_name: patient?.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
                 duration_minutes: timeSpent
             };
@@ -645,11 +648,11 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Building2}
                                 label="Building"
-                                value={editedActivity.building || 'Main Medical Center'}
+                                value={editedActivity.building_name || 'Main Medical Center'}
                                 isEditing={isEditing}
                                 editType="select"
                                 editOptions={buildings.map(building => building.name)}
-                                onEdit={(value) => handleFieldChange('building', value)}
+                                onEdit={(value) => handleFieldChange('building_name', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow

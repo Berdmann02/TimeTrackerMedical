@@ -8,7 +8,7 @@ export interface CreateActivityDTO {
   user_id: number;
   activity_type: string;
   time_spent: number;
-  building: string;
+  building_name: string;
   site_name?: string;
   notes?: string;
   insurance?: string;
@@ -65,7 +65,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       // Use both field names to ensure compatibility
       duration_minutes: activityData.time_spent,
       time_spent: activityData.time_spent,
-      building: activityData.building,
+      building_name: activityData.building_name,
       insurance: activityData.insurance || '',
       user_initials: activityData.user_initials || '',
       medical_records: activityData.medical_checks?.medical_records || false,

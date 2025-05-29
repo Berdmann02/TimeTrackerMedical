@@ -42,7 +42,7 @@ export interface Activity {
   end_time?: string;
   notes?: string;
   site_name?: string;
-  building?: string;
+  building_name?: string;
   site_start_time?: string;
   site_end_time?: string;
   personnel_start_time?: string;

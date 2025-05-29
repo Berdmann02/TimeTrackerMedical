@@ -223,8 +223,14 @@ export default function PatientDetailsPage() {
   // Add new state variables for activity sorting and filtering
   const [activitySortField, setActivitySortField] = useState<"activityId" | "activityType" | "initials" | "recordDate" | "totalTime" | null>(null)
   const [activitySortDirection, setActivitySortDirection] = useState<"asc" | "desc">("asc")
-  const [activityMonthFilter, setActivityMonthFilter] = useState<string>("all")
-  const [activityYearFilter, setActivityYearFilter] = useState<string>("all")
+  
+  // Get current date for default filters
+  const currentDate = new Date()
+  const currentMonth = (currentDate.getMonth() + 1).toString() // getMonth() returns 0-11, so add 1
+  const currentYear = currentDate.getFullYear().toString()
+  
+  const [activityMonthFilter, setActivityMonthFilter] = useState<string>(currentMonth)
+  const [activityYearFilter, setActivityYearFilter] = useState<string>(currentYear)
 
   // Add months and years arrays for filters
   const months = [

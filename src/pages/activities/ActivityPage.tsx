@@ -9,7 +9,7 @@ import {
   FaStop,
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getPatients } from "../../services/patientService";
+import { getPatients, getPatientById } from "../../services/patientService";
 import type { Patient } from "../../services/patientService";
 import { createActivity, getActivityTypes } from "../../services/activityService";
 import type { CreateActivityDTO } from "../../services/activityService";
@@ -17,7 +17,6 @@ import { useAuth } from "../../contexts/AuthContext";
 
 interface ActivityForm {
   patientId: string;
-  siteId: string;
   activityType: string;
   startTime: string;
   endTime: string;
@@ -33,6 +32,7 @@ const ActivityPage: React.FC = () => {
   const patientIdParam = queryParams.get('patientId');
   
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,6 @@ const ActivityPage: React.FC = () => {
   
   const [formData, setFormData] = useState<ActivityForm>({
     patientId: patientIdParam || "",
-    siteId: "cp-san-antonio",
     activityType: "",
     startTime: "",
     endTime: "",
@@ -64,6 +63,12 @@ const ActivityPage: React.FC = () => {
         
         setPatients(patientsData);
         setActivityTypes(activityTypesData);
+
+        // If there's a patientId in the URL, fetch that patient's details
+        if (patientIdParam) {
+          const patient = await getPatientById(patientIdParam);
+          setSelectedPatient(patient);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load required data. Please try again.");
@@ -73,7 +78,22 @@ const ActivityPage: React.FC = () => {
     };
     
     fetchData();
-  }, []);
+  }, [patientIdParam]);
+
+  // Fetch patient details when patient selection changes
+  const handlePatientChange = async (patientId: string) => {
+    if (patientId) {
+      try {
+        const patient = await getPatientById(patientId);
+        setSelectedPatient(patient);
+      } catch (err) {
+        console.error("Error fetching patient details:", err);
+        setSelectedPatient(null);
+      }
+    } else {
+      setSelectedPatient(null);
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -81,6 +101,11 @@ const ActivityPage: React.FC = () => {
     >
   ) => {
     const { name, value } = e.target;
+    
+    // Special handling for patient selection
+    if (name === 'patientId') {
+      handlePatientChange(value);
+    }
     
     // Special handling for datetime-local input
     if (name === 'startTime' || name === 'endTime') {
@@ -162,6 +187,11 @@ const ActivityPage: React.FC = () => {
       alert("You must be logged in to create an activity");
       return;
     }
+
+    if (!selectedPatient) {
+      alert("Patient information not found. Please select a patient.");
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -170,10 +200,11 @@ const ActivityPage: React.FC = () => {
         patient_id: parseInt(formData.patientId),
         user_id: user.id,
         activity_type: formData.activityType,
-        building: "",
-        site_name: formData.siteId === "cp-san-antonio" ? "CP Greater San Antonio" : "CP Intermountain",
+        building_name: selectedPatient.building || "",
+        site_name: selectedPatient.site_name,
         time_spent: calculateTimeDifference(),
-        user_initials: formData.userInitials
+        user_initials: formData.userInitials,
+        notes: formData.notes
       };
       
       await createActivity(activityData);
@@ -268,16 +299,18 @@ const ActivityPage: React.FC = () => {
                       Site Location
                     </span>
                   </label>
-                  <select
-                    name="siteId"
-                    value={formData.siteId}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                    required
-                  >
-                    <option value="cp-san-antonio">CP Greater San Antonio</option>
-                    <option value="cp-intermountain">CP Intermountain</option>
-                  </select>
+                  {selectedPatient ? (
+                    <div className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-100 rounded-lg shadow-sm">
+                      <div className="font-medium text-gray-900">{selectedPatient.site_name}</div>
+                      {selectedPatient.building && (
+                        <div className="text-sm text-gray-600">Building: {selectedPatient.building}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1 block w-full px-3 py-2.5 text-base border border-gray-300 bg-gray-50 rounded-lg shadow-sm text-gray-500">
+                      Select a patient to see site information
+                    </div>
+                  )}
                 </div>
               </div>
 

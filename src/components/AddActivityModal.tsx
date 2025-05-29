@@ -289,7 +289,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         patient_id: parseInt(formData.patientId),
         user_id: user.id,
         activity_type: formData.activityType,
-        building: "",
+        building_name: "",
         site_name: siteName || "",
         time_spent: calculateTimeDifference(),
         notes: formData.notes,
