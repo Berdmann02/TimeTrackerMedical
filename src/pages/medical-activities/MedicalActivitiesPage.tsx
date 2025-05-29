@@ -72,15 +72,28 @@ const MedicalActivitiesPage = () => {
     const timeSpent = activity.time_spent;
     const durationMinutes = activity.duration_minutes;
     
+    let totalMinutes = 0;
+    
     if (timeSpent !== undefined && timeSpent !== null && !isNaN(Number(timeSpent))) {
-      return `${Number(timeSpent).toFixed(2)} minutes`;
+      totalMinutes = Number(timeSpent);
+    } else if (durationMinutes !== undefined && durationMinutes !== null && !isNaN(Number(durationMinutes))) {
+      totalMinutes = Number(durationMinutes);
+    } else {
+      return 'N/A';
     }
     
-    if (durationMinutes !== undefined && durationMinutes !== null && !isNaN(Number(durationMinutes))) {
-      return `${Number(durationMinutes).toFixed(2)} minutes`;
-    }
+    if (totalMinutes === 0) return "0 minutes";
     
-    return 'N/A';
+    const minutes = Math.floor(totalMinutes);
+    const seconds = Math.round((totalMinutes - minutes) * 60);
+    
+    if (minutes === 0) {
+      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+    } else if (seconds === 0) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+    }
   };
 
   // Filtering and sorting

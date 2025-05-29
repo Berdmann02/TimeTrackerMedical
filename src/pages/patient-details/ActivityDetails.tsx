@@ -62,123 +62,156 @@ const DetailRow: FC<DetailRowProps> = memo(({
     helperText,
     activity,
     userFullName
-}) => (
-    <div className="flex flex-col py-4 border-b border-gray-200">
-        <div className="flex items-center mb-2">
-            <Icon className="h-5 w-5 text-gray-500 mr-2" />
-            <span className="text-sm font-medium text-gray-600">{label}</span>
-        </div>
-        <div className="ml-7 space-y-3">
-            {isEditing && editType !== 'readonly' ? (
-                <>
-                    {editType === 'text' && (
-                        <input
-                            type="text"
-                            value={value as string || ''}
-                            onChange={(e) => onEdit && onEdit(e.target.value)}
-                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            autoFocus
-                            placeholder={placeholder}
-                        />
-                    )}
+}) => {
+    // Helper function to format time values
+    const formatTimeValue = (timeValue: number): string => {
+        const totalMinutes = Math.floor(timeValue);
+        const seconds = Math.round((timeValue - totalMinutes) * 60);
+        
+        if (totalMinutes === 0 && seconds === 0) {
+            return "0 minutes";
+        } else if (totalMinutes === 0) {
+            return `${seconds} seconds`;
+        } else if (seconds === 0) {
+            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''}`;
+        } else {
+            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+        }
+    };
 
-                    {editType === 'number' && (
-                        <input
-                            type="number"
-                            value={(() => {
-                                const calculatedValue = calculateTimeDifference();
-                                return typeof calculatedValue === 'number' ? calculatedValue : 0;
-                            })()}
-                            onChange={(e) => onEdit && onEdit(parseFloat(e.target.value))}
-                            min="0"
-                            step="0.01"
-                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            autoFocus
-                        />
-                    )}
-
-                    {editType === 'select' && (
-                        <select
-                            value={value as string || ''}
-                            onChange={(e) => onEdit && onEdit(e.target.value)}
-                            className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            autoFocus
-                        >
-                            {editOptions.map(option => (
-                                <option key={option} value={option}>{option}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {editType === 'datetime' && (
-                        <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <Timer className="h-4 w-4 text-gray-500" />
+    return (
+        <div className="flex items-start space-x-3 py-3">
+            <Icon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {label}
+                </label>
+                {isEditing && editType !== 'readonly' ? (
+                    <>
+                        {editType === 'text' && (
+                            <input
+                                type="text"
+                                value={String(value || '')}
+                                onChange={(e) => onEdit?.(e.target.value)}
+                                placeholder={placeholder}
+                                className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        )}
+                        {editType === 'number' && (
+                            <input
+                                type="number"
+                                value={Number(value) || 0}
+                                onChange={(e) => onEdit?.(parseFloat(e.target.value) || 0)}
+                                placeholder={placeholder}
+                                step="0.01"
+                                min="0"
+                                className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        )}
+                        {editType === 'select' && (
+                            <select
+                                value={String(value || '')}
+                                onChange={(e) => onEdit?.(e.target.value)}
+                                className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="">Select {label}</option>
+                                {editOptions?.map((option) => (
+                                    <option key={option} value={option}>
+                                        {option}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                        {editType === 'boolean' && (
+                            <div className="flex items-center">
                                 <input
-                                    type="datetime-local"
-                                    value={startTime ? new Date(startTime).toISOString().slice(0, 16) : ''}
-                                    onChange={(e) => onStartTimeEdit && onStartTimeEdit(e.target.value)}
-                                    className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    type="checkbox"
+                                    checked={Boolean(value)}
+                                    onChange={(e) => onEdit?.(e.target.checked)}
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
+                                <span className="ml-2 text-sm text-gray-700">
+                                    {Boolean(value) ? 'Yes' : 'No'}
+                                </span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <TimerOff className="h-4 w-4 text-gray-500" />
-                                <input
-                                    type="datetime-local"
-                                    value={endTime ? new Date(endTime).toISOString().slice(0, 16) : ''}
-                                    onChange={(e) => onEndTimeEdit && onEndTimeEdit(e.target.value)}
-                                    className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-                        </div>
-                    )}
-                </>
-            ) : (
-                <div className="space-y-2">
-                    <p className="text-base text-gray-900 font-medium">
-                        {value === null || value === undefined ? (
-                            'N/A'
-                        ) : typeof value === 'number' ? (
-                            `${value.toFixed(2)} minutes`
-                        ) : label === "Personnel Initials" ? (
-                            <div className="relative inline-block group">
-                                <span>{activity?.user_initials || activity?.personnel_initials || String(value).replace('0', '')}</span>
-                                {activity?.user_id && (
-                                    <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
-                                        <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
-                                            {userFullName}
-                                        </div>
+                        )}
+                        {editType === 'datetime' && (
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Start Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={startTime ? new Date(startTime).toISOString().slice(0, 16) : ''}
+                                        onChange={(e) => onStartTimeEdit?.(new Date(e.target.value).toISOString())}
+                                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">End Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={endTime ? new Date(endTime).toISOString().slice(0, 16) : ''}
+                                        onChange={(e) => onEndTimeEdit?.(new Date(e.target.value).toISOString())}
+                                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                {startTime && endTime && calculateTimeDifference && (
+                                    <div className="text-sm text-blue-600 font-medium">
+                                        Duration: {formatTimeValue(calculateTimeDifference())}
                                     </div>
                                 )}
                             </div>
-                        ) : (
-                            value
                         )}
-                    </p>
-                    {(startTime || endTime) && (
-                        <div className="text-sm text-gray-600 space-y-1">
-                            {startTime && (
-                                <div className="flex items-center space-x-2">
-                                    <Timer className="h-4 w-4" />
-                                    <span>Start: {new Date(startTime).toLocaleString()}</span>
+                    </>
+                ) : (
+                    <div className="space-y-2">
+                        <p className="text-base text-gray-900 font-medium">
+                            {value === null || value === undefined ? (
+                                'N/A'
+                            ) : typeof value === 'number' && label === "Total Time" ? (
+                                formatTimeValue(value)
+                            ) : typeof value === 'number' ? (
+                                formatTimeValue(value)
+                            ) : label === "Personnel Initials" ? (
+                                <div className="relative inline-block group">
+                                    <span>{activity?.user_initials || activity?.personnel_initials || String(value).replace('0', '')}</span>
+                                    {activity?.user_id && (
+                                        <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
+                                            <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
+                                                {userFullName}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+                            ) : (
+                                value
                             )}
-                            {endTime && (
-                                <div className="flex items-center space-x-2">
-                                    <TimerOff className="h-4 w-4" />
-                                    <span>End: {new Date(endTime).toLocaleString()}</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-            {helperText && (
-                <p className="text-xs text-gray-500 mt-1">{helperText}</p>
-            )}
+                        </p>
+                        {(startTime || endTime) && (
+                            <div className="text-sm text-gray-600 space-y-1">
+                                {startTime && (
+                                    <div className="flex items-center space-x-2">
+                                        <Timer className="h-4 w-4" />
+                                        <span>Start: {new Date(startTime).toLocaleString()}</span>
+                                    </div>
+                                )}
+                                {endTime && (
+                                    <div className="flex items-center space-x-2">
+                                        <TimerOff className="h-4 w-4" />
+                                        <span>End: {new Date(endTime).toLocaleString()}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+                {helperText && (
+                    <p className="text-xs text-gray-500 mt-1">{helperText}</p>
+                )}
+            </div>
         </div>
-    </div>
-));
+    );
+});
 
 const ActivityDetailsPage: FC = () => {
     const { activityId } = useParams<{ activityId: string }>();
@@ -453,14 +486,26 @@ const ActivityDetailsPage: FC = () => {
     };
 
     // Format time spent
-    const formatTimeSpent = (activity: Activity): number => {
+    const formatTimeSpent = (activity: Activity): string => {
+        let timeValue = 0;
         if (activity.time_spent !== undefined && activity.time_spent !== null && !isNaN(Number(activity.time_spent))) {
-            return Number(activity.time_spent);
+            timeValue = Number(activity.time_spent);
+        } else if (activity.duration_minutes !== undefined && activity.duration_minutes !== null && !isNaN(Number(activity.duration_minutes))) {
+            timeValue = Number(activity.duration_minutes);
         }
-        if (activity.duration_minutes !== undefined && activity.duration_minutes !== null && !isNaN(Number(activity.duration_minutes))) {
-            return Number(activity.duration_minutes);
+        
+        const totalMinutes = Math.floor(timeValue);
+        const seconds = Math.round((timeValue - totalMinutes) * 60);
+        
+        if (totalMinutes === 0 && seconds === 0) {
+            return "0 minutes";
+        } else if (totalMinutes === 0) {
+            return `${seconds} seconds`;
+        } else if (seconds === 0) {
+            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''}`;
+        } else {
+            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
         }
-        return 0;
     };
 
     // Loading state

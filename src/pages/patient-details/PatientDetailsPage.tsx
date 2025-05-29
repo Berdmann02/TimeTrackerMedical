@@ -256,39 +256,39 @@ export default function PatientDetailsPage() {
   ];
 
   // Fetch patient data and activities
-  useEffect(() => {
-    const fetchPatientData = async () => {
-      if (!patientId) {
-        setError("No patient ID provided")
-        setIsLoading(false)
-        return
-      }
-      
-      setIsLoading(true)
-      setError(null)
-      
-      try {
-        // First, try to get the patient details
-        const patientData = await getPatientById(patientId)
-        setPatient(patientData)
-        
-        // Then try to get activities, but don't fail the whole request if this fails
-        try {
-          const activitiesData = await getPatientActivities(patientId)
-          setActivities(activitiesData)
-        } catch (activityError) {
-          console.error("Error fetching patient activities:", activityError)
-          // Just set empty activities instead of failing completely
-          setActivities([])
-        }
-      } catch (err) {
-        console.error("Error fetching patient data:", err)
-        setError("Failed to load patient data. Please try again.")
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchPatientData = async () => {
+    if (!patientId) {
+      setError("No patient ID provided")
+      setIsLoading(false)
+      return
     }
     
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      // First, try to get the patient details
+      const patientData = await getPatientById(patientId)
+      setPatient(patientData)
+      
+      // Then try to get activities, but don't fail the whole request if this fails
+      try {
+        const activitiesData = await getPatientActivities(patientId)
+        setActivities(activitiesData)
+      } catch (activityError) {
+        console.error("Error fetching patient activities:", activityError)
+        // Just set empty activities instead of failing completely
+        setActivities([])
+      }
+    } catch (err) {
+      console.error("Error fetching patient data:", err)
+      setError("Failed to load patient data. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchPatientData()
   }, [patientId])
 
@@ -337,13 +337,27 @@ export default function PatientDetailsPage() {
   }
 
   const handleActivityAdded = () => {
-    // Refresh activities after adding a new one
+    // Refresh patient data to include new activity
     if (patientId) {
-      getPatientActivities(patientId)
-        .then(data => setActivities(data))
-        .catch(err => console.error("Failed to refresh activities:", err));
+      fetchPatientData();
     }
-  }
+  };
+
+  // Format time spent in readable format
+  const formatTimeSpent = (timeValue: number): string => {
+    if (timeValue === 0) return "0 minutes";
+    
+    const minutes = Math.floor(timeValue);
+    const seconds = Math.round((timeValue - minutes) * 60);
+    
+    if (minutes === 0) {
+      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+    } else if (seconds === 0) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+    }
+  };
 
   const handleEditPatient = () => {
     setIsEditing(true);
@@ -1019,10 +1033,7 @@ export default function PatientDetailsPage() {
                           {new Date(activity.recordDate).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {(() => {
-                            const timeValue = Number(activity.time_spent ?? activity.duration_minutes ?? 0);
-                            return `${timeValue.toFixed(2)} minutes`;
-                          })()}
+                          {formatTimeSpent(activity.totalTime)}
                         </td>
                       </tr>
                     ))}
@@ -1042,7 +1053,6 @@ export default function PatientDetailsPage() {
       <StatusHistoryModal
         isOpen={isLastUpdatedModalOpen}
         onClose={() => setIsLastUpdatedModalOpen(false)}
-        updates={statusUpdates}
       />
 
       {/* Add Activity Modal */}

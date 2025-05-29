@@ -13,6 +13,7 @@ import { getPatients } from "../../services/patientService";
 import type { Patient } from "../../services/patientService";
 import { createActivity, getActivityTypes } from "../../services/activityService";
 import type { CreateActivityDTO } from "../../services/activityService";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ActivityForm {
   patientId: string;
@@ -27,6 +28,7 @@ interface ActivityForm {
 const ActivityPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const queryParams = new URLSearchParams(location.search);
   const patientIdParam = queryParams.get('patientId');
   
@@ -127,6 +129,22 @@ const ActivityPage: React.FC = () => {
     return Math.max(0, (end - start) / (1000 * 60));
   };
 
+  const formatTimeDifference = (): string => {
+    const totalMinutes = calculateTimeDifference();
+    if (totalMinutes === 0) return "0 minutes";
+    
+    const minutes = Math.floor(totalMinutes);
+    const seconds = Math.round((totalMinutes - minutes) * 60);
+    
+    if (minutes === 0) {
+      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+    } else if (seconds === 0) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -140,14 +158,22 @@ const ActivityPage: React.FC = () => {
       return;
     }
     
+    if (!user?.id) {
+      alert("You must be logged in to create an activity");
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
+        user_id: user.id,
         activity_type: formData.activityType,
-        user_initials: formData.userInitials,
-        time_spent: calculateTimeDifference()
+        building: "",
+        site_name: formData.siteId === "cp-san-antonio" ? "CP Greater San Antonio" : "CP Intermountain",
+        time_spent: calculateTimeDifference(),
+        user_initials: formData.userInitials
       };
       
       await createActivity(activityData);
@@ -384,7 +410,7 @@ const ActivityPage: React.FC = () => {
                 {formData.startTime && formData.endTime && (
                   <div className="mt-6 pt-4 border-t border-gray-200 text-center">
                     <p className="text-sm text-gray-600">
-                      Total time: <span className="font-semibold">{calculateTimeDifference().toFixed(2)} minutes</span>
+                      Total time: <span className="font-semibold">{formatTimeDifference()}</span>
                     </p>
                   </div>
                 )}
