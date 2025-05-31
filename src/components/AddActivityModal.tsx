@@ -120,12 +120,29 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setError(null);
       setIsSubmitting(false);
     }
-    // If modal is opened, load initial data
+    // If modal is opened, load initial data and reset form
     if (isOpen && !prevIsOpen.current) {
+      setFormData(getInitialFormState());
+      setIsTracking(false);
+      setHasStarted(false);
+      setHasStopped(false);
+      setError(null);
+      setIsSubmitting(false);
       loadInitialData();
     }
     prevIsOpen.current = isOpen;
   }, [isOpen, initialPatientId]);
+
+  // Additional useEffect to reset form when initialPatientId changes while modal is open
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(getInitialFormState());
+      setIsTracking(false);
+      setHasStarted(false);
+      setHasStopped(false);
+      setError(null);
+    }
+  }, [initialPatientId]);
 
   const loadInitialData = async () => {
     setIsLoadingData(true);
