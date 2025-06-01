@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react"
+import { useState, useEffect, memo, useMemo } from "react"
 import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock } from "lucide-react"
 import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate, useParams } from "react-router-dom"
@@ -413,17 +413,41 @@ export default function PatientDetailsPage() {
   }
 
   // Filter and sort activities
-  const filteredAndSortedActivities = patientData?.activities
-    .filter(activity => {
+  const filteredAndSortedActivities = useMemo(() => {
+    if (!patientData?.activities) return [];
+
+    // First, filter activities by month and year
+    const activitiesInPeriod = patientData.activities.filter(activity => {
       const activityDate = new Date(activity.recordDate)
       const matchesMonth = activityMonthFilter === "all" || 
         activityDate.getMonth() + 1 === Number.parseInt(activityMonthFilter)
       const matchesYear = activityYearFilter === "all" || 
         activityDate.getFullYear() === Number.parseInt(activityYearFilter)
       return matchesMonth && matchesYear
-    })
-    .sort((a, b) => {
-      if (!activitySortField) return 0
+    });
+
+    // If filtering by specific month/year, get only the latest activity for that period
+    let activitiesToShow = activitiesInPeriod;
+    if (activityMonthFilter !== "all" && activityYearFilter !== "all") {
+      // Group activities by month-year and get the latest one for each period
+      const activityGroups = new Map<string, typeof activitiesInPeriod[0]>();
+      
+      activitiesInPeriod.forEach(activity => {
+        const activityDate = new Date(activity.recordDate);
+        const monthYear = `${activityDate.getFullYear()}-${activityDate.getMonth() + 1}`;
+        
+        if (!activityGroups.has(monthYear) || 
+            new Date(activity.recordDate) > new Date(activityGroups.get(monthYear)!.recordDate)) {
+          activityGroups.set(monthYear, activity);
+        }
+      });
+      
+      activitiesToShow = Array.from(activityGroups.values());
+    }
+
+    // Sort the activities
+    return activitiesToShow.sort((a, b) => {
+      if (!activitySortField) return new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime(); // Default sort by date desc
 
       let aValue: any = a[activitySortField]
       let bValue: any = b[activitySortField]
@@ -437,7 +461,8 @@ export default function PatientDetailsPage() {
       if (aValue < bValue) return activitySortDirection === "asc" ? -1 : 1
       if (aValue > bValue) return activitySortDirection === "asc" ? 1 : -1
       return 0
-    }) || []
+    });
+  }, [patientData?.activities, activityMonthFilter, activityYearFilter, activitySortField, activitySortDirection]);
 
   // Loading state
   if (isLoading) {
@@ -979,7 +1004,7 @@ export default function PatientDetailsPage() {
                         onClick={() => handleActivitySort("recordDate")}
                       >
                         <div className="flex items-center">
-                          <span>Record Date</span>
+                          <span>Activity Date</span>
                           <div className="ml-1 flex">
                             <ArrowUpIcon
                               className={`h-3 w-3 ${
