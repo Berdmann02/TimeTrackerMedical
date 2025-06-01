@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import AddActivityModal from '../../components/AddActivityModal';
 import { getActivityTypes, getActivityById, getActivitiesWithDetails } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
+import { getSites, type Site } from '../../services/siteService';
+import { getBuildingsWithSiteInfo, type BuildingWithSiteInfo } from '../../services/buildingService';
 
 // Remove mock data and replace with state
 const months = ['All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -33,16 +35,20 @@ const MedicalActivitiesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState('All');
   const [buildingFilter, setBuildingFilter] = useState('All');
-  const [sites, setSites] = useState<string[]>([]);
-  const [buildings, setBuildings] = useState<string[]>(['All']);
+  
+  // Update state to use proper Site and BuildingWithSiteInfo interfaces
+  const [sites, setSites] = useState<Site[]>([]);
+  const [buildings, setBuildings] = useState<BuildingWithSiteInfo[]>([]);
+  const [isLoadingSites, setIsLoadingSites] = useState(false);
+  const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
   
   // Get current date for default filters
   const currentDate = new Date();
   const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() returns 0-11, so add 1
   const currentYear = currentDate.getFullYear().toString();
   
-  const [monthFilter, setMonthFilter] = useState(currentMonth);
-  const [yearFilter, setYearFilter] = useState(currentYear);
+  const [monthFilter, setMonthFilter] = useState('All');
+  const [yearFilter, setYearFilter] = useState('All');
   const [sortField, setSortField] = useState<string>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -55,6 +61,42 @@ const MedicalActivitiesPage = () => {
     if (!dateStr) return 0;
     const date = new Date(dateStr);
     return isNaN(date.getTime()) ? 0 : date.getTime();
+  };
+
+  // Fetch sites data
+  const fetchSitesData = async () => {
+    setIsLoadingSites(true);
+    try {
+      const data = await getSites();
+      setSites(data.filter(site => site.is_active));
+    } catch (err) {
+      console.error('Error fetching sites:', err);
+    } finally {
+      setIsLoadingSites(false);
+    }
+  };
+
+  // Fetch buildings data for selected site
+  const fetchBuildingsData = async (siteName: string) => {
+    setIsLoadingBuildings(true);
+    try {
+      const data = await getBuildingsWithSiteInfo();
+      
+      if (siteName === "All") {
+        // Show all buildings when "All Sites" is selected
+        setBuildings(data.filter(building => building.is_active));
+      } else {
+        // Show only buildings for the selected site
+        const filteredBuildings = data.filter(building => 
+          building.is_active && building.site_name === siteName
+        );
+        setBuildings(filteredBuildings);
+      }
+    } catch (err) {
+      console.error('Error fetching buildings:', err);
+    } finally {
+      setIsLoadingBuildings(false);
+    }
   };
 
   // Fetch all activities and their associated patient names
@@ -76,7 +118,13 @@ const MedicalActivitiesPage = () => {
     };
 
     fetchActivities();
+    fetchSitesData();
   }, []);
+
+  // Load buildings when site filter changes
+  useEffect(() => {
+    fetchBuildingsData(siteFilter);
+  }, [siteFilter]);
 
   // Format time spent
   const formatTimeSpent = (activity: ActivityWithPatient) => {
@@ -189,35 +237,6 @@ const MedicalActivitiesPage = () => {
     navigate(`/patientdetails/${patientId}`);
   };
 
-  // Update buildings when site changes
-  useEffect(() => {
-    if (activities.length > 0) {
-      const uniqueBuildings = ['All'];
-      activities.forEach(activity => {
-        if (activity.building_name && 
-            !uniqueBuildings.includes(activity.building_name) && 
-            (siteFilter === 'All' || activity.site_name === siteFilter)) {
-          uniqueBuildings.push(activity.building_name);
-        }
-      });
-      setBuildings(uniqueBuildings);
-      setBuildingFilter('All'); // Reset building filter when site changes
-    }
-  }, [siteFilter, activities]);
-
-  // Update sites when activities change
-  useEffect(() => {
-    if (activities.length > 0) {
-      const uniqueSites = ['All'];
-      activities.forEach(activity => {
-        if (activity.site_name && !uniqueSites.includes(activity.site_name)) {
-          uniqueSites.push(activity.site_name);
-        }
-      });
-      setSites(uniqueSites);
-    }
-  }, [activities]);
-
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
@@ -237,7 +256,7 @@ const MedicalActivitiesPage = () => {
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onActivityAdded={handleActivityAdded}
-            siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1] : 'CP Greater San Antonio') : siteFilter}
+            siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1].name : 'CP Greater San Antonio') : siteFilter}
           />
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
@@ -268,8 +287,9 @@ const MedicalActivitiesPage = () => {
                       onChange={(e) => setSiteFilter(e.target.value)}
                       className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
+                      <option value="All">All</option>
                       {sites.map((site) => (
-                        <option key={site} value={site}>{site}</option>
+                        <option key={site.name} value={site.name}>{site.name}</option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -283,14 +303,28 @@ const MedicalActivitiesPage = () => {
                     <select
                       value={buildingFilter}
                       onChange={(e) => setBuildingFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                      disabled={isLoadingBuildings}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
+                      <option value="All">
+                        {siteFilter === "All" 
+                          ? "All Buildings" 
+                          : buildings.length === 0 
+                            ? `No buildings for ${siteFilter}` 
+                            : "All Buildings"}
+                      </option>
                       {buildings.map((building) => (
-                        <option key={building} value={building}>{building}</option>
+                        <option key={building.id} value={building.name}>
+                          {building.name}
+                        </option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                      {isLoadingBuildings ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                      ) : (
+                        <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -363,7 +397,7 @@ const MedicalActivitiesPage = () => {
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onActivityAdded={handleActivityAdded}
-            siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1] : 'CP Greater San Antonio') : siteFilter}
+            siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1].name : 'CP Greater San Antonio') : siteFilter}
           />
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
@@ -394,8 +428,9 @@ const MedicalActivitiesPage = () => {
                       onChange={(e) => setSiteFilter(e.target.value)}
                       className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
+                      <option value="All">All</option>
                       {sites.map((site) => (
-                        <option key={site} value={site}>{site}</option>
+                        <option key={site.name} value={site.name}>{site.name}</option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -409,14 +444,28 @@ const MedicalActivitiesPage = () => {
                     <select
                       value={buildingFilter}
                       onChange={(e) => setBuildingFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                      disabled={isLoadingBuildings}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
+                      <option value="All">
+                        {siteFilter === "All" 
+                          ? "All Buildings" 
+                          : buildings.length === 0 
+                            ? `No buildings for ${siteFilter}` 
+                            : "All Buildings"}
+                      </option>
                       {buildings.map((building) => (
-                        <option key={building} value={building}>{building}</option>
+                        <option key={building.id} value={building.name}>
+                          {building.name}
+                        </option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                      {isLoadingBuildings ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                      ) : (
+                        <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -494,7 +543,7 @@ const MedicalActivitiesPage = () => {
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onActivityAdded={handleActivityAdded}
-          siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1] : 'CP Greater San Antonio') : siteFilter}
+          siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1].name : 'CP Greater San Antonio') : siteFilter}
         />
 
         <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
@@ -525,8 +574,9 @@ const MedicalActivitiesPage = () => {
                     onChange={(e) => setSiteFilter(e.target.value)}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
+                    <option value="All">All</option>
                     {sites.map((site) => (
-                      <option key={site} value={site}>{site}</option>
+                      <option key={site.name} value={site.name}>{site.name}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -540,14 +590,28 @@ const MedicalActivitiesPage = () => {
                   <select
                     value={buildingFilter}
                     onChange={(e) => setBuildingFilter(e.target.value)}
-                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    disabled={isLoadingBuildings}
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
+                    <option value="All">
+                      {siteFilter === "All" 
+                        ? "All Buildings" 
+                        : buildings.length === 0 
+                          ? `No buildings for ${siteFilter}` 
+                          : "All Buildings"}
+                    </option>
                     {buildings.map((building) => (
-                      <option key={building} value={building}>{building}</option>
+                      <option key={building.id} value={building.name}>
+                        {building.name}
+                      </option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    {isLoadingBuildings ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                    ) : (
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+                    )}
                   </div>
                 </div>
               </div>

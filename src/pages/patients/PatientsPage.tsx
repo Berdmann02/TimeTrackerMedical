@@ -6,7 +6,7 @@ import AddActivityModal from "../../components/AddActivityModal"
 import { getPatients } from "../../services/patientService"
 import type { Patient } from "../../services/patientService"
 import { getSites, type Site } from "../../services/siteService"
-import { getBuildingsBySiteId, type Building } from "../../services/buildingService"
+import { getBuildingsWithSiteInfo, type BuildingWithSiteInfo } from "../../services/buildingService"
 
 export default function PatientsPage() {
   const navigate = useNavigate()
@@ -39,7 +39,7 @@ export default function PatientsPage() {
 
   // State for dynamic filter data
   const [sites, setSites] = useState<Site[]>([])
-  const [buildings, setBuildings] = useState<Building[]>([])
+  const [buildings, setBuildings] = useState<BuildingWithSiteInfo[]>([])
   const [isLoadingSites, setIsLoadingSites] = useState(false)
   const [isLoadingBuildings, setIsLoadingBuildings] = useState(false)
 
@@ -74,19 +74,19 @@ export default function PatientsPage() {
 
   // Fetch buildings data for selected site
   const fetchBuildingsData = async (siteName: string) => {
-    if (siteName === "all") {
-      setBuildings([]);
-      setBuildingFilter("all");
-      return;
-    }
-
     setIsLoadingBuildings(true);
     try {
-      // Find the site by name to get its ID
-      const selectedSite = sites.find(site => site.name === siteName);
-      if (selectedSite) {
-        const data = await getBuildingsBySiteId(selectedSite.id);
+      const data = await getBuildingsWithSiteInfo();
+      
+      if (siteName === "all") {
+        // Show all buildings when "All Sites" is selected
         setBuildings(data.filter(building => building.is_active));
+      } else {
+        // Show only buildings for the selected site
+        const filteredBuildings = data.filter(building => 
+          building.is_active && building.site_name === siteName
+        );
+        setBuildings(filteredBuildings);
       }
     } catch (err) {
       console.error('Error fetching buildings:', err);
@@ -103,13 +103,16 @@ export default function PatientsPage() {
 
   // Load buildings when site filter changes
   useEffect(() => {
-    if (siteFilter !== "all") {
-      fetchBuildingsData(siteFilter);
-    } else {
-      setBuildings([]);
-      setBuildingFilter("all");
+    fetchBuildingsData(siteFilter);
+  }, [siteFilter]);
+
+  // Filter buildings based on selected site (for display purposes)
+  const filteredBuildings = useMemo(() => {
+    if (siteFilter === "all") {
+      return buildings; // Show all buildings when "All Sites" is selected
     }
-  }, [siteFilter, sites]);
+    return buildings.filter(building => building.site_name === siteFilter);
+  }, [buildings, siteFilter]);
 
   // Static data for filters that don't need to be dynamic
   const months = [
@@ -343,13 +346,17 @@ export default function PatientsPage() {
                   <select
                     value={buildingFilter}
                     onChange={(e) => setBuildingFilter(e.target.value)}
-                    disabled={siteFilter === "all" || isLoadingBuildings}
+                    disabled={isLoadingBuildings}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="all">
-                      {siteFilter === "all" ? "Select a site first" : "All Buildings"}
+                      {siteFilter === "all" 
+                        ? "All Buildings" 
+                        : filteredBuildings.length === 0 
+                          ? `No buildings for ${siteFilter}` 
+                          : "All Buildings"}
                     </option>
-                    {buildings.map((building) => (
+                    {filteredBuildings.map((building) => (
                       <option key={building.id} value={building.name}>
                         {building.name}
                       </option>

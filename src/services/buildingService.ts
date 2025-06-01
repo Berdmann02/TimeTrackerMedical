@@ -9,6 +9,26 @@ export interface Building {
     created_at: string;
 }
 
+export interface BuildingWithSiteInfo extends Building {
+    site_name: string;
+    site_address: string;
+    site_city: string;
+    site_state: string;
+    site_zip: string;
+    site_is_active: boolean;
+    site_created_at: string;
+}
+
+export const getBuildings = async (): Promise<Building[]> => {
+    const response = await axios.get(`${API_URL}/buildings`);
+    return response.data;
+};
+
+export const getBuildingsWithSiteInfo = async (): Promise<BuildingWithSiteInfo[]> => {
+    const response = await axios.get(`${API_URL}/buildings/with-site-info/all`);
+    return response.data;
+};
+
 export const getBuildingsBySiteId = async (siteId: number): Promise<Building[]> => {
     const response = await axios.get(`${API_URL}/buildings/site/${siteId}`);
     return response.data;
