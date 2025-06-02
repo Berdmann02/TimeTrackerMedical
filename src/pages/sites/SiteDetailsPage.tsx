@@ -7,8 +7,8 @@ import { AddBuildingModal } from '../../components/AddBuildingModal';
 import { EditBuildingModal } from '../../components/EditBuildingModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { getBuildingsBySiteId, deleteBuilding, type Building } from '../../services/buildingService';
-import { getUsersBySite, type User } from '../../services/userService';
-import { getPatients, type Patient } from '../../services/patientService';
+import { getUsersBySiteId, type User } from '../../services/userService';
+import { getPatientsBySiteId, type Patient } from '../../services/patientService';
 import AddUserModal from '../../components/AddUserModal';
 import EditUserModal from '../../components/EditUserModal';
 import AddPatientModal from '../../components/AddPatientModal';
@@ -177,6 +177,20 @@ export default function SiteDetailsPage() {
         }
     };
 
+    // Helper function to determine if a user is assigned to this site
+    const isUserAssignedToSite = (user: User, currentSiteId: number): boolean => {
+        if (user.primarysite_id === currentSiteId) return true;
+        if (user.assignedsites_ids && user.assignedsites_ids.includes(currentSiteId)) return true;
+        return false;
+    };
+
+    // Helper function to get site type for user
+    const getUserSiteType = (user: User, currentSiteId: number): string => {
+        if (user.primarysite_id === currentSiteId) return 'Primary';
+        if (user.assignedsites_ids && user.assignedsites_ids.includes(currentSiteId)) return 'Assigned';
+        return 'Unknown';
+    };
+
     // Filter users based on search term
     const filteredUsers = users.filter(user =>
         `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
@@ -196,12 +210,11 @@ export default function SiteDetailsPage() {
     // Add useEffect for fetching patients
     useEffect(() => {
         const fetchPatients = async () => {
-            if (!site?.name || !expandedSections.patients) return;
+            if (!siteId || !expandedSections.patients || isNaN(parseInt(siteId))) return;
             
             setIsLoadingPatients(true);
             try {
-                const allPatients = await getPatients();
-                const sitePatients = allPatients.filter(patient => patient.site_name === site.name);
+                const sitePatients = await getPatientsBySiteId(parseInt(siteId));
                 setPatients(sitePatients);
             } catch (err) {
                 console.error("Error fetching patients:", err);
@@ -211,7 +224,7 @@ export default function SiteDetailsPage() {
         };
 
         fetchPatients();
-    }, [site?.name, expandedSections.patients]);
+    }, [siteId, expandedSections.patients]);
 
     // Filter patients based on search term and status
     const filteredPatients = patients.filter(patient => {
@@ -256,11 +269,11 @@ export default function SiteDetailsPage() {
     // Add useEffect for fetching users
     useEffect(() => {
         const fetchUsers = async () => {
-            if (!site?.name || !expandedSections.users) return;
+            if (!siteId || !expandedSections.users || isNaN(parseInt(siteId))) return;
             
             setIsLoadingUsers(true);
             try {
-                const siteUsers = await getUsersBySite(site.name);
+                const siteUsers = await getUsersBySiteId(parseInt(siteId));
                 setUsers(siteUsers);
             } catch (err) {
                 console.error("Error fetching users:", err);
@@ -270,7 +283,7 @@ export default function SiteDetailsPage() {
         };
 
         fetchUsers();
-    }, [site?.name, expandedSections.users]);
+    }, [siteId, expandedSections.users]);
 
     const handleEditSite = () => {
         setIsEditing(true);
@@ -341,7 +354,7 @@ export default function SiteDetailsPage() {
     };
 
     const handleAddBuilding = async () => {
-        if (!siteId) return;
+        if (!siteId || isNaN(parseInt(siteId))) return;
         setIsLoadingBuildings(true);
         try {
             const data = await getBuildingsBySiteId(parseInt(siteId));
@@ -404,8 +417,8 @@ export default function SiteDetailsPage() {
             lastName: user.last_name,
             email: user.email,
             role: user.role as "admin" | "nurse" | "pharmacist",
-            primarySite: user.primarysite,
-            assignedSites: user.assignedsites
+            primarySite: site?.name, // Use current site name as primary site for display
+            assignedSites: [site?.name || ''] // Use current site name for assigned sites display
         };
         setSelectedUser(transformedUser);
         setIsEditUserModalOpen(true);
@@ -418,8 +431,8 @@ export default function SiteDetailsPage() {
 
     const handleUserUpdated = () => {
         // Refresh the users list
-        if (site?.name) {
-            getUsersBySite(site.name).then(setUsers);
+        if (siteId && !isNaN(parseInt(siteId))) {
+            getUsersBySiteId(parseInt(siteId)).then(setUsers);
         }
     };
 
@@ -448,12 +461,11 @@ export default function SiteDetailsPage() {
 
     const handlePatientAdded = () => {
         // Refresh the patients list after a new patient is added
-        if (site?.name) {
+        if (siteId && !isNaN(parseInt(siteId))) {
             const fetchPatients = async () => {
                 setIsLoadingPatients(true);
                 try {
-                    const allPatients = await getPatients();
-                    const sitePatients = allPatients.filter(patient => patient.site_name === site.name);
+                    const sitePatients = await getPatientsBySiteId(parseInt(siteId));
                     setPatients(sitePatients);
                 } catch (err) {
                     console.error("Error fetching patients:", err);
@@ -919,7 +931,7 @@ export default function SiteDetailsPage() {
                                                         {getFullRoleName(user.role)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {user.primarysite === site?.name ? 'Primary' : 'Assigned'}
+                                                        {siteId && !isNaN(parseInt(siteId)) ? getUserSiteType(user, parseInt(siteId)) : 'Unknown'}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         <div className="flex space-x-3">
@@ -1151,7 +1163,7 @@ export default function SiteDetailsPage() {
                 isOpen={isAddUserModalOpen}
                 onClose={() => setIsAddUserModalOpen(false)}
                 onUserAdded={handleUserUpdated}
-                defaultPrimarySite={site?.name}
+                defaultPrimarySiteId={siteId ? parseInt(siteId) : undefined}
             />
 
             {/* Edit User Modal */}
@@ -1188,7 +1200,7 @@ export default function SiteDetailsPage() {
                 isOpen={isAddPatientModalOpen}
                 onClose={() => setIsAddPatientModalOpen(false)}
                 onPatientAdded={handlePatientAdded}
-                defaultSite={site?.name || ''}
+                defaultSiteId={siteId ? parseInt(siteId) : undefined}
             />
         </div>
     );

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { User, Calendar, Building2, MapPin, X } from "lucide-react";
 import { createUser, type CreateUserDTO } from "../services/userService";
-import { getAllSiteNames } from "../services/siteService";
+import { getSites, type Site } from "../services/siteService";
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUserAdded?: () => void;
   defaultPrimarySite?: string;
+  defaultPrimarySiteId?: number;
 }
 
 interface UserFormData {
@@ -17,11 +18,11 @@ interface UserFormData {
   password: string;
   confirmPassword: string;
   role: "admin" | "nurse" | "pharmacist";
-  primarySite: string;
-  assignedSites: string[];
+  primarySiteId: string;
+  assignedSiteIds: string[];
 }
 
-const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddUserModalProps) => {
+const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite, defaultPrimarySiteId }: AddUserModalProps) => {
   const initialFormData: UserFormData = {
     firstName: "",
     lastName: "",
@@ -29,12 +30,12 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddU
     password: "",
     confirmPassword: "",
     role: "nurse" as "admin" | "nurse" | "pharmacist",
-    primarySite: defaultPrimarySite || "",
-    assignedSites: defaultPrimarySite ? [defaultPrimarySite] : [],
+    primarySiteId: defaultPrimarySiteId ? defaultPrimarySiteId.toString() : "",
+    assignedSiteIds: defaultPrimarySiteId ? [defaultPrimarySiteId.toString()] : [],
   };
 
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
-  const [sites, setSites] = useState<string[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +55,35 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddU
       fetchSites();
     }
     prevIsOpen.current = isOpen;
-  }, [isOpen]);
+  }, [isOpen, defaultPrimarySite, defaultPrimarySiteId]);
 
   const fetchSites = async () => {
     setIsLoading(true);
     setSitesError(null);
     try {
-      const siteData = await getAllSiteNames();
-      setSites(["All", ...siteData]);
+      const siteData = await getSites();
+      const activeSites = siteData.filter(site => site.is_active);
+      setSites(activeSites);
+      
+      // If defaultPrimarySiteId is provided, set it directly
+      if (defaultPrimarySiteId) {
+        setFormData(prev => ({
+          ...prev,
+          primarySiteId: defaultPrimarySiteId.toString(),
+          assignedSiteIds: [defaultPrimarySiteId.toString()]
+        }));
+      }
+      // Fallback: If defaultPrimarySite is provided, find its ID and set it
+      else if (defaultPrimarySite) {
+        const defaultSiteObj = activeSites.find(site => site.name === defaultPrimarySite);
+        if (defaultSiteObj) {
+          setFormData(prev => ({
+            ...prev,
+            primarySiteId: defaultSiteObj.id.toString(),
+            assignedSiteIds: [defaultSiteObj.id.toString()]
+          }));
+        }
+      }
     } catch (err) {
       setSitesError("Failed to load sites. Please try again.");
       console.error("Error loading sites:", err);
@@ -101,8 +123,8 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddU
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        primarysite: formData.primarySite,
-        assignedsites: formData.assignedSites,
+        primarysite_id: parseInt(formData.primarySiteId),
+        assignedsites_ids: formData.assignedSiteIds.map(id => parseInt(id)),
       };
 
       await createUser(userData);
@@ -123,44 +145,17 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddU
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleSiteCheckbox = (site: string) => {
-    if (site === 'All') {
-      // If "All" is selected, set all sites including "All" itself
-      setFormData(prev => ({
+  const handleSiteCheckbox = (siteId: string) => {
+    setFormData(prev => {
+      const newAssignedSiteIds = prev.assignedSiteIds.includes(siteId)
+        ? prev.assignedSiteIds.filter(id => id !== siteId)
+        : [...prev.assignedSiteIds, siteId];
+      
+      return {
         ...prev,
-        assignedSites: prev.assignedSites.includes('All') 
-          ? [] // If "All" was checked, uncheck everything
-          : sites // Check all sites including "All"
-      }));
-    } else {
-      setFormData(prev => {
-        const newAssignedSites = prev.assignedSites.includes(site)
-          ? prev.assignedSites.filter(s => s !== site)
-          : [...prev.assignedSites, site];
-        
-        // Remove "All" if any individual site is unchecked
-        if (prev.assignedSites.includes(site)) {
-          return {
-            ...prev,
-            assignedSites: newAssignedSites.filter(s => s !== 'All')
-          };
-        }
-        
-        // Add "All" if all other sites are selected
-        if (newAssignedSites.length === sites.length - 1 && 
-            sites.every(s => s === 'All' || newAssignedSites.includes(s))) {
-          return {
-            ...prev,
-            assignedSites: sites
-          };
-        }
-        
-        return {
-          ...prev,
-          assignedSites: newAssignedSites
-        };
-      });
-    }
+        assignedSiteIds: newAssignedSiteIds
+      };
+    });
   };
 
   if(!isOpen) return null;
@@ -282,16 +277,16 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddU
                   Primary Site
                 </label>
                 <select
-                  name="primarySite"
-                  value={formData.primarySite}
+                  name="primarySiteId"
+                  value={formData.primarySiteId}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
                   required
                   disabled={isLoading}
                 >
                   <option value="">Select a primary site</option>
-                  {sites.filter(site => site !== 'All').map(site => (
-                    <option key={site} value={site}>{site}</option>
+                  {sites.map(site => (
+                    <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
               </div>
@@ -318,23 +313,23 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite }: AddU
                     <div className="p-2 space-y-1">
                       {sites.map(site => (
                         <label
-                          key={site}
+                          key={site.id}
                           className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
                         >
                           <input
                             type="checkbox"
-                            checked={formData.assignedSites.includes(site)}
-                            onChange={() => handleSiteCheckbox(site)}
+                            checked={formData.assignedSiteIds.includes(site.id.toString())}
+                            onChange={() => handleSiteCheckbox(site.id.toString())}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
                           />
-                          <span className="ml-2 text-gray-700">{site}</span>
+                          <span className="ml-2 text-gray-700">{site.name}</span>
                         </label>
                       ))}
                     </div>
                   )}
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  Selected: {formData.assignedSites.length} sites
+                  Selected: {formData.assignedSiteIds.length} sites
                 </p>
               </div>
             </div>

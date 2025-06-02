@@ -9,8 +9,11 @@ export interface User {
     password:string;
     role: string;
     created_at?:string;
-    primarysite:string;
-    assignedsites:string[];
+    primarysite_id:number;
+    assignedsites_ids:number[];
+    // Legacy fields for backward compatibility (will be populated by mapping)
+    primarysite?:string;
+    assignedsites?:string[];
 }
 
 export interface CreateUserDTO {
@@ -19,8 +22,8 @@ export interface CreateUserDTO {
     email:string;
     password:string;
     role:string;
-    primarysite:string;
-    assignedsites:string[];
+    primarysite_id:number;
+    assignedsites_ids:number[];
 }
 
 export const getUsers = async():Promise<User[]> => {
@@ -85,17 +88,29 @@ export const deleteUser = async (id:number| string): Promise<void> => {
     }
 }
 
+export const getUsersBySiteId = async (siteId: number): Promise<User[]> => {
+    try {
+        const response = await axios.get(`${API_URL}/users/site/${siteId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching users for site ID ${siteId}:`, error);
+        throw error;
+    }
+};
+
 export const getUsersBySite = async (siteName: string): Promise<User[]> => {
     try {
+        // For backward compatibility, we still support getting users by site name
+        // This will need to be updated to get the site ID first and then use the optimized endpoint
         const allUsers = await getUsers();
         return allUsers.filter(user => 
             user.primarysite === siteName || 
-            user.assignedsites.includes(siteName)
+            (user.assignedsites && user.assignedsites.includes(siteName))
         );
     } catch (error) {
         console.error(`Error fetching users for site ${siteName}:`, error);
         throw error;
     }
-}
+};
 
 

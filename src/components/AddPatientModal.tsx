@@ -9,6 +9,7 @@ interface AddPatientModalProps {
   onClose: () => void;
   onPatientAdded?: () => void;
   defaultSite?: string;
+  defaultSiteId?: number;
 }
 
 interface PatientFormData {
@@ -22,13 +23,13 @@ interface PatientFormData {
   notes: string;
 }
 
-const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPatientModalProps) => {
+const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, defaultSiteId }: AddPatientModalProps) => {
   const initialFormData: PatientFormData = {
     firstName: '',
     lastName: '',
     dateOfBirth: '',
     gender: 'M',
-    siteId: defaultSite || '',
+    siteId: defaultSiteId ? defaultSiteId.toString() : '',
     building: '',
     insurance: '',
     notes: ''
@@ -47,7 +48,16 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPa
   useEffect(() => {
     // If modal was open and is now closed, reset the form
     if (prevIsOpen.current && !isOpen) {
-      setFormData(initialFormData);
+      setFormData({
+        firstName: '',
+        lastName: '',
+        dateOfBirth: '',
+        gender: 'M',
+        siteId: defaultSiteId ? defaultSiteId.toString() : '',
+        building: '',
+        insurance: '',
+        notes: ''
+      });
       setError(null);
       setIsSubmitting(false);
       setSites([]);
@@ -58,7 +68,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPa
       fetchSites();
     }
     prevIsOpen.current = isOpen;
-  }, [isOpen, defaultSite]);
+  }, [isOpen, defaultSite, defaultSiteId]);
 
   const fetchSites = async () => {
     setIsLoadingSites(true);
@@ -66,8 +76,15 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPa
       const sitesData = await getSites();
       setSites(sitesData.filter(site => site.is_active));
       
-      // If defaultSite is provided, find its ID and set it
-      if (defaultSite) {
+      // If defaultSiteId is provided, set it directly
+      if (defaultSiteId) {
+        setFormData(prev => ({
+          ...prev,
+          siteId: defaultSiteId.toString()
+        }));
+      }
+      // Fallback: If defaultSite is provided, find its ID and set it
+      else if (defaultSite) {
         const defaultSiteObj = sitesData.find(site => site.name === defaultSite);
         if (defaultSiteObj) {
           setFormData(prev => ({
@@ -87,7 +104,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite }: AddPa
   // Fetch buildings when site changes
   useEffect(() => {
     const fetchBuildings = async () => {
-      if (!formData.siteId) return;
+      if (!formData.siteId || isNaN(parseInt(formData.siteId))) return;
       
       setIsLoadingBuildings(true);
       try {

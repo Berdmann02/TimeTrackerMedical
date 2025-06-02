@@ -97,6 +97,16 @@ export const getPatientActivities = async (patientId: number | string): Promise<
   }
 };
 
+export const getPatientsBySiteId = async (siteId: number): Promise<Patient[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/patients/site/${siteId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching patients for site ID ${siteId}:`, error);
+    throw error;
+  }
+};
+
 export const createPatient = async (patientData: CreatePatientDTO): Promise<Patient> => {
   try {
     const response = await axios.post(`${API_URL}/patients`, patientData);
