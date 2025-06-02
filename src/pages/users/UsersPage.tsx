@@ -4,12 +4,11 @@ import { useNavigate } from "react-router-dom"
 import AddUserModal from "../../components/AddUserModal"
 import EditUserModal from "../../components/EditUserModal"
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
-import { getUsers, deleteUser } from "../../services/userService"
-import type { User as UserType } from "../../services/userService"
+import { getUsers, deleteUser, type UserListItem } from "../../services/userService"
 import { useAuth } from "../../contexts/AuthContext"
 
-interface UserAccount extends Omit<UserType, 'id'> {
-  id?: number;
+// Interface for the user accounts in the table (based on UserListItem from backend)
+interface UserAccount extends UserListItem {
   isActive: boolean;
 }
 
@@ -38,7 +37,7 @@ export default function UsersPage() {
 
   const [users, setUsers] = useState<UserAccount[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | "a" | "U">("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "nurse" | "pharmacist">("all")
   const [sortField, setSortField] = useState<string>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
@@ -51,7 +50,7 @@ export default function UsersPage() {
       setIsLoading(true)
       const fetchedUsers = await getUsers()
       // Transform the users to include isActive property
-      const transformedUsers = fetchedUsers.map(user => ({
+      const transformedUsers = fetchedUsers.map((user) => ({
         ...user,
         isActive: true // You might want to determine this based on some criteria from your API
       }))
@@ -77,8 +76,7 @@ export default function UsersPage() {
   const filteredUsers = users
     .filter((user) => {
       const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+                           user.name.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesRole = roleFilter === "all" || user.role === roleFilter
       return matchesSearch && matchesRole
     })
@@ -95,8 +93,8 @@ export default function UsersPage() {
       
       switch (sortField) {
         case 'name':
-          aValue = `${a.first_name.charAt(0).toUpperCase() + a.first_name.slice(1).toLowerCase()} ${a.last_name.charAt(0).toUpperCase() + a.last_name.slice(1).toLowerCase()}`
-          bValue = `${b.first_name.charAt(0).toUpperCase() + b.first_name.slice(1).toLowerCase()} ${b.last_name.charAt(0).toUpperCase() + b.last_name.slice(1).toLowerCase()}`
+          aValue = a.name
+          bValue = b.name
           break
         case 'email':
           aValue = a.email
@@ -107,16 +105,12 @@ export default function UsersPage() {
           bValue = b.role
           break
         case 'primarysite':
-          aValue = a.primarysite || ''
-          bValue = b.primarysite || ''
-          break
-        case 'created_at':
-          aValue = a.created_at ? new Date(a.created_at).getTime() : 0
-          bValue = b.created_at ? new Date(b.created_at).getTime() : 0
+          aValue = a.primary_site || ''
+          bValue = b.primary_site || ''
           break
         default:
-          aValue = `${a.first_name.charAt(0).toUpperCase() + a.first_name.slice(1).toLowerCase()} ${a.last_name.charAt(0).toUpperCase() + a.last_name.slice(1).toLowerCase()}`
-          bValue = `${b.first_name.charAt(0).toUpperCase() + b.first_name.slice(1).toLowerCase()} ${b.last_name.charAt(0).toUpperCase() + b.last_name.slice(1).toLowerCase()}`
+          aValue = a.name
+          bValue = b.name
       }
       
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -136,15 +130,20 @@ export default function UsersPage() {
 
   const handleEdit = (userId: number) => {
     const user = users.find(u => u.id === userId);
-    if (user) {
+    if (user && user.id) {
+      // Parse the name back to first and last name
+      const nameParts = user.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       setSelectedUser({
-        id: user.id?.toString(),
+        id: user.id.toString(), // Use actual user ID from backend
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        role: user.role === 'a' ? 'admin' : user.role === 'p' ? 'pharmacist' : 'nurse',
-        primarySite: user.primarysite,
-        assignedSites: user.assignedsites
+        firstName: firstName,
+        lastName: lastName,
+        role: user.role,
+        primarySite: user.primary_site,
+        assignedSites: user.assigned_sites
       });
       setIsEditUserModalOpen(true);
     }
@@ -167,6 +166,7 @@ export default function UsersPage() {
     
     setIsDeleting(true);
     try {
+      // Use actual user ID from backend
       await deleteUser(userToDelete.id);
       setUsers(users.filter((user) => user.id !== userToDelete.id));
       setIsDeleteModalOpen(false);
@@ -228,13 +228,13 @@ export default function UsersPage() {
                   <div className="relative">
                     <select
                       value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value as "all" | "a" | "U")}
+                      onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "nurse" | "pharmacist")}
                       className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
                       <option value="all">All Roles</option>
-                      <option value="a">Admin</option>
-                      <option value="n">Nurse</option>
-                      <option value="p">Pharmacist</option>
+                      <option value="admin">Admin</option>
+                      <option value="nurse">Nurse</option>
+                      <option value="pharmacist">Pharmacist</option>
                     </select>
                   </div>
                 </div>
@@ -289,13 +289,13 @@ export default function UsersPage() {
                 <div className="relative">
                   <select
                     value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value as "all" | "a" | "U")}
+                    onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "nurse" | "pharmacist")}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Roles</option>
-                    <option value="a">Admin</option>
-                    <option value="n">Nurse</option>
-                    <option value="p">Pharmacist</option>
+                    <option value="admin">Admin</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="pharmacist">Pharmacist</option>
                   </select>
                 </div>
               </div>
@@ -360,14 +360,8 @@ export default function UsersPage() {
                         </div>
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('created_at')}>
-                      <div className="flex items-center">
-                        <span>Created At</span>
-                        <div className="ml-1 flex">
-                          <ArrowUpIcon className={`h-3 w-3 ${sortField === 'created_at' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                          <ArrowDownIcon className={`h-3 w-3 ${sortField === 'created_at' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        </div>
-                      </div>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Assigned Sites
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -380,7 +374,7 @@ export default function UsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <div className="flex items-center">
                           <User className="h-5 w-5 text-gray-400 mr-2" />
-                          <span>{`${user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase()} ${user.last_name.charAt(0).toUpperCase() + user.last_name.slice(1).toLowerCase()}`}</span>
+                          <span>{user.name}</span>
                           {isCurrentUser(user) && (
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                               You
@@ -393,18 +387,36 @@ export default function UsersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
-                          <span>
-                            {user.role === "a" ? "Admin" : 
-                             user.role === "p" ? "Pharmacist" : 
-                             user.role === "n" ? "Nurse" : "User"}
+                          <span className="capitalize">
+                            {user.role}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.primarysite || "Not assigned"}
+                        {user.primary_site || "Not assigned"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        <div className="max-w-xs">
+                          {user.assigned_sites && user.assigned_sites.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.assigned_sites.slice(0, 2).map((site, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                                >
+                                  {site}
+                                </span>
+                              ))}
+                              {user.assigned_sites.length > 2 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                  +{user.assigned_sites.length - 2} more
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            "None"
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex space-x-3">
@@ -483,7 +495,7 @@ export default function UsersPage() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
-        itemName={userToDelete ? `${userToDelete.first_name.charAt(0).toUpperCase() + userToDelete.first_name.slice(1).toLowerCase()} ${userToDelete.last_name.charAt(0).toUpperCase() + userToDelete.last_name.slice(1).toLowerCase()}` : 'user'}
+        itemName={userToDelete ? userToDelete.name : 'user'}
       />
     </div>
   )

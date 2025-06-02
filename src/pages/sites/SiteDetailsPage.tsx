@@ -7,7 +7,7 @@ import { AddBuildingModal } from '../../components/AddBuildingModal';
 import { EditBuildingModal } from '../../components/EditBuildingModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { getBuildingsBySiteId, deleteBuilding, type Building } from '../../services/buildingService';
-import { getUsersBySiteId, type User } from '../../services/userService';
+import { getUsersBySiteId, deleteUser, type UserListItem } from '../../services/userService';
 import { getPatientsBySiteId, type Patient } from '../../services/patientService';
 import AddUserModal from '../../components/AddUserModal';
 import EditUserModal from '../../components/EditUserModal';
@@ -135,13 +135,13 @@ export default function SiteDetailsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [buildingToDelete, setBuildingToDelete] = useState<Building | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<UserListItem[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(false);
     const [userSearchTerm, setUserSearchTerm] = useState('');
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<TransformedUser | null>(null);
-    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [userToDelete, setUserToDelete] = useState<UserListItem | null>(null);
     const [isDeletingUser, setIsDeletingUser] = useState(false);
     const [patients, setPatients] = useState<Patient[]>([]);
     const [isLoadingPatients, setIsLoadingPatients] = useState(false);
@@ -158,42 +158,34 @@ export default function SiteDetailsPage() {
         patients: false
     });
 
-    // Helper function to check if user is the current user - moved up here
-    const isCurrentUser = (user: User) => {
+    // Helper function to check if user is the current user - updated for new structure
+    const isCurrentUser = (user: UserListItem) => {
         return currentUser && user.email === currentUser.email;
     };
 
-    // Function to get full role name
+    // Function to get full role name - updated for new role format
     const getFullRoleName = (role: string): string => {
-        switch (role.toLowerCase()) {
-            case 'a':
-                return 'Admin';
-            case 'p':
-                return 'Pharmacist';
-            case 'n':
-                return 'Nurse';
-            default:
-                return role;
-        }
+        // The new backend returns full role names already
+        return role.charAt(0).toUpperCase() + role.slice(1);
     };
 
-    // Helper function to determine if a user is assigned to this site
-    const isUserAssignedToSite = (user: User, currentSiteId: number): boolean => {
-        if (user.primarysite_id === currentSiteId) return true;
-        if (user.assignedsites_ids && user.assignedsites_ids.includes(currentSiteId)) return true;
+    // Helper function to determine if a user is assigned to this site - updated for new structure
+    const isUserAssignedToSite = (user: UserListItem, currentSiteName: string): boolean => {
+        if (user.primary_site === currentSiteName) return true;
+        if (user.assigned_sites && user.assigned_sites.includes(currentSiteName)) return true;
         return false;
     };
 
-    // Helper function to get site type for user
-    const getUserSiteType = (user: User, currentSiteId: number): string => {
-        if (user.primarysite_id === currentSiteId) return 'Primary';
-        if (user.assignedsites_ids && user.assignedsites_ids.includes(currentSiteId)) return 'Assigned';
+    // Helper function to get site type for user - updated for new structure
+    const getUserSiteType = (user: UserListItem, currentSiteName: string): string => {
+        if (user.primary_site === currentSiteName) return 'Primary';
+        if (user.assigned_sites && user.assigned_sites.includes(currentSiteName)) return 'Assigned';
         return 'Unknown';
     };
 
-    // Filter users based on search term
+    // Filter users based on search term - updated for new structure
     const filteredUsers = users.filter(user =>
-        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
     ).sort((a, b) => {
         // Current user always comes first
@@ -204,7 +196,7 @@ export default function SiteDetailsPage() {
         if (!aIsCurrentUser && bIsCurrentUser) return 1;
         
         // If neither is current user, maintain alphabetical order
-        return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+        return a.name.localeCompare(b.name);
     });
 
     // Add useEffect for fetching patients
@@ -409,16 +401,21 @@ export default function SiteDetailsPage() {
         handleAddBuilding(); // Refresh the buildings list
     };
 
-    // User handlers
-    const handleEditUser = (user: User) => {
+    // User handlers - updated for new structure
+    const handleEditUser = (user: UserListItem) => {
+        // Parse the name back to first and last name
+        const nameParts = user.name.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
         const transformedUser = {
             id: user.id?.toString(),
-            firstName: user.first_name,
-            lastName: user.last_name,
+            firstName: firstName,
+            lastName: lastName,
             email: user.email,
             role: user.role as "admin" | "nurse" | "pharmacist",
-            primarySite: site?.name, // Use current site name as primary site for display
-            assignedSites: [site?.name || ''] // Use current site name for assigned sites display
+            primarySite: user.primary_site,
+            assignedSites: user.assigned_sites
         };
         setSelectedUser(transformedUser);
         setIsEditUserModalOpen(true);
@@ -437,12 +434,11 @@ export default function SiteDetailsPage() {
     };
 
     const handleDeleteUser = async () => {
-        if (!userToDelete) return;
+        if (!userToDelete?.id) return;
         
         setIsDeletingUser(true);
         try {
-            // Add your delete user API call here
-            // await deleteUser(userToDelete.id);
+            await deleteUser(userToDelete.id);
             await handleUserUpdated(); // Refresh the list
             setIsDeleteModalOpen(false);
             setUserToDelete(null);
@@ -916,7 +912,7 @@ export default function SiteDetailsPage() {
                                                 <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${isCurrentUser(user) ? 'bg-blue-50' : ''}`}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                         <div className="flex items-center">
-                                                            {`${user.first_name} ${user.last_name}`}
+                                                            {user.name}
                                                             {isCurrentUser(user) && (
                                                                 <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                                                     You
@@ -931,7 +927,7 @@ export default function SiteDetailsPage() {
                                                         {getFullRoleName(user.role)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {siteId && !isNaN(parseInt(siteId)) ? getUserSiteType(user, parseInt(siteId)) : 'Unknown'}
+                                                        {site?.name ? getUserSiteType(user, site.name) : 'Unknown'}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         <div className="flex space-x-3">
@@ -1183,7 +1179,7 @@ export default function SiteDetailsPage() {
                 }}
                 onConfirm={handleDeleteUser}
                 isDeleting={isDeletingUser}
-                itemName={userToDelete ? `user ${userToDelete.first_name} ${userToDelete.last_name}` : 'user'}
+                itemName={userToDelete ? `user ${userToDelete.name}` : 'user'}
             />
 
             {/* Delete Site Confirmation Modal */}

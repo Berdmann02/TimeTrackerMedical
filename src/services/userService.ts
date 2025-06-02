@@ -1,32 +1,49 @@
 import axios from 'axios';
 import {API_URL} from '../config';
 
+// Interface for the data returned by most GET endpoints (getUsers, getUserById, getUsersBySiteId)
+export interface UserListItem {
+    id: number;             // User database ID (now provided by backend)
+    name: string;           // Concatenated first_name + ' ' + last_name
+    email: string;
+    role: "admin" | "nurse" | "pharmacist";
+    primary_site: string;   // Site name (not ID)
+    assigned_sites: string[]; // Array of site names (not IDs)
+}
+
+// Interface for the full user data (used for create/update operations)
 export interface User {
-    id?:number;
-    first_name:string;
-    last_name:string;
-    email:string;
-    password:string;
-    role: string;
-    created_at?:string;
-    primarysite_id:number;
-    assignedsites_ids:number[];
+    id?: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    role: "admin" | "nurse" | "pharmacist";
+    created_at?: Date;
+    primarysite_id: number;
+    assignedsites_ids: number[];
     // Legacy fields for backward compatibility (will be populated by mapping)
-    primarysite?:string;
-    assignedsites?:string[];
+    primarysite?: string;
+    assignedsites?: string[];
 }
 
 export interface CreateUserDTO {
-    first_name:string;
-    last_name:string;
-    email:string;
-    password:string;
-    role:string;
-    primarysite_id:number;
-    assignedsites_ids:number[];
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    role: "admin" | "nurse" | "pharmacist";
+    primarysite_id: number;
+    assignedsites_ids: number[];
 }
 
-export const getUsers = async():Promise<User[]> => {
+// Returns: Array of UserListItem objects with:
+// - name: string (concatenated first_name + ' ' + last_name)
+// - email: string
+// - role: "admin" | "nurse" | "pharmacist"
+// - primary_site: string (site name)
+// - assigned_sites: string[] (array of site names)
+export const getUsers = async(): Promise<UserListItem[]> => {
     try{
         const response = await axios.get(`${API_URL}/users`);
         return response.data;
@@ -36,7 +53,13 @@ export const getUsers = async():Promise<User[]> => {
     }
 };
 
-export const getUserById = async (id:number | string): Promise<User> => {
+// Returns: Single UserListItem object with:
+// - name: string (concatenated first_name + ' ' + last_name)
+// - email: string
+// - role: "admin" | "nurse" | "pharmacist"
+// - primary_site: string (site name)
+// - assigned_sites: string[] (array of site names)
+export const getUserById = async (id: number | string): Promise<UserListItem> => {
     try {
         const response = await axios.get(`${API_URL}/users/${id}`);
         return response.data;
@@ -46,6 +69,15 @@ export const getUserById = async (id:number | string): Promise<User> => {
     }
 };
 
+// Expects: CreateUserDTO object with:
+// - first_name: string
+// - last_name: string
+// - email: string
+// - password: string
+// - role: "admin" | "nurse" | "pharmacist"
+// - primarysite_id: number
+// - assignedsites_ids: number[]
+// Returns: Full User object with all database fields including id and created_at
 export const createUser = async (userData: CreateUserDTO): Promise<User> => {
     try {
         console.log('Creating user with data:', userData); // Debug log
@@ -69,9 +101,11 @@ export const createUser = async (userData: CreateUserDTO): Promise<User> => {
     }
 };
 
-export const updateUser = async (id:number| string,userData: Partial<User>): Promise<User> => {
+// Expects: Partial<User> object with any fields to update
+// Returns: Full User object with all database fields
+export const updateUser = async (id: number| string, userData: Partial<User>): Promise<User> => {
     try{
-        const response = await axios.put(`${API_URL}/users/${id}`,userData);
+        const response = await axios.put(`${API_URL}/users/${id}`, userData);
         return response.data;
     }catch(error){
         console.error(`Error updating user with ID ${id}:`,error);
@@ -79,7 +113,8 @@ export const updateUser = async (id:number| string,userData: Partial<User>): Pro
     }
 };
 
-export const deleteUser = async (id:number| string): Promise<void> => {
+// Returns: void (just confirms deletion)
+export const deleteUser = async (id: number| string): Promise<void> => {
     try{
         await axios.delete(`${API_URL}/users/${id}`);
     }catch(error){
@@ -88,7 +123,14 @@ export const deleteUser = async (id:number| string): Promise<void> => {
     }
 }
 
-export const getUsersBySiteId = async (siteId: number): Promise<User[]> => {
+// Returns: Array of UserListItem objects for users associated with the site
+// (either as primary site or in assigned sites) with:
+// - name: string (concatenated first_name + ' ' + last_name)
+// - email: string
+// - role: "admin" | "nurse" | "pharmacist"
+// - primary_site: string (site name)
+// - assigned_sites: string[] (array of site names)
+export const getUsersBySiteId = async (siteId: number): Promise<UserListItem[]> => {
     try {
         const response = await axios.get(`${API_URL}/users/site/${siteId}`);
         return response.data;
@@ -98,14 +140,16 @@ export const getUsersBySiteId = async (siteId: number): Promise<User[]> => {
     }
 };
 
-export const getUsersBySite = async (siteName: string): Promise<User[]> => {
+// Legacy function for backward compatibility
+// Returns: Array of UserListItem objects filtered by site name
+export const getUsersBySite = async (siteName: string): Promise<UserListItem[]> => {
     try {
         // For backward compatibility, we still support getting users by site name
         // This will need to be updated to get the site ID first and then use the optimized endpoint
         const allUsers = await getUsers();
         return allUsers.filter(user => 
-            user.primarysite === siteName || 
-            (user.assignedsites && user.assignedsites.includes(siteName))
+            user.primary_site === siteName || 
+            (user.assigned_sites && user.assigned_sites.includes(siteName))
         );
     } catch (error) {
         console.error(`Error fetching users for site ${siteName}:`, error);

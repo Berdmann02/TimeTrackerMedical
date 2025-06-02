@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Shield, X } from 'lucide-react';
 import { updateUser, type User as UserType } from "../services/userService";
-import { getAllSiteNames } from "../services/siteService";
+import { getSites, type Site } from "../services/siteService";
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -23,8 +23,8 @@ interface UserFormData {
   lastName: string;
   email: string;
   role: "admin" | "nurse" | "pharmacist";
-  primarySite: string;
-  assignedSites: string[];
+  primarySiteId: string;
+  assignedSiteIds: string[];
 }
 
 const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalProps) => {
@@ -33,12 +33,12 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     lastName: "",
     email: "",
     role: "nurse",
-    primarySite: "",
-    assignedSites: [],
+    primarySiteId: "",
+    assignedSiteIds: [],
   };
 
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
-  const [sites, setSites] = useState<string[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,8 +66,8 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
         lastName: user.lastName || "",
         email: user.email,
         role: user.role,
-        primarySite: user.primarySite || "",
-        assignedSites: user.assignedSites || [],
+        primarySiteId: "", // Will be set after sites are loaded
+        assignedSiteIds: [], // Will be set after sites are loaded
       });
       setError(null);
       setIsSubmitting(false);
@@ -79,8 +79,23 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     setIsLoading(true);
     setSitesError(null);
     try {
-      const siteData = await getAllSiteNames();
-      setSites(["All", ...siteData]);
+      const siteData = await getSites();
+      const activeSites = siteData.filter(site => site.is_active);
+      setSites(activeSites);
+      
+      // After sites are loaded, map site names to IDs
+      if (user) {
+        const primarySiteObj = activeSites.find(site => site.name === user.primarySite);
+        const assignedSiteObjs = activeSites.filter(site => 
+          user.assignedSites?.includes(site.name)
+        );
+        
+        setFormData(prev => ({
+          ...prev,
+          primarySiteId: primarySiteObj ? primarySiteObj.id.toString() : "",
+          assignedSiteIds: assignedSiteObjs.map(site => site.id.toString())
+        }));
+      }
     } catch (err) {
       setSitesError("Failed to load sites. Please try again.");
       console.error("Error loading sites:", err);
@@ -114,10 +129,11 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
         last_name: formData.lastName,
         email: formData.email,
         role: formData.role,
-        primarysite: formData.primarySite,
-        assignedsites: formData.assignedSites,
+        primarysite_id: parseInt(formData.primarySiteId),
+        assignedsites_ids: formData.assignedSiteIds.map(id => parseInt(id)),
       };
 
+      // Use the original email as identifier (user.id is actually the email in our case)
       await updateUser(user.id, userData);
 
       if (onUserUpdated) {
@@ -136,41 +152,17 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleSiteCheckbox = (site: string) => {
-    if (site === 'All') {
-      setFormData(prev => ({
+  const handleSiteCheckbox = (siteId: string) => {
+    setFormData(prev => {
+      const newAssignedSiteIds = prev.assignedSiteIds.includes(siteId)
+        ? prev.assignedSiteIds.filter(id => id !== siteId)
+        : [...prev.assignedSiteIds, siteId];
+      
+      return {
         ...prev,
-        assignedSites: prev.assignedSites.includes('All') 
-          ? [] 
-          : sites
-      }));
-    } else {
-      setFormData(prev => {
-        const newAssignedSites = prev.assignedSites.includes(site)
-          ? prev.assignedSites.filter(s => s !== site)
-          : [...prev.assignedSites, site];
-        
-        if (prev.assignedSites.includes(site)) {
-          return {
-            ...prev,
-            assignedSites: newAssignedSites.filter(s => s !== 'All')
-          };
-        }
-        
-        if (newAssignedSites.length === sites.length - 1 && 
-            sites.every(s => s === 'All' || newAssignedSites.includes(s))) {
-          return {
-            ...prev,
-            assignedSites: sites
-          };
-        }
-        
-        return {
-          ...prev,
-          assignedSites: newAssignedSites
-        };
-      });
-    }
+        assignedSiteIds: newAssignedSiteIds
+      };
+    });
   };
 
   if(!isOpen) return null;
@@ -262,16 +254,16 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                   Primary Site
                 </label>
                 <select
-                  name="primarySite"
-                  value={formData.primarySite}
+                  name="primarySiteId"
+                  value={formData.primarySiteId}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
                   required
                   disabled={isLoading}
                 >
                   <option value="">Select a primary site</option>
-                  {sites.filter(site => site !== 'All').map(site => (
-                    <option key={site} value={site}>{site}</option>
+                  {sites.map(site => (
+                    <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
               </div>
@@ -298,23 +290,23 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                     <div className="p-2 space-y-1">
                       {sites.map(site => (
                         <label
-                          key={site}
+                          key={site.id}
                           className="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm"
                         >
                           <input
                             type="checkbox"
-                            checked={formData.assignedSites.includes(site)}
-                            onChange={() => handleSiteCheckbox(site)}
+                            checked={formData.assignedSiteIds.includes(site.id.toString())}
+                            onChange={() => handleSiteCheckbox(site.id.toString())}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
                           />
-                          <span className="ml-2 text-gray-700">{site}</span>
+                          <span className="ml-2 text-gray-700">{site.name}</span>
                         </label>
                       ))}
                     </div>
                   )}
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  Selected: {formData.assignedSites.length} sites
+                  Selected: {formData.assignedSiteIds.length} sites
                 </p>
               </div>
             </div>
