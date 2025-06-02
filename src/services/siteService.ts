@@ -30,6 +30,11 @@ export interface UpdateSiteDto {
   is_active?: boolean;
 }
 
+export interface SiteWithBuildings {
+  site_name: string;
+  building_names: string[];
+}
+
 export const createSite = async (data: CreateSiteDto): Promise<Site> => {
   const response = await axios.post(`${API_URL}/sites`, data);
   return response.data;
@@ -81,5 +86,15 @@ export const getAllSiteNames = async (): Promise<string[]> => {
   } catch (error) {
     console.error('Error fetching site names:', error);
     return [];
+  }
+};
+
+export const getSitesAndBuildings = async (): Promise<SiteWithBuildings[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/sites/sites-and-buildings`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching sites and buildings:', error);
+    throw error;
   }
 }; 

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddActivityModal from '../../components/AddActivityModal';
 import { getActivityTypes, getActivityById, getActivitiesWithDetails } from '../../services/activityService';
 import type { Activity } from '../../services/patientService';
-import { getSites, type Site } from '../../services/siteService';
-import { getBuildingsWithSiteInfo, type BuildingWithSiteInfo } from '../../services/buildingService';
+import { getSitesAndBuildings, type SiteWithBuildings } from '../../services/siteService';
 
 // Remove mock data and replace with state
 const months = ['All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -36,11 +35,8 @@ const MedicalActivitiesPage = () => {
   const [siteFilter, setSiteFilter] = useState('All');
   const [buildingFilter, setBuildingFilter] = useState('All');
   
-  // Update state to use proper Site and BuildingWithSiteInfo interfaces
-  const [sites, setSites] = useState<Site[]>([]);
-  const [buildings, setBuildings] = useState<BuildingWithSiteInfo[]>([]);
-  const [isLoadingSites, setIsLoadingSites] = useState(false);
-  const [isLoadingBuildings, setIsLoadingBuildings] = useState(false);
+  // State for sites and buildings data
+  const [sitesAndBuildings, setSitesAndBuildings] = useState<SiteWithBuildings[]>([]);
   
   // Get current date for default filters
   const currentDate = new Date();
@@ -63,41 +59,38 @@ const MedicalActivitiesPage = () => {
     return isNaN(date.getTime()) ? 0 : date.getTime();
   };
 
-  // Fetch sites data
-  const fetchSitesData = async () => {
-    setIsLoadingSites(true);
+  // Fetch sites and buildings data in the background
+  const fetchSitesAndBuildingsData = async () => {
     try {
-      const data = await getSites();
-      setSites(data.filter(site => site.is_active));
+      const data = await getSitesAndBuildings();
+      setSitesAndBuildings(data);
     } catch (err) {
-      console.error('Error fetching sites:', err);
-    } finally {
-      setIsLoadingSites(false);
+      console.error('Error fetching sites and buildings:', err);
     }
   };
 
-  // Fetch buildings data for selected site
-  const fetchBuildingsData = async (siteName: string) => {
-    setIsLoadingBuildings(true);
-    try {
-      const data = await getBuildingsWithSiteInfo();
-      
-      if (siteName === "All") {
-        // Show all buildings when "All Sites" is selected
-        setBuildings(data.filter(building => building.is_active));
-      } else {
-        // Show only buildings for the selected site
-        const filteredBuildings = data.filter(building => 
-          building.is_active && building.site_name === siteName
-        );
-        setBuildings(filteredBuildings);
-      }
-    } catch (err) {
-      console.error('Error fetching buildings:', err);
-    } finally {
-      setIsLoadingBuildings(false);
+  // Get all unique site names
+  const siteNames = useMemo(() => {
+    return sitesAndBuildings.map(site => site.site_name);
+  }, [sitesAndBuildings]);
+
+  // Get all buildings (filtered by selected site if applicable)
+  const availableBuildings = useMemo(() => {
+    if (siteFilter === "All") {
+      // Show all buildings from all sites, but remove duplicates
+      const allBuildings = sitesAndBuildings.flatMap(site => site.building_names).filter(Boolean);
+      return [...new Set(allBuildings)]; // Remove duplicates
+    } else {
+      // Show only buildings for the selected site
+      const selectedSiteData = sitesAndBuildings.find(site => site.site_name === siteFilter);
+      return selectedSiteData ? selectedSiteData.building_names : [];
     }
-  };
+  }, [sitesAndBuildings, siteFilter]);
+
+  // Reset building filter when site filter changes
+  useEffect(() => {
+    setBuildingFilter("All");
+  }, [siteFilter]);
 
   // Fetch all activities and their associated patient names
   useEffect(() => {
@@ -118,13 +111,8 @@ const MedicalActivitiesPage = () => {
     };
 
     fetchActivities();
-    fetchSitesData();
+    fetchSitesAndBuildingsData(); // Load in background without loading state
   }, []);
-
-  // Load buildings when site filter changes
-  useEffect(() => {
-    fetchBuildingsData(siteFilter);
-  }, [siteFilter]);
 
   // Format time spent
   const formatTimeSpent = (activity: ActivityWithPatient) => {
@@ -256,7 +244,7 @@ const MedicalActivitiesPage = () => {
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onActivityAdded={handleActivityAdded}
-            siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1].name : 'CP Greater San Antonio') : siteFilter}
+            siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
           />
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
@@ -287,9 +275,9 @@ const MedicalActivitiesPage = () => {
                       onChange={(e) => setSiteFilter(e.target.value)}
                       className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
-                      <option value="All">All</option>
-                      {sites.map((site) => (
-                        <option key={site.name} value={site.name}>{site.name}</option>
+                      <option value="All">All Sites</option>
+                      {siteNames.map((site) => (
+                        <option key={site} value={site}>{site}</option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -303,28 +291,23 @@ const MedicalActivitiesPage = () => {
                     <select
                       value={buildingFilter}
                       onChange={(e) => setBuildingFilter(e.target.value)}
-                      disabled={isLoadingBuildings}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
                       <option value="All">
                         {siteFilter === "All" 
                           ? "All Buildings" 
-                          : buildings.length === 0 
+                          : siteNames.length === 0 
                             ? `No buildings for ${siteFilter}` 
                             : "All Buildings"}
                       </option>
-                      {buildings.map((building) => (
-                        <option key={building.id} value={building.name}>
-                          {building.name}
+                      {availableBuildings.map((building) => (
+                        <option key={building} value={building}>
+                          {building}
                         </option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      {isLoadingBuildings ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                      ) : (
-                        <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                      )}
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                     </div>
                   </div>
                 </div>
@@ -397,7 +380,7 @@ const MedicalActivitiesPage = () => {
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onActivityAdded={handleActivityAdded}
-            siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1].name : 'CP Greater San Antonio') : siteFilter}
+            siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
           />
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
@@ -428,9 +411,9 @@ const MedicalActivitiesPage = () => {
                       onChange={(e) => setSiteFilter(e.target.value)}
                       className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
-                      <option value="All">All</option>
-                      {sites.map((site) => (
-                        <option key={site.name} value={site.name}>{site.name}</option>
+                      <option value="All">All Sites</option>
+                      {siteNames.map((site) => (
+                        <option key={site} value={site}>{site}</option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -444,28 +427,23 @@ const MedicalActivitiesPage = () => {
                     <select
                       value={buildingFilter}
                       onChange={(e) => setBuildingFilter(e.target.value)}
-                      disabled={isLoadingBuildings}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                     >
                       <option value="All">
                         {siteFilter === "All" 
                           ? "All Buildings" 
-                          : buildings.length === 0 
+                          : siteNames.length === 0 
                             ? `No buildings for ${siteFilter}` 
                             : "All Buildings"}
                       </option>
-                      {buildings.map((building) => (
-                        <option key={building.id} value={building.name}>
-                          {building.name}
+                      {availableBuildings.map((building) => (
+                        <option key={building} value={building}>
+                          {building}
                         </option>
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      {isLoadingBuildings ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                      ) : (
-                        <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                      )}
+                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                     </div>
                   </div>
                 </div>
@@ -543,7 +521,7 @@ const MedicalActivitiesPage = () => {
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onActivityAdded={handleActivityAdded}
-          siteName={siteFilter === 'All' ? (sites.length > 1 ? sites[1].name : 'CP Greater San Antonio') : siteFilter}
+          siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
         />
 
         <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
@@ -574,9 +552,9 @@ const MedicalActivitiesPage = () => {
                     onChange={(e) => setSiteFilter(e.target.value)}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
-                    <option value="All">All</option>
-                    {sites.map((site) => (
-                      <option key={site.name} value={site.name}>{site.name}</option>
+                    <option value="All">All Sites</option>
+                    {siteNames.map((site) => (
+                      <option key={site} value={site}>{site}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -590,28 +568,23 @@ const MedicalActivitiesPage = () => {
                   <select
                     value={buildingFilter}
                     onChange={(e) => setBuildingFilter(e.target.value)}
-                    disabled={isLoadingBuildings}
-                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="All">
                       {siteFilter === "All" 
                         ? "All Buildings" 
-                        : buildings.length === 0 
+                        : siteNames.length === 0 
                           ? `No buildings for ${siteFilter}` 
                           : "All Buildings"}
                     </option>
-                    {buildings.map((building) => (
-                      <option key={building.id} value={building.name}>
-                        {building.name}
+                    {availableBuildings.map((building) => (
+                      <option key={building} value={building}>
+                        {building}
                       </option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    {isLoadingBuildings ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                    ) : (
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    )}
+                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
                   </div>
                 </div>
               </div>
