@@ -24,11 +24,6 @@ export const getBuildings = async (): Promise<Building[]> => {
     return response.data;
 };
 
-export const getBuildingsWithSiteInfo = async (): Promise<BuildingWithSiteInfo[]> => {
-    const response = await axios.get(`${API_URL}/buildings/with-site-info/all`);
-    return response.data;
-};
-
 export const getBuildingsBySiteId = async (siteId: number): Promise<Building[]> => {
     const response = await axios.get(`${API_URL}/buildings/site/${siteId}`);
     return response.data;
