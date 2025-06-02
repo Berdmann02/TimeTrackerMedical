@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, ChevronLeft, Pencil, Save, X, ArrowUpIcon, ArrowDownIcon, ChevronDownIcon, Users, UserSquare2, Building as BuildingIcon, ChevronRight, Plus, SearchIcon, Trash } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getSiteById, updateSite } from '../../services/siteService';
+import { getSiteById, updateSite, deleteSite } from '../../services/siteService';
 import type { Site } from '../../services/siteService';
 import { AddBuildingModal } from '../../components/AddBuildingModal';
 import { EditBuildingModal } from '../../components/EditBuildingModal';
@@ -148,6 +148,8 @@ export default function SiteDetailsPage() {
     const [patientSearchTerm, setPatientSearchTerm] = useState('');
     const [patientStatusFilter, setPatientStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
+    const [isDeleteSiteModalOpen, setIsDeleteSiteModalOpen] = useState(false);
+    const [isDeletingSite, setIsDeletingSite] = useState(false);
 
     // Add state for expandable sections
     const [expandedSections, setExpandedSections] = useState({
@@ -463,6 +465,21 @@ export default function SiteDetailsPage() {
         }
     };
 
+    const handleDeleteSite = async () => {
+        if (!siteId) return;
+        
+        setIsDeletingSite(true);
+        try {
+            await deleteSite(parseInt(siteId, 10));
+            navigate('/sites'); // Navigate back to sites list after successful deletion
+        } catch (err) {
+            console.error("Error deleting site:", err);
+            alert("Failed to delete site. Please try again.");
+        } finally {
+            setIsDeletingSite(false);
+        }
+    };
+
     // Loading state
     if (isLoading) {
         return (
@@ -552,6 +569,13 @@ export default function SiteDetailsPage() {
                                 >
                                     <Save className="h-4 w-4 mr-2" />
                                     {isSaving ? "Saving..." : "Save Changes"}
+                                </button>
+                                <button
+                                    onClick={() => setIsDeleteSiteModalOpen(true)}
+                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
+                                >
+                                    <Trash className="h-4 w-4 mr-2" />
+                                    Delete Site
                                 </button>
                                 <button
                                     onClick={handleCancelEdit}
@@ -1148,6 +1172,15 @@ export default function SiteDetailsPage() {
                 onConfirm={handleDeleteUser}
                 isDeleting={isDeletingUser}
                 itemName={userToDelete ? `user ${userToDelete.first_name} ${userToDelete.last_name}` : 'user'}
+            />
+
+            {/* Delete Site Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteSiteModalOpen}
+                onClose={() => setIsDeleteSiteModalOpen(false)}
+                onConfirm={handleDeleteSite}
+                isDeleting={isDeletingSite}
+                itemName={`site "${site?.name}"`}
             />
 
             {/* Add Patient Modal */}

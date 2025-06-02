@@ -13,8 +13,7 @@ const SitesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [stateFilter, setStateFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showInactive, setShowInactive] = useState(false);
 
   const fetchSites = async () => {
     try {
@@ -35,9 +34,6 @@ const SitesPage: React.FC = () => {
     navigate(`/sites/${siteId}`);
   };
 
-  // Get unique states for filter
-  const states = Array.from(new Set(sites.map(site => site.state))).sort();
-
   // Helper function to capitalize site names
   const capitalizeSiteName = (name: string) => {
     return name.split(' ').map(word => 
@@ -54,12 +50,9 @@ const SitesPage: React.FC = () => {
       site.state.toLowerCase().includes(searchTerm.toLowerCase()) ||
       site.zip.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesState = stateFilter === 'all' || site.state === stateFilter;
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && site.is_active) ||
-      (statusFilter === 'inactive' && !site.is_active);
+    const matchesStatus = showInactive || site.is_active;
 
-    return matchesSearch && matchesState && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const sortedSites = [...filteredSites].sort((a, b) => {
@@ -116,7 +109,7 @@ const SitesPage: React.FC = () => {
 
           <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
             <div className="flex flex-col space-y-3">
-              {/* Top row with search */}
+              {/* Top row with search and show inactive toggle */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div className="relative w-full md:w-64">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -130,45 +123,16 @@ const SitesPage: React.FC = () => {
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
-              </div>
-
-              {/* Filter dropdowns - more compact layout */}
-              <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">State</label>
-                  <div className="relative">
-                    <select
-                      value={stateFilter}
-                      onChange={(e) => setStateFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      <option value="all">All States</option>
-                      {states.map((state) => (
-                        <option key={state} value={state}>{state}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showInactive}
+                    onChange={() => setShowInactive(!showInactive)}
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive Sites</span>
+                </label>
               </div>
             </div>
           </div>
@@ -207,7 +171,7 @@ const SitesPage: React.FC = () => {
 
         <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
           <div className="flex flex-col space-y-3">
-            {/* Top row with search */}
+            {/* Top row with search and show inactive toggle */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
               <div className="relative w-full md:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -221,45 +185,16 @@ const SitesPage: React.FC = () => {
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
-            </div>
-
-            {/* Filter dropdowns - more compact layout */}
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-              <div className="relative">
-                <label className="block text-xs font-medium text-gray-700 mb-1">State</label>
-                <div className="relative">
-                  <select
-                    value={stateFilter}
-                    onChange={(e) => setStateFilter(e.target.value)}
-                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                  >
-                    <option value="all">All States</option>
-                    {states.map((state) => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                  </div>
-                </div>
-              </div>
-              <div className="relative">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-                <div className="relative">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                  </div>
-                </div>
-              </div>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={() => setShowInactive(!showInactive)}
+                  className="sr-only peer"
+                />
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-700">Show Inactive Sites</span>
+              </label>
             </div>
           </div>
         </div>
