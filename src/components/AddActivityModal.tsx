@@ -340,7 +340,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   if (!isOpen) return null;
 
   // Find selected patient details
-  const selectedPatient = patients.find(p => p.id.toString() === formData.patientId);
+  const selectedPatient = patients.find(p => p.id?.toString() === formData.patientId);
   const selectedPatientName = selectedPatient 
     ? `${selectedPatient.last_name}, ${selectedPatient.first_name}`
     : patientName && initialPatientId === formData.patientId ? patientName : "";

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { createPatient, type CreatePatientDTO } from '../services/patientService';
+import { createPatient } from '../services/patientService';
+import type { CreatePatientDto } from '../types/patient';
 import { getSites, type Site } from '../services/siteService';
 import { getBuildingsBySiteId, type Building } from '../services/buildingService';
 
@@ -17,10 +18,11 @@ interface PatientFormData {
   lastName: string;
   dateOfBirth: string;
   gender: 'M' | 'F' | 'O';
-  siteId: string;
+  site_name: string;
   building: string;
   insurance: string;
   notes: string;
+  medicalRecords: string;
 }
 
 const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, defaultSiteId }: AddPatientModalProps) => {
@@ -29,10 +31,11 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
     lastName: '',
     dateOfBirth: '',
     gender: 'M',
-    siteId: defaultSiteId ? defaultSiteId.toString() : '',
+    site_name: defaultSite || '',
     building: '',
     insurance: '',
-    notes: ''
+    notes: '',
+    medicalRecords: 'initial'
   };
 
   const [formData, setFormData] = useState<PatientFormData>(initialFormData);
@@ -53,10 +56,11 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
         lastName: '',
         dateOfBirth: '',
         gender: 'M',
-        siteId: defaultSiteId ? defaultSiteId.toString() : '',
+        site_name: defaultSite || '',
         building: '',
         insurance: '',
-        notes: ''
+        notes: '',
+        medicalRecords: 'initial'
       });
       setError(null);
       setIsSubmitting(false);
@@ -76,20 +80,20 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
       const sitesData = await getSites();
       setSites(sitesData.filter(site => site.is_active));
       
-      // If defaultSiteId is provided, set it directly
-      if (defaultSiteId) {
+      // If defaultSite is provided, set it directly
+      if (defaultSite) {
         setFormData(prev => ({
           ...prev,
-          siteId: defaultSiteId.toString()
+          site_name: defaultSite
         }));
       }
-      // Fallback: If defaultSite is provided, find its ID and set it
-      else if (defaultSite) {
-        const defaultSiteObj = sitesData.find(site => site.name === defaultSite);
+      // If defaultSiteId is provided, find the corresponding site name
+      else if (defaultSiteId) {
+        const defaultSiteObj = sitesData.find(site => site.id === defaultSiteId);
         if (defaultSiteObj) {
           setFormData(prev => ({
             ...prev,
-            siteId: defaultSiteObj.id.toString()
+            site_name: defaultSiteObj.name
           }));
         }
       }
@@ -104,12 +108,16 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
   // Fetch buildings when site changes
   useEffect(() => {
     const fetchBuildings = async () => {
-      if (!formData.siteId || isNaN(parseInt(formData.siteId))) return;
+      if (!formData.site_name) return;
       
       setIsLoadingBuildings(true);
       try {
-        const buildingsData = await getBuildingsBySiteId(parseInt(formData.siteId));
-        setBuildings(buildingsData.filter(building => building.is_active));
+        // Find the site ID from the site name
+        const selectedSite = sites.find(site => site.name === formData.site_name);
+        if (selectedSite) {
+          const buildingsData = await getBuildingsBySiteId(selectedSite.id);
+          setBuildings(buildingsData.filter(building => building.is_active));
+        }
       } catch (err) {
         console.error('Error fetching buildings:', err);
       } finally {
@@ -118,7 +126,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
     };
 
     fetchBuildings();
-  }, [formData.siteId]);
+  }, [formData.site_name, sites]);
 
   // Update scroll lock effect
   useEffect(() => {
@@ -140,15 +148,16 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
     
     try {
       // Map the form data to the DTO format
-      const patientData: CreatePatientDTO = {
+      const patientData: CreatePatientDto = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         birthdate: formData.dateOfBirth,
         gender: formData.gender,
-        site_name: sites.find(site => site.id.toString() === formData.siteId)?.name || '',
+        site_name: formData.site_name,
         building: formData.building || undefined,
         insurance: formData.insurance,
-        is_active: true
+        is_active: true,
+        medical_records: formData.medicalRecords
       };
       
       await createPatient(patientData);
@@ -172,7 +181,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
       // Reset building when site changes
-      if (name === 'siteId') {
+      if (name === 'site_name') {
         newData.building = '';
       }
       return newData;
@@ -285,8 +294,8 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
                   Site
                 </label>
                 <select
-                  name="siteId"
-                  value={formData.siteId}
+                  name="site_name"
+                  value={formData.site_name}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
                   required
@@ -294,7 +303,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
                 >
                   <option value="">Select a site</option>
                   {sites.map(site => (
-                    <option key={site.id} value={site.id}>
+                    <option key={site.id} value={site.name}>
                       {site.name}
                     </option>
                   ))}
@@ -310,11 +319,11 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200 cursor-pointer appearance-none"
                   required
-                  disabled={!formData.siteId || isLoadingBuildings}
+                  disabled={!formData.site_name || isLoadingBuildings}
                 >
                   <option value="">Select a building</option>
                   {buildings.map(building => (
-                    <option key={building.id} value={building.name}>
+                    <option key={building.id} value={building.id}>
                       {building.name}
                     </option>
                   ))}

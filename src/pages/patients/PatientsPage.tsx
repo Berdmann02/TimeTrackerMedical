@@ -206,9 +206,9 @@ export default function PatientsPage() {
 
   // Handle opening the add activity modal
   const handleAddActivity = (patient: Patient) => {
-    setSelectedPatientId(patient.id.toString());
+    setSelectedPatientId(patient.id?.toString() || "");
     setSelectedPatientName(`${patient.last_name}, ${patient.first_name}`);
-    setSelectedPatientSite(patient.site_name);
+    setSelectedPatientSite(patient.site_name || "");
     setIsAddActivityModalOpen(true);
   };
 

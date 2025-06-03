@@ -1,9 +1,10 @@
 import { useState, useEffect, memo, useMemo } from "react"
 import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock } from "lucide-react"
-import type { PatientWithActivities } from "../../types/patient"
 import { useNavigate, useParams } from "react-router-dom"
 import { getPatientById, getPatientActivities, updatePatient } from "../../services/patientService"
 import type { Patient, Activity as ApiActivity } from "../../services/patientService"
+import type { PatientWithActivities } from "../../types/patient"
+import { getLatestMedicalRecordByPatientId, type MedicalRecord } from '../../services/medicalRecordService'
 import AddActivityModal from "../../components/AddActivityModal"
 import StatusHistoryModal from "../../components/StatusHistoryModal"
 import axios from "axios"
@@ -13,7 +14,7 @@ import { API_URL } from "../../config"
 interface DetailRowProps {
     icon?: any;
     label: string;
-    value: string | boolean | number | null | undefined;
+    value: string | number | boolean | Date | null | undefined;
     isEditing?: boolean;
     onEdit?: (value: any) => void;
     editType?: 'text' | 'date' | 'select' | 'checkbox' | 'readonly' | 'textarea';
@@ -21,107 +22,83 @@ interface DetailRowProps {
     className?: string;
 }
 
-const DetailRow: React.FC<DetailRowProps> = memo(({
-    icon: Icon,
-    label,
-    value,
-    isEditing = false,
-    onEdit,
-    editType = 'text',
-    editOptions = [],
-    className = ''
-}) => {
-    const renderValue = () => {
-        if (value === null || value === undefined) return 'N/A';
-        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-        if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
-            // Format the date for display without timezone conversion
-            const [year, month, day] = value.split('T')[0].split('-');
-            return `${month}/${day}/${year}`;
-        }
-        return value;
-    };
+const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditing = false, onEdit, editType = 'text', editOptions = [], className = '' }) => {
+  // Format value for display
+  const formatValue = (val: DetailRowProps['value']): string => {
+    if (val === null || val === undefined) return 'N/A';
+    if (val instanceof Date) return val.toISOString().split('T')[0];
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    return String(val);
+  };
 
-    const renderEditField = () => {
-        if (!isEditing || editType === 'readonly') {
-            return (
-                <p className={`text-gray-900 ${className} whitespace-pre-wrap`}>
-                    {renderValue()}
-                </p>
-            );
-        }
-
-        switch (editType) {
-            case 'textarea':
-                return (
-                    <textarea
-                        value={value as string || ''}
-                        onChange={(e) => onEdit && onEdit(e.target.value)}
-                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 h-full min-h-[100px] resize-none"
-                    />
-                );
-            case 'text':
-                return (
-                    <input
-                        type="text"
-                        value={value as string || ''}
-                        onChange={(e) => onEdit && onEdit(e.target.value)}
-                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                );
-            case 'date':
-                // Ensure we're using the date part only without timezone conversion
-                const dateValue = typeof value === 'string' ? value.split('T')[0] : '';
-                return (
-                    <input
-                        type="date"
-                        value={dateValue}
-                        onChange={(e) => onEdit && onEdit(e.target.value)}
-                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                );
-            case 'select':
-                return (
-                    <select
-                        value={value as string || ''}
-                        onChange={(e) => onEdit && onEdit(e.target.value)}
-                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        {editOptions.map(option => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
-                    </select>
-                );
-            case 'checkbox':
-                return (
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">{label}</span>
-                        <input
-                            type="checkbox"
-                            checked={value as boolean}
-                            onChange={(e) => onEdit && onEdit(e.target.checked)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                    </div>
-                );
-            default:
-                return <p className={`text-gray-900 ${className}`}>{renderValue()}</p>;
-        }
-    };
-
-    // For checkbox type, we don't need the label since it's inline
-    if (editType === 'checkbox' && isEditing) {
-        return renderEditField();
+  const renderValue = () => {
+    if (isEditing) {
+      switch (editType) {
+        case 'date':
+          return (
+            <input
+              type="date"
+              value={formatValue(value)}
+              onChange={(e) => onEdit?.(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          );
+        case 'select':
+          return (
+            <select
+              value={String(value)}
+              onChange={(e) => onEdit?.(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+              {editOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          );
+        case 'checkbox':
+          return (
+            <input
+              type="checkbox"
+              checked={Boolean(value)}
+              onChange={(e) => onEdit?.(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+          );
+        case 'textarea':
+          return (
+            <textarea
+              value={formatValue(value)}
+              onChange={(e) => onEdit?.(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              rows={4}
+            />
+          );
+        default:
+          return (
+            <input
+              type="text"
+              value={formatValue(value)}
+              onChange={(e) => onEdit?.(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          );
+      }
     }
 
-    return (
-        <div>
-            <label className="text-sm font-medium text-gray-500 block">{label}</label>
-            <div className="mt-1">
-                {renderEditField()}
-            </div>
-        </div>
-    );
+    return <span className="text-gray-900">{formatValue(value)}</span>;
+  };
+
+  return (
+    <div className={`${className}`}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {icon && <span className="mr-2">{icon}</span>}
+        {label}
+      </label>
+      {renderValue()}
+    </div>
+  );
 });
 
 // Add this interface before LastUpdatedModalProps
@@ -206,9 +183,15 @@ const LastUpdatedModal: React.FC<LastUpdatedModalProps> = ({ isOpen, onClose, up
   );
 };
 
+// Helper function to format birthdate
+const formatBirthdate = (birthdate: Date | string | undefined): string => {
+  if (!birthdate) return '';
+  return typeof birthdate === 'string' ? birthdate : birthdate.toISOString().split('T')[0];
+};
+
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
-  const { patientId } = useParams<{ patientId: string }>()
+  const { patientId = '' } = useParams<{ patientId: string }>()
   
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -219,6 +202,7 @@ export default function PatientDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLastUpdatedModalOpen, setIsLastUpdatedModalOpen] = useState(false)
+  const [latestMedicalRecord, setLatestMedicalRecord] = useState<MedicalRecord | null>(null)
 
   // Add new state variables for activity sorting and filtering
   const [activitySortField, setActivitySortField] = useState<"activityId" | "activityType" | "initials" | "recordDate" | "totalTime" | null>(null)
@@ -277,6 +261,31 @@ export default function PatientDetailsPage() {
       const patientData = await getPatientById(patientId)
       setPatient(patientData)
       
+      // Get latest medical record
+      try {
+        const latestRecord = await getLatestMedicalRecordByPatientId(patientId);
+        setLatestMedicalRecord(latestRecord);
+        
+        // Update patient data with latest medical record values
+        if (latestRecord) {
+          setPatient((prev: Patient | null) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              bp_at_goal: latestRecord.bpAtGoal,
+              hospital_visited_since_last_review: latestRecord.hospitalVisitSinceLastReview,
+              a1c_at_goal: latestRecord.a1cAtGoal,
+              use_benzo: latestRecord.benzodiazepines,
+              use_antipsychotic: latestRecord.antipsychotics,
+              use_opioids: latestRecord.opioids,
+              fall_since_last_visit: latestRecord.fallSinceLastVisit
+            };
+          });
+        }
+      } catch (medicalRecordError) {
+        console.error("Error fetching latest medical record:", medicalRecordError);
+      }
+      
       // Then try to get activities, but don't fail the whole request if this fails
       try {
         const activitiesData = await getPatientActivities(patientId)
@@ -301,25 +310,8 @@ export default function PatientDetailsPage() {
   // Convert API data to format expected by the component
   const patientData: PatientWithActivities | null = patient ? {
     patient: {
-      firstName: patient.first_name,
-      lastName: patient.last_name,
-      birthDate: patient.birthdate,
-      gender: patient.gender,
-      siteName: patient.site_name,
-      building: patient.building || undefined,
-      isActivePatient: patient.is_active,
-      phoneNumber: patient.phone_number || undefined,
-      contactName: patient.contact_name || undefined,
-      contactPhoneNumber: patient.contact_phone_number || undefined,
-      insurance: patient.insurance || undefined,
-      medicalRecordsCompleted: patient.medical_records_completed,
-      bpAtGoal: patient.bp_at_goal,
-      hospitalVisitedSinceLastReview: patient.hospital_visited_since_last_review,
-      a1cAtGoal: patient.a1c_at_goal,
-      useBenzo: patient.use_benzo,
-      fallSinceLastVisit: patient.fall_since_last_visit,
-      useAntipsychotic: patient.use_antipsychotic,
-      useOpioids: patient.use_opioids
+      ...patient,
+      site_name: patient.site_name || '', // Ensure site is provided as it's required
     },
     activities: activities.map(activity => {
       return {
@@ -376,18 +368,43 @@ export default function PatientDetailsPage() {
   };
 
   const handleSave = async () => {
-    if (!patientId || !editedPatient) return;
+    if (!editedPatient || !patientId) return;
     
     setIsSaving(true);
-    
     try {
-      const updatedPatient = await updatePatient(patientId, editedPatient);
-      setPatient(updatedPatient);
-      setEditedPatient(updatedPatient);
+      // Prepare the update data - only include fields that the API expects
+      const updateData: Partial<Patient> = {
+        first_name: editedPatient.first_name,
+        last_name: editedPatient.last_name,
+        birthdate: editedPatient.birthdate,
+        gender: editedPatient.gender,
+        phone_number: editedPatient.phone_number,
+        contact_name: editedPatient.contact_name,
+        contact_phone_number: editedPatient.contact_phone_number,
+        insurance: editedPatient.insurance,
+        is_active: editedPatient.is_active,
+        site_name: editedPatient.site_name,
+        building: editedPatient.building,
+        // Medical status fields - these will be handled by createMedicalRecord
+        bp_at_goal: editedPatient.bp_at_goal,
+        hospital_visited_since_last_review: editedPatient.hospital_visited_since_last_review,
+        a1c_at_goal: editedPatient.a1c_at_goal,
+        use_benzo: editedPatient.use_benzo,
+        use_antipsychotic: editedPatient.use_antipsychotic,
+        use_opioids: editedPatient.use_opioids,
+        fall_since_last_visit: editedPatient.fall_since_last_visit
+      };
+
+      // Update the patient
+      await updatePatient(patientId, updateData);
+      
+      // After successful update, refresh all patient data including medical records
+      await fetchPatientData();
+      
       setIsEditing(false);
     } catch (err) {
-      console.error("Error updating patient:", err);
-      alert("Failed to update patient. Please try again.");
+      console.error("Error saving patient:", err);
+      setError("Failed to save patient. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -395,11 +412,9 @@ export default function PatientDetailsPage() {
 
   const handleFieldChange = (field: string, value: any) => {
     if (!editedPatient) return;
-    
-    setEditedPatient(prev => {
-      if (!prev) return prev;
-      return { ...prev, [field]: value };
-    });
+
+    const updatedPatient = { ...editedPatient, [field]: value };
+    setEditedPatient(updatedPatient);
   };
 
   // Add activity sorting handler
@@ -495,7 +510,7 @@ export default function PatientDetailsPage() {
     )
   }
 
-  const patientFullName = `${patientData.patient.lastName}, ${patientData.patient.firstName}`;
+  const patientFullName = patient ? `${patient.last_name}, ${patient.first_name}` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -576,11 +591,11 @@ export default function PatientDetailsPage() {
                     </div>
                   ) : (
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      patientData?.patient.isActivePatient
+                      patientData?.patient.is_active
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {patientData?.patient.isActivePatient ? "Active" : "Inactive"}
+                      {patientData?.patient.is_active ? "Active" : "Inactive"}
                     </span>
                   )}
                 </div>
@@ -606,15 +621,15 @@ export default function PatientDetailsPage() {
                     ) : (
                       <div>
                         <label className="text-sm font-medium text-gray-500 block">Full Name</label>
-                        <p className="text-gray-900 mt-1 text-lg font-medium">
-                          {`${patientData?.patient.firstName} ${patientData?.patient.lastName}`}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">{patient?.first_name} {patient?.last_name}</span>
+                        </div>
                       </div>
                     )}
                     <div className="mt-6">
                       <DetailRow
                         label="Birth Date"
-                        value={isEditing ? editedPatient?.birthdate : patientData?.patient.birthDate}
+                        value={isEditing ? editedPatient?.birthdate : patientData?.patient.birthdate}
                         isEditing={isEditing}
                         editType="date"
                         onEdit={(value) => handleFieldChange('birthdate', value)}
@@ -624,7 +639,7 @@ export default function PatientDetailsPage() {
                   <div className="col-span-1">
                     <DetailRow
                       label="Site Name"
-                      value={isEditing ? editedPatient?.site_name : patientData?.patient.siteName}
+                      value={isEditing ? editedPatient?.site_name : patientData?.patient.site_name}
                       isEditing={isEditing}
                       editType="select"
                       editOptions={['CP Greater San Antonio', 'CP Intermountain']}
@@ -713,10 +728,10 @@ export default function PatientDetailsPage() {
                             <ClipboardCheck className="w-4 h-4 text-gray-400" />
                             <DetailRow
                               label="Medical Records"
-                              value={editedPatient?.medical_records_completed}
+                              value={editedPatient?.medical_records}
                               isEditing={isEditing}
                               editType="checkbox"
-                              onEdit={(value) => handleFieldChange('medical_records_completed', value)}
+                              onEdit={(value) => handleFieldChange('medical_records', value)}
                             />
                           </div>
                           <div className="flex items-center gap-2">
@@ -755,29 +770,29 @@ export default function PatientDetailsPage() {
                           <div className="flex items-center gap-2">
                             <ClipboardCheck className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">Medical Records:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.medicalRecordsCompleted ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.medicalRecordsCompleted ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.medical_records ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.medical_records ? 'Yes' : 'No'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Heart className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">BP at Goal:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.bpAtGoal ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.bpAtGoal ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.bp_at_goal ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.bp_at_goal ? 'Yes' : 'No'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Hospital className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">Hospital Visit Since Last Review:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.hospitalVisitedSinceLastReview ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.hospitalVisitedSinceLastReview ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.hospital_visited_since_last_review ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.hospital_visited_since_last_review ? 'Yes' : 'No'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">A1C at Goal:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.a1cAtGoal ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.a1cAtGoal ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.a1c_at_goal ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.a1c_at_goal ? 'Yes' : 'No'}
                             </span>
                           </div>
                         </>
@@ -836,29 +851,29 @@ export default function PatientDetailsPage() {
                           <div className="flex items-center gap-2">
                             <Pill className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">Benzodiazepines:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.useBenzo ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.useBenzo ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.use_benzo ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.use_benzo ? 'Yes' : 'No'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Syringe className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">Antipsychotics:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.useAntipsychotic ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.useAntipsychotic ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.use_antipsychotic ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.use_antipsychotic ? 'Yes' : 'No'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Pill className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">Opioids:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.useOpioids ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.useOpioids ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.use_opioids ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.use_opioids ? 'Yes' : 'No'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-gray-400" />
                             <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.fallSinceLastVisit ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.fallSinceLastVisit ? 'Yes' : 'No'}
+                            <span className={`text-sm font-medium ${patientData?.patient.fall_since_last_visit ? 'text-green-600' : 'text-red-600'}`}>
+                              {patientData?.patient.fall_since_last_visit ? 'Yes' : 'No'}
                             </span>
                           </div>
                         </>
@@ -918,7 +933,7 @@ export default function PatientDetailsPage() {
                   </div>
                 </div>
 
-                {patientData?.patient.isActivePatient && (
+                {patientData?.patient.is_active && (
                   <button
                     className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
                     onClick={handleAddActivity}
@@ -1084,6 +1099,7 @@ export default function PatientDetailsPage() {
       <StatusHistoryModal
         isOpen={isLastUpdatedModalOpen}
         onClose={() => setIsLastUpdatedModalOpen(false)}
+        patientId={patientId}
       />
 
       {/* Add Activity Modal */}

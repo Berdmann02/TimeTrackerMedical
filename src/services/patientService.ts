@@ -1,30 +1,9 @@
 import axios from 'axios';
 import { API_URL } from '../config';
+import type { Patient as PatientType } from '../types/patient';
+import { createMedicalRecord } from './medicalRecordService';
 
-export interface Patient {
-  id: number;
-  first_name: string;
-  last_name: string;
-  birthdate: string;
-  gender: string;
-  phone_number: string | null;
-  contact_name: string | null;
-  contact_phone_number: string | null;
-  insurance: string | null;
-  is_active: boolean;
-  site_name: string;
-  building: string | null;
-  created_at: string;
-  medical_records_completed?: boolean;
-  bp_at_goal?: boolean;
-  hospital_visited_since_last_review?: boolean;
-  a1c_at_goal?: boolean;
-  use_benzo?: boolean;
-  fall_since_last_visit?: boolean;
-  use_antipsychotic?: boolean;
-  use_opioids?: boolean;
-  notes?: string | null;
-}
+export type Patient = PatientType;
 
 export interface Activity {
   id: number;
@@ -53,19 +32,20 @@ export interface Activity {
   notes_end_time?: string;
 }
 
-export interface CreatePatientDTO {
-  first_name: string;
-  last_name: string;
-  birthdate: string;
-  gender: string;
-  site_name: string;
-  building?: string;
-  is_active: boolean;
-  phone_number?: string;
-  contact_name?: string;
-  contact_phone_number?: string;
-  insurance?: string;
-}
+// Helper function to check if any medical status fields are being updated
+const hasMedicalStatusChanges = (patientData: Partial<Patient>): boolean => {
+  const medicalStatusFields = [
+    'bp_at_goal',
+    'hospital_visited_since_last_review',
+    'a1c_at_goal',
+    'use_benzo',
+    'use_antipsychotic',
+    'use_opioids',
+    'fall_since_last_visit'
+  ];
+
+  return medicalStatusFields.some(field => field in patientData);
+};
 
 export const getPatients = async (): Promise<Patient[]> => {
   try {
@@ -107,7 +87,22 @@ export const getPatientsBySiteId = async (siteId: number): Promise<Patient[]> =>
   }
 };
 
-export const createPatient = async (patientData: CreatePatientDTO): Promise<Patient> => {
+export interface CreatePatientDto {
+  first_name: string;
+  last_name: string;
+  birthdate: string;
+  gender: 'M' | 'F' | 'O';
+  phone_number?: string;
+  contact_name?: string;
+  contact_phone_number?: string;
+  insurance?: string;
+  is_active: boolean;
+  site_name: string; // site name
+  building?: string; // building ID
+  medical_records: string;
+}
+
+export const createPatient = async (patientData: CreatePatientDto): Promise<Patient> => {
   try {
     const response = await axios.post(`${API_URL}/patients`, patientData);
     return response.data;
@@ -119,13 +114,61 @@ export const createPatient = async (patientData: CreatePatientDTO): Promise<Pati
 
 export const updatePatient = async (id: number | string, patientData: Partial<Patient>): Promise<Patient> => {
   try {
-    const response = await axios.put(`${API_URL}/patients/${id}`, patientData);
+    // First update the patient - only send fields that the API expects
+    const updateData: Partial<{
+      first_name: string;
+      last_name: string;
+      birthdate: string | Date;
+      gender: 'M' | 'F' | 'O';
+      phone_number: string;
+      contact_name: string;
+      contact_phone_number: string;
+      insurance: string;
+      is_active: boolean;
+      site_name: string;
+      building: string;
+    }> = {
+      first_name: patientData.first_name,
+      last_name: patientData.last_name,
+      birthdate: patientData.birthdate,
+      gender: patientData.gender,
+      phone_number: patientData.phone_number,
+      contact_name: patientData.contact_name,
+      contact_phone_number: patientData.contact_phone_number,
+      insurance: patientData.insurance,
+      is_active: patientData.is_active,
+      site_name: patientData.site_name,
+      building: patientData.building
+    };
+
+    // Remove undefined values
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key as keyof typeof updateData] === undefined) {
+        delete updateData[key as keyof typeof updateData];
+      }
+    });
+
+    const response = await axios.put(`${API_URL}/patients/${id}`, updateData);
+    
+    // If any medical status fields were updated, create a new medical record
+    if (hasMedicalStatusChanges(patientData)) {
+      await createMedicalRecord({
+        patientId: typeof id === 'string' ? parseInt(id) : id,
+        bpAtGoal: patientData.bp_at_goal ?? false,
+        hospitalVisitSinceLastReview: patientData.hospital_visited_since_last_review ?? false,
+        a1cAtGoal: patientData.a1c_at_goal ?? false,
+        benzodiazepines: patientData.use_benzo ?? false,
+        antipsychotics: patientData.use_antipsychotic ?? false,
+        opioids: patientData.use_opioids ?? false,
+        fallSinceLastVisit: patientData.fall_since_last_visit ?? false
+      });
+    }
+
     return response.data;
   } catch (error) {
     console.error(`Error updating patient with ID ${id}:`, error);
     throw error;
   }
-}; 
-
+};
 
 // need to add delte patient possibly 
