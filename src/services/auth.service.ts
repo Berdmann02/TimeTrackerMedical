@@ -72,17 +72,17 @@ class AuthService {
   // Check if user is admin
   isAdmin(): boolean {
     const role = this.getUserRole();
-    return role === 'admin' || role === 'a';
+    return role === 'admin' || role === 'admin';
   }
 
   // Check if user is nurse
   isNurse(): boolean {
-    return this.getUserRole() === 'n';
+    return this.getUserRole() === 'nurse';
   }
 
   // Check if user is pharmacist
   isPharmacist(): boolean {
-    return this.getUserRole() === 'p';
+    return this.getUserRole() === 'pharmacist';
   }
 
   // Get stored token
