@@ -98,8 +98,9 @@ export interface CreatePatientDto {
   insurance?: string;
   is_active: boolean;
   site_name: string; // site name
-  building?: string; // building ID
+  building?: string; // building name
   medical_records: string;
+  notes?: string;
 }
 
 export const createPatient = async (patientData: CreatePatientDto): Promise<Patient> => {
@@ -126,7 +127,8 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
       insurance: string;
       is_active: boolean;
       site_name: string;
-      building: string;
+      building: string; // building name
+      notes: string;
     }> = {
       first_name: patientData.first_name,
       last_name: patientData.last_name,
@@ -138,7 +140,8 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
       insurance: patientData.insurance,
       is_active: patientData.is_active,
       site_name: patientData.site_name,
-      building: patientData.building
+      building: patientData.building,
+      notes: patientData.notes
     };
 
     // Remove undefined values
@@ -148,7 +151,9 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
       }
     });
 
+    console.log('Sending update data to API:', updateData);
     const response = await axios.put(`${API_URL}/patients/${id}`, updateData);
+    console.log('API response:', response.data);
     
     // If any medical status fields were updated, create a new medical record
     if (hasMedicalStatusChanges(patientData)) {
@@ -171,4 +176,12 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
   }
 };
 
-// need to add delte patient possibly 
+export const deletePatient = async (id: number | string): Promise<void> => {
+  try {
+    await axios.delete(`${API_URL}/patients/${id}`);
+  } catch (error) {
+    console.error(`Error deleting patient with ID ${id}:`, error);
+    throw error;
+  }
+};
+

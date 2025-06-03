@@ -157,7 +157,8 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
         building: formData.building || undefined,
         insurance: formData.insurance,
         is_active: true,
-        medical_records: formData.medicalRecords
+        medical_records: formData.medicalRecords,
+        notes: formData.notes
       };
       
       await createPatient(patientData);
@@ -323,7 +324,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
                 >
                   <option value="">Select a building</option>
                   {buildings.map(building => (
-                    <option key={building.id} value={building.id}>
+                    <option key={building.id} value={building.name}>
                       {building.name}
                     </option>
                   ))}

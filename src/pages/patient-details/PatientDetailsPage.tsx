@@ -1,14 +1,16 @@
 import { useState, useEffect, memo, useMemo } from "react"
-import { User, MapPin, Shield, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock } from "lucide-react"
+import { User, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock, Trash } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
-import { getPatientById, getPatientActivities, updatePatient } from "../../services/patientService"
+import { getPatientById, getPatientActivities, updatePatient, deletePatient } from "../../services/patientService"
 import type { Patient, Activity as ApiActivity } from "../../services/patientService"
 import type { PatientWithActivities } from "../../types/patient"
 import { getLatestMedicalRecordByPatientId, type MedicalRecord } from '../../services/medicalRecordService'
 import AddActivityModal from "../../components/AddActivityModal"
 import StatusHistoryModal from "../../components/StatusHistoryModal"
-import axios from "axios"
-import { API_URL } from "../../config"
+import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
+import { getBuildingsBySiteId, type Building } from '../../services/buildingService'
+import { getSiteByName } from '../../services/siteService'
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
 
 // DetailRow component for editable fields that maintains original UI
 interface DetailRowProps {
@@ -20,13 +22,33 @@ interface DetailRowProps {
     editType?: 'text' | 'date' | 'select' | 'checkbox' | 'readonly' | 'textarea';
     editOptions?: string[];
     className?: string;
+    buildings?: Building[];
 }
 
-const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditing = false, onEdit, editType = 'text', editOptions = [], className = '' }) => {
+// Add this before DetailRow component
+const formatDateForInput = (dateString: string | Date | undefined | null): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toISOString().split('T')[0];
+};
+
+const DetailRow: React.FC<DetailRowProps> = memo(({ 
+  icon, 
+  label, 
+  value, 
+  isEditing = false, 
+  onEdit, 
+  editType = 'text', 
+  editOptions = [], 
+  className = '',
+  buildings = []
+}) => {
   // Format value for display
   const formatValue = (val: DetailRowProps['value']): string => {
     if (val === null || val === undefined) return 'N/A';
-    if (val instanceof Date) return val.toISOString().split('T')[0];
+    if (label === 'Birth Date' && (val instanceof Date || (typeof val === 'string' && val.includes('T')))) {
+      return new Date(val).toLocaleDateString();
+    }
     if (typeof val === 'boolean') return val ? 'Yes' : 'No';
     return String(val);
   };
@@ -38,7 +60,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
           return (
             <input
               type="date"
-              value={formatValue(value)}
+              value={formatDateForInput(value as string)}
               onChange={(e) => onEdit?.(e.target.value)}
               className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
@@ -50,6 +72,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
               onChange={(e) => onEdit?.(e.target.value)}
               className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
+              <option value="">Select {label}</option>
               {editOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -212,6 +235,10 @@ export default function PatientDetailsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isLastUpdatedModalOpen, setIsLastUpdatedModalOpen] = useState(false)
   const [latestMedicalRecord, setLatestMedicalRecord] = useState<MedicalRecord | null>(null)
+  const [sitesAndBuildings, setSitesAndBuildings] = useState<SiteWithBuildings[]>([])
+  const [availableBuildings, setAvailableBuildings] = useState<string[]>([])
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingPatient, setIsDeletingPatient] = useState(false);
 
   // Add new state variables for activity sorting and filtering
   const [activitySortField, setActivitySortField] = useState<"activityId" | "activityType" | "initials" | "recordDate" | "totalTime" | null>(null)
@@ -268,6 +295,7 @@ export default function PatientDetailsPage() {
     try {
       // First, try to get the patient details
       const patientData = await getPatientById(patientId)
+      console.log('Fetched patient data:', patientData);
       setPatient(patientData)
       
       // Get latest medical record
@@ -315,6 +343,34 @@ export default function PatientDetailsPage() {
   useEffect(() => {
     fetchPatientData()
   }, [patientId])
+
+  // Only fetch sites and buildings when editing mode is activated
+  useEffect(() => {
+    const fetchSitesAndBuildings = async () => {
+      if (!isEditing) return;
+      
+      try {
+        const data = await getSitesAndBuildings();
+        console.log('Fetched sites and buildings:', data);
+        setSitesAndBuildings(data);
+        
+        // If we have a site selected, set its buildings
+        if (editedPatient?.site_name) {
+          console.log('Current site name:', editedPatient.site_name);
+          const selectedSite = data.find(site => site.site_name === editedPatient.site_name);
+          console.log('Selected site:', selectedSite);
+          if (selectedSite) {
+            console.log('Setting available buildings:', selectedSite.building_names);
+            setAvailableBuildings(selectedSite.building_names);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching sites and buildings:", err);
+      }
+    };
+
+    fetchSitesAndBuildings();
+  }, [isEditing, editedPatient?.site_name]);
 
   // Convert API data to format expected by the component
   const patientData: PatientWithActivities | null = patient ? {
@@ -368,7 +424,8 @@ export default function PatientDetailsPage() {
 
   const handleEditPatient = () => {
     setIsEditing(true);
-    setEditedPatient(patient);
+    // Create a deep copy of the patient data to avoid reference issues
+    setEditedPatient(patient ? {...patient} : null);
   };
 
   const handleCancelEdit = () => {
@@ -381,38 +438,15 @@ export default function PatientDetailsPage() {
     
     setIsSaving(true);
     try {
-      // Prepare the update data - only include fields that the API expects
-      const updateData: Partial<Patient> = {
-        first_name: editedPatient.first_name,
-        last_name: editedPatient.last_name,
-        birthdate: editedPatient.birthdate,
-        gender: editedPatient.gender,
-        phone_number: editedPatient.phone_number,
-        contact_name: editedPatient.contact_name,
-        contact_phone_number: editedPatient.contact_phone_number,
-        insurance: editedPatient.insurance,
-        is_active: editedPatient.is_active,
-        site_name: editedPatient.site_name,
-        building: editedPatient.building,
-        // Medical status fields - these will be handled by createMedicalRecord
-        bp_at_goal: editedPatient.bp_at_goal,
-        hospital_visited_since_last_review: editedPatient.hospital_visited_since_last_review,
-        a1c_at_goal: editedPatient.a1c_at_goal,
-        use_benzo: editedPatient.use_benzo,
-        use_antipsychotic: editedPatient.use_antipsychotic,
-        use_opioids: editedPatient.use_opioids,
-        fall_since_last_visit: editedPatient.fall_since_last_visit
-      };
-
-      // Update the patient
-      await updatePatient(patientId, updateData);
+      console.log('Saving patient with data:', editedPatient);
+      const updatedPatient = await updatePatient(patientId, editedPatient);
+      console.log('Patient updated successfully:', updatedPatient);
       
-      // After successful update, refresh all patient data including medical records
-      await fetchPatientData();
-      
+      setPatient(updatedPatient);
+      setEditedPatient(updatedPatient);
       setIsEditing(false);
     } catch (err) {
-      console.error("Error saving patient:", err);
+      console.error("Error updating patient:", err);
       setError("Failed to save patient. Please try again.");
     } finally {
       setIsSaving(false);
@@ -423,6 +457,20 @@ export default function PatientDetailsPage() {
     if (!editedPatient) return;
 
     const updatedPatient = { ...editedPatient, [field]: value };
+    
+    // If site name changed, update available buildings
+    if (field === 'site_name') {
+      console.log('Site name changed to:', value);
+      const selectedSite = sitesAndBuildings.find(site => site.site_name === value);
+      console.log('Found site:', selectedSite);
+      if (selectedSite) {
+        console.log('Setting available buildings for new site:', selectedSite.building_names);
+        setAvailableBuildings(selectedSite.building_names);
+        // Reset building when site changes
+        updatedPatient.building = '';
+      }
+    }
+    
     setEditedPatient(updatedPatient);
   };
 
@@ -488,6 +536,21 @@ export default function PatientDetailsPage() {
     });
   }, [patientData?.activities, activityMonthFilter, activityYearFilter, activitySortField, activitySortDirection]);
 
+  const handleDeletePatient = async () => {
+    if (!patientId) return;
+    
+    setIsDeletingPatient(true);
+    try {
+      await deletePatient(patientId);
+      navigate('/patients'); // Navigate back to patients list after successful deletion
+    } catch (err) {
+      console.error("Error deleting patient:", err);
+      alert("Failed to delete patient. Please try again.");
+    } finally {
+      setIsDeletingPatient(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -545,6 +608,13 @@ export default function PatientDetailsPage() {
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
+                >
+                  <Trash className="h-4 w-4 mr-2" />
+                  Delete Patient
                 </button>
                 <button
                   onClick={handleCancelEdit}
@@ -651,7 +721,7 @@ export default function PatientDetailsPage() {
                       value={isEditing ? editedPatient?.site_name : patientData?.patient.site_name}
                       isEditing={isEditing}
                       editType="select"
-                      editOptions={['CP Greater San Antonio', 'CP Intermountain']}
+                      editOptions={sitesAndBuildings.map(site => site.site_name)}
                       onEdit={(value) => handleFieldChange('site_name', value)}
                     />
                     <div className="mt-6">
@@ -660,22 +730,7 @@ export default function PatientDetailsPage() {
                         value={isEditing ? editedPatient?.building : patientData?.patient.building}
                         isEditing={isEditing}
                         editType="select"
-                        editOptions={[
-                          'Building A',
-                          'Building B',
-                          'Building C',
-                          'Building D',
-                          'Main Building',
-                          'North Wing',
-                          'South Wing',
-                          'East Wing',
-                          'West Wing',
-                          'Administrative Building',
-                          'Medical Center',
-                          'Outpatient Center',
-                          'Emergency Department',
-                          'Surgery Center'
-                        ]}
+                        editOptions={availableBuildings}
                         onEdit={(value) => handleFieldChange('building', value)}
                       />
                     </div>
@@ -1118,6 +1173,15 @@ export default function PatientDetailsPage() {
         onActivityAdded={handleActivityAdded}
         patientId={patientId}
         patientName={patientFullName}
+      />
+
+      {/* Delete Patient Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeletePatient}
+        isDeleting={isDeletingPatient}
+        itemName={`patient "${patient?.first_name} ${patient?.last_name}"`}
       />
     </div>
   )
