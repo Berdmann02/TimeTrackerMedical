@@ -22,7 +22,6 @@ interface PatientFormData {
   building: string;
   insurance: string;
   notes: string;
-  medicalRecords: string;
 }
 
 const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, defaultSiteId }: AddPatientModalProps) => {
@@ -35,7 +34,6 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
     building: '',
     insurance: '',
     notes: '',
-    medicalRecords: 'initial'
   };
 
   const [formData, setFormData] = useState<PatientFormData>(initialFormData);
@@ -60,7 +58,6 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
         building: '',
         insurance: '',
         notes: '',
-        medicalRecords: 'initial'
       });
       setError(null);
       setIsSubmitting(false);
@@ -157,7 +154,6 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
         building: formData.building || undefined,
         insurance: formData.insurance,
         is_active: true,
-        medical_records: formData.medicalRecords,
         notes: formData.notes
       };
       

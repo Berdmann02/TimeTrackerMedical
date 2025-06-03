@@ -35,6 +35,7 @@ export interface Activity {
 // Helper function to check if any medical status fields are being updated
 const hasMedicalStatusChanges = (patientData: Partial<Patient>): boolean => {
   const medicalStatusFields = [
+    'medical_records',
     'bp_at_goal',
     'hospital_visited_since_last_review',
     'a1c_at_goal',
@@ -99,7 +100,6 @@ export interface CreatePatientDto {
   is_active: boolean;
   site_name: string; // site name
   building?: string; // building name
-  medical_records: string;
   notes?: string;
 }
 
@@ -159,6 +159,7 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
     if (hasMedicalStatusChanges(patientData)) {
       await createMedicalRecord({
         patientId: typeof id === 'string' ? parseInt(id) : id,
+        medical_records: patientData.medical_records ?? false,
         bpAtGoal: patientData.bp_at_goal ?? false,
         hospitalVisitSinceLastReview: patientData.hospital_visited_since_last_review ?? false,
         a1cAtGoal: patientData.a1c_at_goal ?? false,

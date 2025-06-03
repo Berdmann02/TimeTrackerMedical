@@ -10,7 +10,6 @@ export interface CreatePatientDto {
     site_name: string; // Site name
     building?: string; // Building ID
     is_active: boolean;
-    medical_records: string; // Required field for medical records
     notes?: string; // Add notes field
 }
 
@@ -28,7 +27,7 @@ export interface Patient {
     site_name: string; // Site name
     building?: string; // Building ID
     created_at?: Date;
-    medical_records?: string;
+    medical_records?: boolean;
     notes?: string;
     // Medical status fields
     bp_at_goal?: boolean;

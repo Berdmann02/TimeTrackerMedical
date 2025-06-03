@@ -309,6 +309,7 @@ export default function PatientDetailsPage() {
             if (!prev) return prev;
             return {
               ...prev,
+              medical_records: latestRecord.medical_records,
               bp_at_goal: latestRecord.bpAtGoal,
               hospital_visited_since_last_review: latestRecord.hospitalVisitSinceLastReview,
               a1c_at_goal: latestRecord.a1cAtGoal,
@@ -449,6 +450,7 @@ export default function PatientDetailsPage() {
         
         // Update patient data with latest medical record values
         if (latestRecord) {
+          updatedPatient.medical_records = latestRecord.medical_records;
           updatedPatient.bp_at_goal = latestRecord.bpAtGoal;
           updatedPatient.hospital_visited_since_last_review = latestRecord.hospitalVisitSinceLastReview;
           updatedPatient.a1c_at_goal = latestRecord.a1cAtGoal;
