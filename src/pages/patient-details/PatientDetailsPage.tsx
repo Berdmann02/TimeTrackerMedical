@@ -40,7 +40,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
               type="date"
               value={formatValue(value)}
               onChange={(e) => onEdit?.(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           );
         case 'select':
@@ -48,7 +48,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
             <select
               value={String(value)}
               onChange={(e) => onEdit?.(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               {editOptions.map((option) => (
                 <option key={option} value={option}>
@@ -59,19 +59,22 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
           );
         case 'checkbox':
           return (
-            <input
-              type="checkbox"
-              checked={Boolean(value)}
-              onChange={(e) => onEdit?.(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">{label}</span>
+              <input
+                type="checkbox"
+                checked={Boolean(value)}
+                onChange={(e) => onEdit?.(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+            </div>
           );
         case 'textarea':
           return (
             <textarea
               value={formatValue(value)}
               onChange={(e) => onEdit?.(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               rows={4}
             />
           );
@@ -81,7 +84,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
               type="text"
               value={formatValue(value)}
               onChange={(e) => onEdit?.(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           );
       }
@@ -90,13 +93,19 @@ const DetailRow: React.FC<DetailRowProps> = memo(({ icon, label, value, isEditin
     return <span className="text-gray-900">{formatValue(value)}</span>;
   };
 
+  if (editType === 'checkbox' && isEditing) {
+    return renderValue();
+  }
+
   return (
     <div className={`${className}`}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-gray-500 mb-1">
         {icon && <span className="mr-2">{icon}</span>}
         {label}
       </label>
-      {renderValue()}
+      <div className="mt-1">
+        {renderValue()}
+      </div>
     </div>
   );
 });
@@ -621,8 +630,8 @@ export default function PatientDetailsPage() {
                     ) : (
                       <div>
                         <label className="text-sm font-medium text-gray-500 block">Full Name</label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">{patient?.first_name} {patient?.last_name}</span>
+                        <div className="mt-1">
+                          <span className="text-gray-900">{patient?.first_name} {patient?.last_name}</span>
                         </div>
                       </div>
                     )}
