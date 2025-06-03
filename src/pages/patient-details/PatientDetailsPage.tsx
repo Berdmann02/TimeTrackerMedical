@@ -442,6 +442,25 @@ export default function PatientDetailsPage() {
       const updatedPatient = await updatePatient(patientId, editedPatient);
       console.log('Patient updated successfully:', updatedPatient);
       
+      // Re-fetch latest medical record after successful update
+      try {
+        const latestRecord = await getLatestMedicalRecordByPatientId(patientId);
+        setLatestMedicalRecord(latestRecord);
+        
+        // Update patient data with latest medical record values
+        if (latestRecord) {
+          updatedPatient.bp_at_goal = latestRecord.bpAtGoal;
+          updatedPatient.hospital_visited_since_last_review = latestRecord.hospitalVisitSinceLastReview;
+          updatedPatient.a1c_at_goal = latestRecord.a1cAtGoal;
+          updatedPatient.use_benzo = latestRecord.benzodiazepines;
+          updatedPatient.use_antipsychotic = latestRecord.antipsychotics;
+          updatedPatient.use_opioids = latestRecord.opioids;
+          updatedPatient.fall_since_last_visit = latestRecord.fallSinceLastVisit;
+        }
+      } catch (medicalRecordError) {
+        console.error("Error fetching latest medical record:", medicalRecordError);
+      }
+      
       setPatient(updatedPatient);
       setEditedPatient(updatedPatient);
       setIsEditing(false);
