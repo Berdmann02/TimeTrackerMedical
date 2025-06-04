@@ -221,6 +221,25 @@ const formatBirthdate = (birthdate: Date | string | undefined): string => {
   return typeof birthdate === 'string' ? birthdate : birthdate.toISOString().split('T')[0];
 };
 
+type GenderCode = 'M' | 'F' | 'O';
+type GenderDisplay = 'Male' | 'Female' | 'Other';
+
+const genderOptions: Record<GenderCode, GenderDisplay> = {
+  'M': 'Male',
+  'F': 'Female',
+  'O': 'Other'
+};
+
+const getGenderDisplay = (value: string | null | undefined): GenderDisplay | '' => {
+  if (!value) return '';
+  return genderOptions[value as GenderCode] || value as GenderDisplay;
+};
+
+const getGenderValue = (display: string): GenderCode => {
+  const entry = Object.entries(genderOptions).find(([_, v]) => v === display);
+  return (entry ? entry[0] : display) as GenderCode;
+};
+
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
   const { patientId = '' } = useParams<{ patientId: string }>()
@@ -759,11 +778,14 @@ export default function PatientDetailsPage() {
                   <div className="col-span-1">
                     <DetailRow
                       label="Gender"
-                      value={isEditing ? editedPatient?.gender : patientData?.patient.gender}
+                      value={isEditing ? 
+                        (editedPatient?.gender ? genderOptions[editedPatient.gender as GenderCode] : '') : 
+                        getGenderDisplay(patientData?.patient.gender)
+                      }
                       isEditing={isEditing}
                       editType="select"
-                      editOptions={['Male', 'Female', 'Other']}
-                      onEdit={(value) => handleFieldChange('gender', value)}
+                      editOptions={Object.values(genderOptions)}
+                      onEdit={(value) => handleFieldChange('gender', getGenderValue(value))}
                     />
                     <div className="mt-6">
                       <DetailRow
