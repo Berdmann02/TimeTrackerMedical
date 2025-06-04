@@ -1,18 +1,31 @@
 import axios from 'axios';
-import type { Activity } from './patientService';
 import { API_URL } from '../config';
-import { getUserInitialsFromAuthUser } from '../utils/userUtils';
+import { createMedicalRecord } from './medicalRecordService';
 
+// Activity interface matching the backend schema
+export interface Activity {
+  id?: number;
+  patient_id: number;
+  user_id: number;
+  activity_type: string;
+  pharm_flag?: boolean;
+  notes?: string;
+  site_name: string;
+  building?: string;
+  service_datetime: Date | string;
+  duration_minutes: number;
+  created_at?: Date | string;
+}
+
+// DTO for creating activities with medical checks
 export interface CreateActivityDTO {
   patient_id: number;
   user_id: number;
   activity_type: string;
-  time_spent: number;
-  building_name: string;
-  site_name?: string;
+  duration_minutes: number;
+  site_name: string;
+  building?: string;
   notes?: string;
-  insurance?: string;
-  user_initials?: string;
   medical_checks?: {
     medical_records: boolean;
     bp_at_goal: boolean;
@@ -25,12 +38,27 @@ export interface CreateActivityDTO {
   };
 }
 
-export const getActivityById = async (id: number | string): Promise<Activity | Activity[]> => {
+// Helper function to check if any medical checks are selected
+const hasMedicalChecks = (medical_checks?: CreateActivityDTO['medical_checks']): boolean => {
+  if (!medical_checks) return false;
+  
+  return Object.values(medical_checks).some(check => check === true);
+};
+
+// Get all activities
+export const getActivities = async (): Promise<Activity[]> => {
   try {
-    if (id === 'all') {
-      const response = await axios.get(`${API_URL}/activities`);
-      return response.data;
-    }
+    const response = await axios.get(`${API_URL}/activities`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    throw error;
+  }
+};
+
+// Get activity by ID
+export const getActivityById = async (id: number | string): Promise<Activity> => {
+  try {
     const response = await axios.get(`${API_URL}/activities/${id}`);
     return response.data;
   } catch (error) {
@@ -39,57 +67,125 @@ export const getActivityById = async (id: number | string): Promise<Activity | A
   }
 };
 
-// New optimized function to get activities with patient and user details
+// Get activities by patient ID
+export const getActivitiesByPatientId = async (patientId: number | string): Promise<Activity[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/activities/patient/${patientId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching activities for patient ${patientId}:`, error);
+    throw error;
+  }
+};
+
+// Get activities with patient and user details (optimized endpoint)
 export const getActivitiesWithDetails = async (): Promise<any[]> => {
   try {
-    const response = await axios.get(`${API_URL}/activities/with-details`);
-    return response.data;
+    // The backend doesn't have with-details endpoint, so use client-side enrichment
+    console.log('Using client-side enrichment for activities with details');
+    
+    // Get basic activities
+    const activities = await getActivities();
+    
+    // Get all patients and users for enrichment
+    const [patientsResponse, usersResponse] = await Promise.all([
+      axios.get(`${API_URL}/patients`),
+      axios.get(`${API_URL}/users`)
+    ]);
+    
+    const patients = patientsResponse.data;
+    const users = usersResponse.data;
+    
+    // Enrich activities with patient and user details
+    const enrichedActivities = activities.map(activity => {
+      const patient = patients.find((p: any) => p.id === activity.patient_id);
+      const user = users.find((u: any) => u.id === activity.user_id);
+      
+      return {
+        ...activity,
+        patient: patient ? {
+          id: patient.id,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          full_name: `${patient.first_name} ${patient.last_name}`,
+          insurance: patient.insurance,
+          site_name: patient.site_name,
+          building: patient.building
+        } : null,
+        user: user ? {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          full_name: `${user.first_name} ${user.last_name}`,
+          role: user.role,
+          initials: `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`
+        } : null
+      };
+    });
+    
+    return enrichedActivities;
   } catch (error) {
     console.error('Error fetching activities with details:', error);
     throw error;
   }
 };
 
+// Create activity with proper medical checks handling
 export const createActivity = async (activityData: CreateActivityDTO): Promise<Activity> => {
   try {
-    // Map our frontend DTO to match the backend schema
-    const backendActivityData = {
+    // Check if any medical checks are selected to set pharm_flag
+    const hasChecks = hasMedicalChecks(activityData.medical_checks);
+    
+    // Map to backend schema
+    const backendActivityData: Omit<Activity, 'id' | 'created_at'> = {
       patient_id: activityData.patient_id,
       user_id: activityData.user_id,
       activity_type: activityData.activity_type,
+      pharm_flag: hasChecks, // Set pharm_flag based on medical checks
       notes: activityData.notes || '',
-      site_name: activityData.site_name || 'CP Greater San Antonio', // Use dynamic value or fallback
-      // Use both field names to ensure compatibility
+      site_name: activityData.site_name,
+      building: activityData.building || '',
       service_datetime: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      // Use both field names to ensure compatibility
-      duration_minutes: activityData.time_spent,
-      time_spent: activityData.time_spent,
-      building_name: activityData.building_name,
-      insurance: activityData.insurance || '',
-      user_initials: activityData.user_initials || '',
-      medical_records: activityData.medical_checks?.medical_records || false,
-      bp_at_goal: activityData.medical_checks?.bp_at_goal || false,
-      hospital_visit: activityData.medical_checks?.hospital_visit || false,
-      a1c_at_goal: activityData.medical_checks?.a1c_at_goal || false,
-      benzodiazepines: activityData.medical_checks?.benzodiazepines || false,
-      antipsychotics: activityData.medical_checks?.antipsychotics || false,
-      opioids: activityData.medical_checks?.opioids || false,
-      fall_since_last_visit: activityData.medical_checks?.fall_since_last_visit || false
+      duration_minutes: Math.max(1, Math.round(activityData.duration_minutes)) // Round to integer, minimum 1 minute
     };
     
-    console.log('Sending activity data to backend:', backendActivityData);
+    console.log('Creating activity with data:', backendActivityData);
+    console.log('Raw input data:', activityData);
+    console.log('Has medical checks:', hasChecks);
     const response = await axios.post(`${API_URL}/activities`, backendActivityData);
-    return response.data;
+    const createdActivity = response.data;
+    
+    // If medical checks were performed, create a medical record
+    if (hasChecks && activityData.medical_checks) {
+      try {
+        await createMedicalRecord({
+          patientId: activityData.patient_id,
+          medical_records: activityData.medical_checks.medical_records,
+          bpAtGoal: activityData.medical_checks.bp_at_goal,
+          hospitalVisitSinceLastReview: activityData.medical_checks.hospital_visit,
+          a1cAtGoal: activityData.medical_checks.a1c_at_goal,
+          benzodiazepines: activityData.medical_checks.benzodiazepines,
+          antipsychotics: activityData.medical_checks.antipsychotics,
+          opioids: activityData.medical_checks.opioids,
+          fallSinceLastVisit: activityData.medical_checks.fall_since_last_visit
+        });
+        console.log('Medical record created for activity');
+      } catch (medicalRecordError) {
+        console.error('Error creating medical record:', medicalRecordError);
+        // Don't fail the activity creation if medical record fails
+      }
+    }
+    
+    return createdActivity;
   } catch (error) {
     console.error('Error creating activity:', error);
     throw error;
   }
 };
 
-export const updateActivity = async (id: number | string, activityData: any): Promise<Activity> => {
+// Update activity
+export const updateActivity = async (id: number | string, activityData: Partial<Activity>): Promise<Activity> => {
   try {
-    // Backend expects the PUT method
     const response = await axios.put(`${API_URL}/activities/${id}`, activityData);
     return response.data;
   } catch (error) {
@@ -98,6 +194,7 @@ export const updateActivity = async (id: number | string, activityData: any): Pr
   }
 };
 
+// Delete activity
 export const deleteActivity = async (id: number | string): Promise<void> => {
   try {
     await axios.delete(`${API_URL}/activities/${id}`);
@@ -107,15 +204,14 @@ export const deleteActivity = async (id: number | string): Promise<void> => {
   }
 };
 
-// Get all available activity types
+// Get available activity types
 export const getActivityTypes = async (): Promise<string[]> => {
   try {
-    // Since there's no activity-types endpoint in the backend,
-    // we'll provide a hardcoded list of common activity types
-    // This can be replaced with an API call once the endpoint is implemented
+    // Return predefined activity types
+    // This can be replaced with an API call when backend endpoint is available
     return [
       "Assess medical/functional/psychosocial needs",
-      "Conduct risk assessment",
+      "Conduct risk assessment", 
       "Coordinate care with other service providers",
       "Discuss & monitor patient condition",
       "Manage care transition",
@@ -129,4 +225,4 @@ export const getActivityTypes = async (): Promise<string[]> => {
     console.error('Error fetching activity types:', error);
     throw error;
   }
-}; 
+};
