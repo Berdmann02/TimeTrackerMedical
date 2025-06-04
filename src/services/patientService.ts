@@ -88,6 +88,16 @@ export const getPatientsBySiteId = async (siteId: number): Promise<Patient[]> =>
   }
 };
 
+export const getPatientsBySiteName = async (siteName: string): Promise<Patient[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/patients/site/${siteName}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching patients for site ${siteName}:`, error);
+    throw error;
+  }
+};
+
 export interface CreatePatientDto {
   first_name: string;
   last_name: string;
