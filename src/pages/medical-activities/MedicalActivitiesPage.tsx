@@ -3,8 +3,34 @@ import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, Plus } from 'l
 import { useNavigate } from 'react-router-dom';
 import AddActivityModal from '../../components/AddActivityModal';
 import { getActivityTypes, getActivityById, getActivitiesWithDetails } from '../../services/activityService';
-import type { Activity } from '../../services/patientService';
+import type { Activity as ServiceActivity } from '../../services/activityService';
 import { getSitesAndBuildings, type SiteWithBuildings } from '../../services/siteService';
+
+// Base interface for enriched activity data from backend
+interface EnrichedActivity extends ServiceActivity {
+  patient_name?: string;
+  user_initials?: string;
+  building_name?: string;
+}
+
+// Local interface for activities with required fields
+interface ActivityWithDetails {
+  id: number;
+  patient_id: number;
+  user_id: number;
+  activity_type: string;
+  pharm_flag?: boolean;
+  notes?: string;
+  site_name: string;
+  building?: string;
+  service_datetime: string;
+  duration_minutes: number;
+  created_at?: string;
+  patient_name: string;
+  user_initials: string;
+  time_spent?: number;
+  building_name?: string;
+}
 
 // Remove mock data and replace with state
 const months = ['All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -21,12 +47,21 @@ interface User {
   last_name: string;
 }
 
-interface ActivityWithPatient extends Activity {
-  patient_name?: string;
+// Update the interface to match backend data
+interface Activity {
+  id: number;
+  patient_id: number;
+  user_id: number;
+  activity_type: string;
+  pharm_flag?: boolean;
+  notes?: string;
+  site_name: string;
+  building?: string;
+  service_datetime: string;
+  duration_minutes: number;
+  created_at?: string;
   user_initials?: string;
-  site_name?: string;
-  building_name?: string;
-  building_id?: number;
+  patient_name?: string; // Added from backend join
 }
 
 const MedicalActivitiesPage = () => {
@@ -48,7 +83,7 @@ const MedicalActivitiesPage = () => {
   const [sortField, setSortField] = useState<string>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [activities, setActivities] = useState<ActivityWithPatient[]>([]);
+  const [activities, setActivities] = useState<ActivityWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,29 +128,48 @@ const MedicalActivitiesPage = () => {
   }, [siteFilter]);
 
   // Fetch all activities and their associated patient names
+  const fetchActivities = async () => {
+    try {
+      setIsLoading(true);
+      const activitiesData = await getActivitiesWithDetails() as EnrichedActivity[];
+      
+      // Convert to ActivityWithDetails and ensure required fields
+      const enrichedActivities: ActivityWithDetails[] = activitiesData
+        .filter((activity): activity is EnrichedActivity & { id: number } => activity.id !== undefined)
+        .map(activity => ({
+          id: activity.id,
+          patient_id: activity.patient_id,
+          user_id: activity.user_id,
+          activity_type: activity.activity_type,
+          pharm_flag: activity.pharm_flag,
+          notes: activity.notes,
+          site_name: activity.site_name,
+          building: activity.building,
+          service_datetime: activity.service_datetime.toString(),
+          duration_minutes: activity.duration_minutes,
+          created_at: activity.created_at?.toString(),
+          patient_name: activity.patient_name || 'Unknown',
+          user_initials: activity.user_initials || 'N/A',
+          time_spent: activity.duration_minutes,
+          building_name: activity.building
+        }));
+      
+      setActivities(enrichedActivities);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching activities:', err);
+      setError('Failed to load activities');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        setIsLoading(true);
-        const activitiesData = await getActivitiesWithDetails();
-
-        // Data already includes patient names and user initials from the backend join
-        setActivities(activitiesData);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching activities:', err);
-        setError('Failed to load activities');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchActivities();
-    fetchSitesAndBuildingsData(); // Load in background without loading state
   }, []);
 
   // Format time spent
-  const formatTimeSpent = (activity: ActivityWithPatient) => {
+  const formatTimeSpent = (activity: ActivityWithDetails) => {
     const timeSpent = activity.time_spent;
     const durationMinutes = activity.duration_minutes;
     
@@ -206,14 +260,7 @@ const MedicalActivitiesPage = () => {
   };
 
   const handleActivityAdded = async () => {
-    try {
-      const activitiesData = await getActivitiesWithDetails();
-      
-      // Data already includes patient names and user initials from the backend join
-      setActivities(activitiesData);
-    } catch (err) {
-      console.error('Error refreshing activities:', err);
-    }
+    await fetchActivities();
   };
 
   // Add navigation handlers
@@ -497,9 +544,9 @@ const MedicalActivitiesPage = () => {
     );
   }
 
-  const formatDate = (dateStr?: string): string => {
+  const formatDate = (dateStr?: string | Date): string => {
     if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
+    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
     return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
   };
 
@@ -689,42 +736,34 @@ const MedicalActivitiesPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {sortedActivities.length > 0 ? (
-                  sortedActivities.map((activity) => (
-                    <tr key={activity.id} className="hover:bg-gray-50 transition-colors">
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
-                        onClick={() => handleActivityClick(activity.id)}
-                      >
-                        {activity.id}
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
-                        onClick={() => handlePatientClick(activity.patient_id)}
-                      >
-                        {activity.patient_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.activity_type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.user_initials  || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(activity.service_datetime || activity.created_at)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatTimeSpent(activity)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No activities found
+                {sortedActivities.map((activity) => (
+                  <tr key={activity.id} className="hover:bg-gray-50 transition-colors">
+                    <td 
+                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
+                      onClick={() => handleActivityClick(activity.id)}
+                    >
+                      {activity.id}
+                    </td>
+                    <td 
+                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
+                      onClick={() => handlePatientClick(activity.patient_id)}
+                    >
+                      {activity.patient_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {activity.activity_type}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {activity.user_initials || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(activity.service_datetime || activity.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatTimeSpent(activity)}
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>

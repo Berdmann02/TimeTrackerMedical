@@ -15,6 +15,7 @@ export interface Activity {
   service_datetime: Date | string;
   duration_minutes: number;
   created_at?: Date | string;
+  user_initials?: string; // Added to match backend enriched data
 }
 
 // DTO for creating activities with medical checks
@@ -45,7 +46,7 @@ const hasMedicalChecks = (medical_checks?: CreateActivityDTO['medical_checks']):
   return Object.values(medical_checks).some(check => check === true);
 };
 
-// Get all activities
+// Get all activities - now returns enriched data from backend
 export const getActivities = async (): Promise<Activity[]> => {
   try {
     const response = await axios.get(`${API_URL}/activities`);
@@ -67,7 +68,7 @@ export const getActivityById = async (id: number | string): Promise<Activity> =>
   }
 };
 
-// Get activities by patient ID
+// Get activities by patient ID - now returns enriched data from backend
 export const getActivitiesByPatientId = async (patientId: number | string): Promise<Activity[]> => {
   try {
     const response = await axios.get(`${API_URL}/activities/patient/${patientId}`);
@@ -78,52 +79,10 @@ export const getActivitiesByPatientId = async (patientId: number | string): Prom
   }
 };
 
-// Get activities with patient and user details (optimized endpoint)
-export const getActivitiesWithDetails = async (): Promise<any[]> => {
+// Get activities with details - now just uses the enriched data from backend
+export const getActivitiesWithDetails = async (): Promise<Activity[]> => {
   try {
-    // The backend doesn't have with-details endpoint, so use client-side enrichment
-    console.log('Using client-side enrichment for activities with details');
-    
-    // Get basic activities
-    const activities = await getActivities();
-    
-    // Get all patients and users for enrichment
-    const [patientsResponse, usersResponse] = await Promise.all([
-      axios.get(`${API_URL}/patients`),
-      axios.get(`${API_URL}/users`)
-    ]);
-    
-    const patients = patientsResponse.data;
-    const users = usersResponse.data;
-    
-    // Enrich activities with patient and user details
-    const enrichedActivities = activities.map(activity => {
-      const patient = patients.find((p: any) => p.id === activity.patient_id);
-      const user = users.find((u: any) => u.id === activity.user_id);
-      
-      return {
-        ...activity,
-        patient: patient ? {
-          id: patient.id,
-          first_name: patient.first_name,
-          last_name: patient.last_name,
-          full_name: `${patient.first_name} ${patient.last_name}`,
-          insurance: patient.insurance,
-          site_name: patient.site_name,
-          building: patient.building
-        } : null,
-        user: user ? {
-          id: user.id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          full_name: `${user.first_name} ${user.last_name}`,
-          role: user.role,
-          initials: `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`
-        } : null
-      };
-    });
-    
-    return enrichedActivities;
+    return await getActivities();
   } catch (error) {
     console.error('Error fetching activities with details:', error);
     throw error;

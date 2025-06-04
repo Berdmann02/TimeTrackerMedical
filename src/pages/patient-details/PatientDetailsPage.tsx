@@ -1,10 +1,10 @@
 import { useState, useEffect, memo, useMemo } from "react"
-import { User, Activity, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock, Trash } from "lucide-react"
+import { User, Activity as ActivityIcon, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock, Trash } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
 import { getPatientById, getPatientActivities, updatePatient, deletePatient } from "../../services/patientService"
 import type { Patient, Activity as ApiActivity } from "../../services/patientService"
-import type { PatientWithActivities } from "../../types/patient"
 import { getLatestMedicalRecordByPatientId, type MedicalRecord } from '../../services/medicalRecordService'
+import { getActivitiesByPatientId, type Activity as ServiceActivity } from '../../services/activityService'
 import AddActivityModal from "../../components/AddActivityModal"
 import StatusHistoryModal from "../../components/StatusHistoryModal"
 import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
@@ -240,6 +240,46 @@ const getGenderValue = (display: string): GenderCode => {
   return (entry ? entry[0] : display) as GenderCode;
 };
 
+// Update the Activity interface to match backend enriched data
+interface Activity {
+  id: number;
+  patient_id: number;
+  user_id: number;
+  activity_type: string;
+  pharm_flag?: boolean;
+  notes?: string;
+  site_name: string;
+  building?: string;
+  service_datetime: string;
+  duration_minutes: number;
+  created_at?: string;
+  user_initials?: string;
+  time_spent?: number;
+}
+
+// Update the PatientActivity interface to match the display format
+interface PatientActivity {
+  activityId: string;
+  activityType: string;
+  initials: string;
+  recordDate: string;
+  totalTime: number;
+  time_spent: number;
+  duration_minutes: number;
+}
+
+// Update the PatientWithActivities interface
+interface PatientWithActivities {
+  patient: Patient & { site_name: string };
+  activities: PatientActivity[];
+}
+
+// Local interface for patient data with activities
+interface LocalPatientWithActivities {
+  patient: Patient & { site_name: string };
+  activities: PatientActivity[];
+}
+
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
   const { patientId = '' } = useParams<{ patientId: string }>()
@@ -248,7 +288,7 @@ export default function PatientDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [patient, setPatient] = useState<Patient | null>(null)
   const [editedPatient, setEditedPatient] = useState<Patient | null>(null)
-  const [activities, setActivities] = useState<ApiActivity[]>([])
+  const [activities, setActivities] = useState<ServiceActivity[]>([])
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -303,19 +343,19 @@ export default function PatientDetailsPage() {
   // Fetch patient data and activities
   const fetchPatientData = async () => {
     if (!patientId) {
-      setError("No patient ID provided")
-      setIsLoading(false)
-      return
+      setError("No patient ID provided");
+      setIsLoading(false);
+      return;
     }
     
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
     
     try {
       // First, try to get the patient details
-      const patientData = await getPatientById(patientId)
+      const patientData = await getPatientById(patientId);
       console.log('Fetched patient data:', patientData);
-      setPatient(patientData)
+      setPatient(patientData);
       
       // Get latest medical record
       try {
@@ -343,22 +383,21 @@ export default function PatientDetailsPage() {
         console.error("Error fetching latest medical record:", medicalRecordError);
       }
       
-      // Then try to get activities, but don't fail the whole request if this fails
+      // Get activities with enriched data
       try {
-        const activitiesData = await getPatientActivities(patientId)
-        setActivities(activitiesData)
+        const activitiesData = await getActivitiesByPatientId(patientId);
+        setActivities(activitiesData);
       } catch (activityError) {
-        console.error("Error fetching patient activities:", activityError)
-        // Just set empty activities instead of failing completely
-        setActivities([])
+        console.error("Error fetching patient activities:", activityError);
+        setActivities([]);
       }
     } catch (err) {
-      console.error("Error fetching patient data:", err)
-      setError("Failed to load patient data. Please try again.")
+      console.error("Error fetching patient data:", err);
+      setError("Failed to load patient data. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     fetchPatientData()
@@ -393,22 +432,20 @@ export default function PatientDetailsPage() {
   }, [isEditing, editedPatient?.site_name]);
 
   // Convert API data to format expected by the component
-  const patientData: PatientWithActivities | null = patient ? {
+  const patientData: LocalPatientWithActivities | null = patient ? {
     patient: {
       ...patient,
       site_name: patient.site_name || '', // Ensure site is provided as it's required
     },
-    activities: activities.map(activity => {
-      return {
-        activityId: activity.id?.toString() || '',
-        activityType: activity.activity_type || '',
-        initials: activity.user_initials || activity.personnel_initials || 'N/A',
-        recordDate: activity.created_at || activity.service_datetime || new Date().toISOString(),
-        totalTime: activity.time_spent ?? activity.duration_minutes ?? 0,
-        time_spent: activity.time_spent,
-        duration_minutes: activity.duration_minutes
-      };
-    })
+    activities: activities.map(activity => ({
+      activityId: activity.id?.toString() || '',
+      activityType: activity.activity_type || '',
+      initials: activity.user_initials || 'N/A',
+      recordDate: (activity.service_datetime || activity.created_at || new Date().toISOString()).toString(),
+      totalTime: activity.duration_minutes,
+      time_spent: activity.duration_minutes,
+      duration_minutes: activity.duration_minutes
+    }))
   } : null
 
   const handleActivityClick = (activityId: string) => {
@@ -426,12 +463,25 @@ export default function PatientDetailsPage() {
     }
   };
 
-  // Format time spent in readable format
-  const formatTimeSpent = (timeValue: number): string => {
-    if (timeValue === 0) return "0 minutes";
+  // Update the formatTimeSpent function to accept PatientActivity
+  const formatTimeSpent = (activity: PatientActivity): string => {
+    const timeSpent = activity.time_spent;
+    const durationMinutes = activity.duration_minutes;
     
-    const minutes = Math.floor(timeValue);
-    const seconds = Math.round((timeValue - minutes) * 60);
+    let totalMinutes = 0;
+    
+    if (timeSpent !== undefined && timeSpent !== null && !isNaN(Number(timeSpent))) {
+      totalMinutes = Number(timeSpent);
+    } else if (durationMinutes !== undefined && durationMinutes !== null && !isNaN(Number(durationMinutes))) {
+      totalMinutes = Number(durationMinutes);
+    } else {
+      return 'N/A';
+    }
+    
+    if (totalMinutes === 0) return "0 minutes";
+    
+    const minutes = Math.floor(totalMinutes);
+    const seconds = Math.round((totalMinutes - minutes) * 60);
     
     if (minutes === 0) {
       return `${seconds} second${seconds !== 1 ? 's' : ''}`;
@@ -526,23 +576,34 @@ export default function PatientDetailsPage() {
 
   // Filter and sort activities
   const filteredAndSortedActivities = useMemo(() => {
-    if (!patientData?.activities) return [];
+    if (!activities) return [];
 
     // First, filter activities by month and year
-    const activitiesInPeriod = patientData.activities.filter(activity => {
-      const activityDate = new Date(activity.recordDate)
-      const matchesMonth = activityMonthFilter === "all" || 
-        activityDate.getMonth() + 1 === Number.parseInt(activityMonthFilter)
-      const matchesYear = activityYearFilter === "all" || 
-        activityDate.getFullYear() === Number.parseInt(activityYearFilter)
-      return matchesMonth && matchesYear
-    });
+    const activitiesInPeriod = activities
+      .filter((activity): activity is Required<ServiceActivity> => activity.id !== undefined)
+      .map(activity => ({
+        activityId: activity.id.toString(),
+        activityType: activity.activity_type,
+        initials: activity.user_initials || 'N/A',
+        recordDate: (activity.service_datetime || activity.created_at || new Date().toISOString()).toString(),
+        totalTime: activity.duration_minutes,
+        time_spent: activity.duration_minutes,
+        duration_minutes: activity.duration_minutes
+      }))
+      .filter(activity => {
+        const activityDate = new Date(activity.recordDate);
+        const matchesMonth = activityMonthFilter === "all" || 
+          activityDate.getMonth() + 1 === Number.parseInt(activityMonthFilter);
+        const matchesYear = activityYearFilter === "all" || 
+          activityDate.getFullYear() === Number.parseInt(activityYearFilter);
+        return matchesMonth && matchesYear;
+      });
 
     // If filtering by specific month/year, get only the latest activity for that period
     let activitiesToShow = activitiesInPeriod;
     if (activityMonthFilter !== "all" && activityYearFilter !== "all") {
       // Group activities by month-year and get the latest one for each period
-      const activityGroups = new Map<string, typeof activitiesInPeriod[0]>();
+      const activityGroups = new Map<string, PatientActivity>();
       
       activitiesInPeriod.forEach(activity => {
         const activityDate = new Date(activity.recordDate);
@@ -561,20 +622,20 @@ export default function PatientDetailsPage() {
     return activitiesToShow.sort((a, b) => {
       if (!activitySortField) return new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime(); // Default sort by date desc
 
-      let aValue: any = a[activitySortField]
-      let bValue: any = b[activitySortField]
+      let aValue: any = a[activitySortField];
+      let bValue: any = b[activitySortField];
 
       // Special handling for dates
       if (activitySortField === "recordDate") {
-        aValue = new Date(a.recordDate).getTime()
-        bValue = new Date(b.recordDate).getTime()
+        aValue = new Date(a.recordDate).getTime();
+        bValue = new Date(b.recordDate).getTime();
       }
 
-      if (aValue < bValue) return activitySortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return activitySortDirection === "asc" ? 1 : -1
-      return 0
+      if (aValue < bValue) return activitySortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return activitySortDirection === "asc" ? 1 : -1;
+      return 0;
     });
-  }, [patientData?.activities, activityMonthFilter, activityYearFilter, activitySortField, activitySortDirection]);
+  }, [activities, activityMonthFilter, activityYearFilter, activitySortField, activitySortDirection]);
 
   const handleDeletePatient = async () => {
     if (!patientId) return;
@@ -998,7 +1059,7 @@ export default function PatientDetailsPage() {
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-blue-600" />
+                <ActivityIcon className="w-5 h-5 text-blue-600" />
                 Activities
               </h2>
               <div className="flex items-center gap-4">
@@ -1186,7 +1247,7 @@ export default function PatientDetailsPage() {
                           {new Date(activity.recordDate).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatTimeSpent(activity.totalTime)}
+                          {formatTimeSpent(activity)}
                         </td>
                       </tr>
                     ))}
