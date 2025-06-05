@@ -412,18 +412,17 @@ const ActivityDetailsPage: FC = () => {
                 (typeof editedActivity.duration_minutes === 'number' ?
                     editedActivity.duration_minutes : 0);
 
-            // Use patient's actual site and building information
+            // Map frontend fields to backend Activity interface
             const updateData = {
-                id: Number(activityId),
                 patient_id: editedActivity.patient_id,
+                user_id: editedActivity.user_id,
                 activity_type: editedActivity.activity_type,
-                personnel_initials: editedActivity.personnel_initials || editedActivity.user_initials || '',
                 pharm_flag: Boolean(editedActivity.pharm_flag || editedActivity.is_pharmacist),
                 notes: editedActivity.notes || '',
-                site_name: patient?.site_name || editedActivity.site_name || '',
-                building: patient?.building || editedActivity.building || editedActivity.building_name || '',
+                site_name: editedActivity.site_name || '',
+                building: editedActivity.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
-                duration_minutes: timeSpent
+                duration_minutes: Math.max(1, Math.round(timeSpent)) // Ensure positive integer
             };
 
             console.log('Updating activity with data:', updateData);
