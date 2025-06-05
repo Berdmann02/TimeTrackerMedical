@@ -17,13 +17,30 @@ import {
     TimerOff
 } from 'lucide-react';
 import { getActivityById, deleteActivity, updateActivity, getActivityTypes } from '../../services/activityService';
-import type { Activity } from '../../services/patientService';
+import type { Activity as BaseActivity } from '../../services/activityService';
 import { getPatientById } from '../../services/patientService';
 import { getSites, type Site } from '../../services/siteService';
 import { getBuildingsBySiteId, type Building } from '../../services/buildingService';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import axios from 'axios';
 import { API_URL } from '../../config';
+
+// Extended Activity interface for this component to handle all the fields used in the UI
+interface Activity extends BaseActivity {
+  personnel_initials?: string;
+  time_spent?: number;
+  is_pharmacist?: boolean;
+  building_name?: string;
+  end_time?: string;
+  site_start_time?: string;
+  site_end_time?: string;
+  personnel_start_time?: string;
+  personnel_end_time?: string;
+  activity_start_time?: string;
+  activity_end_time?: string;
+  notes_start_time?: string;
+  notes_end_time?: string;
+}
 
 interface DetailRowProps {
     icon: any;
@@ -404,7 +421,7 @@ const ActivityDetailsPage: FC = () => {
                 pharm_flag: Boolean(editedActivity.pharm_flag || editedActivity.is_pharmacist),
                 notes: editedActivity.notes || '',
                 site_name: patient?.site_name || editedActivity.site_name || '',
-                building_name: patient?.building || editedActivity.building_name || '',
+                building: patient?.building || editedActivity.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
                 duration_minutes: timeSpent
             };
@@ -648,11 +665,11 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Building2}
                                 label="Building"
-                                value={editedActivity.building_name || 'Main Medical Center'}
+                                value={editedActivity.building || editedActivity.building_name || 'Main Medical Center'}
                                 isEditing={isEditing}
                                 editType="select"
                                 editOptions={buildings.map(building => building.name)}
-                                onEdit={(value) => handleFieldChange('building_name', value)}
+                                onEdit={(value) => handleFieldChange('building', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
