@@ -578,8 +578,8 @@ export default function PatientDetailsPage() {
   const filteredAndSortedActivities = useMemo(() => {
     if (!activities) return [];
 
-    // First, filter activities by month and year
-    const activitiesInPeriod = activities
+    // Filter activities by month and year
+    const filteredActivities = activities
       .filter((activity): activity is Required<ServiceActivity> => activity.id !== undefined)
       .map(activity => ({
         activityId: activity.id.toString(),
@@ -599,27 +599,8 @@ export default function PatientDetailsPage() {
         return matchesMonth && matchesYear;
       });
 
-    // If filtering by specific month/year, get only the latest activity for that period
-    let activitiesToShow = activitiesInPeriod;
-    if (activityMonthFilter !== "all" && activityYearFilter !== "all") {
-      // Group activities by month-year and get the latest one for each period
-      const activityGroups = new Map<string, PatientActivity>();
-      
-      activitiesInPeriod.forEach(activity => {
-        const activityDate = new Date(activity.recordDate);
-        const monthYear = `${activityDate.getFullYear()}-${activityDate.getMonth() + 1}`;
-        
-        if (!activityGroups.has(monthYear) || 
-            new Date(activity.recordDate) > new Date(activityGroups.get(monthYear)!.recordDate)) {
-          activityGroups.set(monthYear, activity);
-        }
-      });
-      
-      activitiesToShow = Array.from(activityGroups.values());
-    }
-
     // Sort the activities
-    return activitiesToShow.sort((a, b) => {
+    return filteredActivities.sort((a, b) => {
       if (!activitySortField) return new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime(); // Default sort by date desc
 
       let aValue: any = a[activitySortField];

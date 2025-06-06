@@ -13,6 +13,7 @@ import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { authService } from '../services/auth.service';
 
 interface ActivityForm {
   patientId: string;
@@ -53,6 +54,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   patients: providedPatients = [] 
 }) => {
   const { user, isPharmacist } = useAuth();
+  
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -191,16 +193,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     
     // Special handling for datetime-local input
     if (name === 'startTime' || name === 'endTime') {
-      // Convert the datetime-local value to ISO string format
+      // For datetime-local inputs, we need to handle the local datetime properly
       if (value) {
-        const date = new Date(value);
-        const isoString = date.toISOString();
+        // Use our helper function to create a proper local date
+        const localDate = createLocalDate(value);
         setFormData(prev => ({
           ...prev,
-          [name]: isoString
+          [name]: localDate.toISOString()
         }));
       } else {
-        // Handle empty value
         setFormData(prev => ({
           ...prev,
           [name]: ""
@@ -224,9 +225,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   };
 
   const handleStartTime = () => {
-    const now = new Date().toISOString();
+    const now = new Date();
+    const isoString = now.toISOString();
     // Allow restarting even after stopping (having an end time)
-    setFormData((prev) => ({ ...prev, startTime: now, endTime: "" }));
+    setFormData((prev) => ({ ...prev, startTime: isoString, endTime: "" }));
     setIsTracking(true);
     setHasStarted(true);
     setHasStopped(false);
@@ -235,8 +237,9 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const handleEndTime = () => {
     // Only set endTime if we're currently tracking
     if (isTracking) {
-      const now = new Date().toISOString();
-      setFormData((prev) => ({ ...prev, endTime: now }));
+      const now = new Date();
+      const isoString = now.toISOString();
+      setFormData((prev) => ({ ...prev, endTime: isoString }));
       setIsTracking(false);
       setHasStopped(true);
     }
@@ -245,26 +248,52 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const calculateTimeDifference = (): number => {
     if (!formData.startTime || !formData.endTime) return 0;
     
-    const start = new Date(formData.startTime).getTime();
-    const end = new Date(formData.endTime).getTime();
-    
-    // Return time difference in minutes
-    return Math.max(0, (end - start) / (1000 * 60));
+    try {
+      const start = new Date(formData.startTime).getTime();
+      const end = new Date(formData.endTime).getTime();
+      
+      // Calculate difference in milliseconds, then convert to minutes
+      const diffMs = end - start;
+      const diffMinutes = diffMs / (1000 * 60);
+      
+      // Debug logging to help track time calculations
+      console.log('Time calculation:', {
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        startDate: new Date(formData.startTime).toLocaleString(),
+        endDate: new Date(formData.endTime).toLocaleString(),
+        diffMinutes: diffMinutes.toFixed(2)
+      });
+      
+      return Math.max(0, diffMinutes);
+    } catch (error) {
+      console.error('Error calculating time difference:', error);
+      return 0;
+    }
   };
+
+  // Add useEffect to log when form data changes (for debugging)
+  useEffect(() => {
+    if (formData.startTime && formData.endTime) {
+      console.log('Form data changed - recalculating time:', {
+        start: new Date(formData.startTime).toLocaleString(),
+        end: new Date(formData.endTime).toLocaleString(),
+        difference: calculateTimeDifference()
+      });
+    }
+  }, [formData.startTime, formData.endTime]);
 
   const formatTimeDifference = (): string => {
     const totalMinutes = calculateTimeDifference();
     if (totalMinutes === 0) return "0 minutes";
     
-    const minutes = Math.floor(totalMinutes);
-    const seconds = Math.round((totalMinutes - minutes) * 60);
+    // Format as decimal minutes with 1 decimal place
+    const roundedMinutes = Math.round(totalMinutes * 10) / 10;
     
-    if (minutes === 0) {
-      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
-    } else if (seconds === 0) {
-      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    if (roundedMinutes === 1) {
+      return "1 minute";
     } else {
-      return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+      return `${roundedMinutes} minutes`;
     }
   };
 
@@ -272,13 +301,36 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const formatDateTimeLocal = (isoString: string): string => {
     if (!isoString) return "";
     
-    const date = new Date(isoString);
-    // Get local timezone offset and adjust
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    try {
+      const date = new Date(isoString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return "";
+      
+      // Format to local datetime-local format (YYYY-MM-DDTHH:MM)
+      // Using the date methods directly to avoid timezone conversion issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Error formatting datetime:', error);
+      return "";
+    }
+  };
+
+  // Helper function to create a local date from datetime-local input
+  const createLocalDate = (datetimeLocalValue: string): Date => {
+    // datetime-local format: "YYYY-MM-DDTHH:MM"
+    // We need to create a Date object that represents this exact local time
+    const [datePart, timePart] = datetimeLocalValue.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
     
-    // Format to YYYY-MM-DDTHH:MM (datetime-local format)
-    return localDate.toISOString().slice(0, 16);
+    // Create date in local timezone
+    return new Date(year, month - 1, day, hours, minutes);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -302,13 +354,16 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     setIsSubmitting(true);
     
     try {
+      // Find the selected patient to get site info
+      const selectedPatient = patients.find(p => p.id?.toString() === formData.patientId);
+      
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
-        user_id: user.id,
+        user_id: parseInt(user.id.toString()), // Ensure user_id is a number
         activity_type: formData.activityType,
         duration_minutes: calculateTimeDifference(),
-        site_name: siteName || "",
-        building: "",
+        site_name: siteName || selectedPatient?.site_name || "Unknown Site",
+        building: selectedPatient?.building || "",
         notes: formData.notes,
         medical_checks: {
           medical_records: formData.medicalChecks.medicalRecords,
@@ -331,7 +386,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       onClose();
     } catch (err) {
       console.error("Error creating activity:", err);
-      setError("Failed to create activity. Please try again.");
+      // More detailed error handling
+      if (err instanceof Error) {
+        setError(`Failed to create activity: ${err.message}`);
+      } else {
+        setError("Failed to create activity. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
