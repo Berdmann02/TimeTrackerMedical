@@ -31,8 +31,8 @@ export default function PatientsPage() {
   const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() returns 0-11, so add 1
   const currentYear = currentDate.getFullYear().toString();
   
-  const [monthFilter, setMonthFilter] = useState<string>(currentMonth)
-  const [yearFilter, setYearFilter] = useState<string>(currentYear)
+  const [monthFilter, setMonthFilter] = useState<string>("all")
+  const [yearFilter, setYearFilter] = useState<string>("all")
   const [showInactive, setShowInactive] = useState(false)
   const [buildingFilter, setBuildingFilter] = useState<string>("all")
 
