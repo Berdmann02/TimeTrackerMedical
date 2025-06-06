@@ -168,6 +168,10 @@ const MedicalActivitiesPage = () => {
     fetchActivities();
   }, []);
 
+  useEffect(() => {
+    fetchSitesAndBuildingsData();
+  }, []);
+
   // Format time spent
   const formatTimeSpent = (activity: ActivityWithDetails) => {
     const timeSpent = activity.time_spent;
