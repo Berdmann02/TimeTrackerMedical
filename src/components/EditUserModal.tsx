@@ -25,7 +25,6 @@ interface UserFormData {
   role: "admin" | "nurse" | "pharmacist";
   primarySiteId: string;
   assignedSiteIds: string[];
-  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
@@ -38,7 +37,6 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     role: "nurse",
     primarySiteId: "",
     assignedSiteIds: [],
-    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   };
@@ -74,7 +72,6 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
         role: user.role,
         primarySiteId: "", // Will be set after sites are loaded
         assignedSiteIds: [], // Will be set after sites are loaded
-        currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
@@ -133,13 +130,8 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     setError(null);
 
     try {
-      // Validate password fields if any password field is filled
-      if (formData.newPassword || formData.confirmPassword || formData.currentPassword) {
-        if (!formData.currentPassword) {
-          setError("Current password is required to change password");
-          setIsSubmitting(false);
-          return;
-        }
+      // Validate password fields if new password is being set
+      if (formData.newPassword || formData.confirmPassword) {
         if (formData.newPassword !== formData.confirmPassword) {
           setError("New password and confirm password do not match");
           setIsSubmitting(false);
@@ -157,7 +149,6 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
       };
       
       if (formData.newPassword) {
-        userData.current_password = formData.currentPassword;
         userData.new_password = formData.newPassword;
       }
 
@@ -276,19 +267,6 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
             </div>
 
             {/* Password Fields */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1">
-                Current Password
-              </label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={handleChange}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
-                placeholder="••••••••"
-              />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1">
