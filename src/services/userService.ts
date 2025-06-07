@@ -17,7 +17,9 @@ export interface User {
     first_name: string;
     last_name: string;
     email: string;
-    password: string;
+    password?: string;
+    current_password?: string;
+    new_password?: string;
     role: "admin" | "nurse" | "pharmacist";
     created_at?: Date;
     primarysite_id: number;

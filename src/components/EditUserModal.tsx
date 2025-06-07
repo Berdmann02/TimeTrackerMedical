@@ -25,6 +25,9 @@ interface UserFormData {
   role: "admin" | "nurse" | "pharmacist";
   primarySiteId: string;
   assignedSiteIds: string[];
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalProps) => {
@@ -35,6 +38,9 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     role: "nurse",
     primarySiteId: "",
     assignedSiteIds: [],
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   };
 
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
@@ -68,6 +74,9 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
         role: user.role,
         primarySiteId: "", // Will be set after sites are loaded
         assignedSiteIds: [], // Will be set after sites are loaded
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
       setError(null);
       setIsSubmitting(false);
@@ -124,6 +133,20 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     setError(null);
 
     try {
+      // Validate password fields if any password field is filled
+      if (formData.newPassword || formData.confirmPassword || formData.currentPassword) {
+        if (!formData.currentPassword) {
+          setError("Current password is required to change password");
+          setIsSubmitting(false);
+          return;
+        }
+        if (formData.newPassword !== formData.confirmPassword) {
+          setError("New password and confirm password do not match");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const userData: Partial<UserType> = {
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -132,6 +155,11 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
         primarysite_id: parseInt(formData.primarySiteId),
         assignedsites_ids: formData.assignedSiteIds.map(id => parseInt(id)),
       };
+      
+      if (formData.newPassword) {
+        userData.current_password = formData.currentPassword;
+        userData.new_password = formData.newPassword;
+      }
 
       // Use the original email as identifier (user.id is actually the email in our case)
       await updateUser(user.id, userData);
@@ -245,6 +273,49 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                 required
                 placeholder="user@example.com"
               />
+            </div>
+
+            {/* Password Fields */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Current Password
+              </label>
+              <input
+                type="password"
+                name="currentPassword"
+                value={formData.currentPassword}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                placeholder="••••••••"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             {/* Site Fields */}
@@ -361,4 +432,4 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
   );
 };
 
-export default EditUserModal; 
+export default EditUserModal;

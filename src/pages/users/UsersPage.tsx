@@ -361,9 +361,6 @@ export default function UsersPage() {
                       </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Assigned Sites
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -395,29 +392,6 @@ export default function UsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.primary_site || "Not assigned"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        <div className="max-w-xs">
-                          {user.assigned_sites && user.assigned_sites.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {user.assigned_sites.slice(0, 2).map((site, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                                >
-                                  {site}
-                                </span>
-                              ))}
-                              {user.assigned_sites.length > 2 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                  +{user.assigned_sites.length - 2} more
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            "None"
-                          )}
-                        </div>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex space-x-3">
                           <button
@@ -442,7 +416,7 @@ export default function UsersPage() {
                   ))}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                         No users found matching your filters
                       </td>
                     </tr>
