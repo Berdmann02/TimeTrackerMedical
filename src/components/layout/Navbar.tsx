@@ -77,13 +77,15 @@ const Navbar = () => {
               <UserCheck className="w-5 h-5" />
               Patients
             </Link>
-            <Link
-              to="/sites"
-              className={getLinkClasses('/sites')}
-            >
-              <Building2 className="w-5 h-5" />
-              Sites
-            </Link>
+            {!isPharmacist && (
+              <Link
+                to="/sites"
+                className={getLinkClasses('/sites')}
+              >
+                <Building2 className="w-5 h-5" />
+                Sites
+              </Link>
+            )}
             <Link
               to="/medical-activities"
               className={getLinkClasses('/medical-activities')}
@@ -91,13 +93,15 @@ const Navbar = () => {
               <Activity className="w-5 h-5" />
               Medical Activities
             </Link>
-            <Link
-              to="/reports"
-              className={getLinkClasses('/reports')}
-            >
-              <FileText className="w-5 h-5" />
-              Reports
-            </Link>
+            {!isPharmacist && (
+              <Link
+                to="/reports"
+                className={getLinkClasses('/reports')}
+              >
+                <FileText className="w-5 h-5" />
+                Reports
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/users"
@@ -188,14 +192,16 @@ const Navbar = () => {
               <UserCheck className="w-5 h-5" />
               Patients
             </Link>
-            <Link
-              to="/sites"
-              className={getLinkClasses('/sites', true)}
-              onClick={toggleMenu}
-            >
-              <Building2 className="w-5 h-5" />
-              Sites
-            </Link>
+            {!isPharmacist && (
+              <Link
+                to="/sites"
+                className={getLinkClasses('/sites', true)}
+                onClick={toggleMenu}
+              >
+                <Building2 className="w-5 h-5" />
+                Sites
+              </Link>
+            )}
             <Link
               to="/medical-activities"
               className={getLinkClasses('/medical-activities', true)}
@@ -204,14 +210,16 @@ const Navbar = () => {
               <Activity className="w-5 h-5" />
               Medical Activities
             </Link>
-            <Link
-              to="/reports"
-              className={getLinkClasses('/reports', true)}
-              onClick={toggleMenu}
-            >
-              <FileText className="w-5 h-5" />
-              Reports
-            </Link>
+            {!isPharmacist && (
+              <Link
+                to="/reports"
+                className={getLinkClasses('/reports', true)}
+                onClick={toggleMenu}
+              >
+                <FileText className="w-5 h-5" />
+                Reports
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/users"
@@ -271,4 +279,4 @@ const Navbar = () => {
   )
 }
 
-export default Navbar 
+export default Navbar

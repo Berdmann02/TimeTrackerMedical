@@ -14,6 +14,7 @@ import SiteDetailsPage from './pages/sites/SiteDetailsPage';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AdminRoute } from './components/layout/AdminRoute';
 import { PublicRoute } from './components/layout/PublicRoute';
+import RestrictPharmacistRoute from './components/layout/RestrictPharmacistRoute';
 
 function App() {
   const { isLoading } = useAuth();
@@ -84,7 +85,9 @@ function App() {
         path="/sites"
         element={
           <ProtectedRoute>
-            <SitesPage />
+            <RestrictPharmacistRoute>
+              <SitesPage />
+            </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
       />
@@ -92,7 +95,9 @@ function App() {
         path="/sites/:siteId"
         element={
           <ProtectedRoute>
-            <SiteDetailsPage />
+            <RestrictPharmacistRoute>
+              <SiteDetailsPage />
+            </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
       />
@@ -108,7 +113,9 @@ function App() {
         path="/reports"
         element={
           <ProtectedRoute>
-            <ReportsPage />
+            <RestrictPharmacistRoute>
+              <ReportsPage />
+            </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
       />

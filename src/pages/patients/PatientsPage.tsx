@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
-import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import AddPatientModal from "../../components/AddPatientModal"
 import AddActivityModal from "../../components/AddActivityModal"
 import { getPatients } from "../../services/patientService"
@@ -9,6 +10,7 @@ import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/sit
 
 export default function PatientsPage() {
   const navigate = useNavigate()
+  const { isPharmacist } = useAuth();
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false)
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
   const [selectedPatientId, setSelectedPatientId] = useState<string>("")
@@ -254,13 +256,15 @@ export default function PatientsPage() {
         {/* Header with title and Add Patient button */}
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
-          <button
-            onClick={() => setIsAddPatientModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Add Patient
-          </button>
+          {!isPharmacist && (
+            <button
+              onClick={() => setIsAddPatientModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add Patient
+            </button>
+          )}
         </div>
 
         {/* Filters and Search */}
