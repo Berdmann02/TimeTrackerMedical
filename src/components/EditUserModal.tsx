@@ -280,6 +280,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-colors duration-200"
                   placeholder="••••••••"
                 />
+                <p className="text-xs text-gray-500 mt-1">Leave blank to keep current password</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1">
