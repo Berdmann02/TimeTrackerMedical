@@ -158,8 +158,25 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                     <label className="block text-xs text-gray-500 mb-1">Start Time</label>
                                     <input
                                         type="datetime-local"
-                                        value={startTime ? new Date(startTime).toISOString().slice(0, 16) : ''}
-                                        onChange={(e) => onStartTimeEdit?.(new Date(e.target.value).toISOString())}
+                                        value={startTime ? (() => {
+                                            try {
+                                                const date = new Date(startTime);
+                                                // Adjust for local timezone to prevent date shifting
+                                                const offset = date.getTimezoneOffset();
+                                                const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                                                return localDate.toISOString().slice(0, 16);
+                                            } catch {
+                                                return '';
+                                            }
+                                        })() : ''}
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                // Create date and strip seconds for clean minute-based calculation
+                                                const date = new Date(e.target.value);
+                                                date.setSeconds(0, 0); // Set seconds and milliseconds to 0
+                                                onStartTimeEdit?.(date.toISOString());
+                                            }
+                                        }}
                                         className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
@@ -167,8 +184,25 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                     <label className="block text-xs text-gray-500 mb-1">End Time</label>
                                     <input
                                         type="datetime-local"
-                                        value={endTime ? new Date(endTime).toISOString().slice(0, 16) : ''}
-                                        onChange={(e) => onEndTimeEdit?.(new Date(e.target.value).toISOString())}
+                                        value={endTime ? (() => {
+                                            try {
+                                                const date = new Date(endTime);
+                                                // Adjust for local timezone to prevent date shifting
+                                                const offset = date.getTimezoneOffset();
+                                                const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                                                return localDate.toISOString().slice(0, 16);
+                                            } catch {
+                                                return '';
+                                            }
+                                        })() : ''}
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                // Create date and strip seconds for clean minute-based calculation
+                                                const date = new Date(e.target.value);
+                                                date.setSeconds(0, 0); // Set seconds and milliseconds to 0
+                                                onEndTimeEdit?.(date.toISOString());
+                                            }
+                                        }}
                                         className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
@@ -388,7 +422,19 @@ const ActivityDetailsPage: FC = () => {
     const calculateTimeDifference = (): number => {
         if (!editedActivity) return 0;
 
-        // Use time_spent if available, otherwise fall back to duration_minutes
+        // If we have both start and end time, calculate the difference
+        const startTime = editedActivity.service_datetime || editedActivity.created_at;
+        const endTime = editedActivity.end_time;
+        
+        if (startTime && endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            const diffInMs = end.getTime() - start.getTime();
+            const diffInMinutes = diffInMs / (1000 * 60); // Convert milliseconds to minutes
+            return Math.max(0, Math.round(diffInMinutes)); // Round to whole minutes and ensure non-negative
+        }
+        
+        // Fall back to stored time_spent or duration_minutes if no end time
         if (editedActivity.time_spent !== undefined && typeof editedActivity.time_spent === 'number') {
             return editedActivity.time_spent;
         }
@@ -406,11 +452,22 @@ const ActivityDetailsPage: FC = () => {
         setIsSaving(true);
 
         try {
-            // Create properly formatted data for backend
-            const timeSpent = typeof editedActivity.time_spent === 'number' ?
-                editedActivity.time_spent :
-                (typeof editedActivity.duration_minutes === 'number' ?
-                    editedActivity.duration_minutes : 0);
+            // Calculate time spent based on start/end times or use existing value
+            let timeSpent = 0;
+            const startTime = editedActivity.service_datetime || editedActivity.created_at;
+            const endTime = editedActivity.end_time;
+            
+            if (startTime && endTime) {
+                // Calculate duration from start and end times
+                const start = new Date(startTime);
+                const end = new Date(endTime);
+                const diffInMs = end.getTime() - start.getTime();
+                timeSpent = Math.max(0, Math.round(diffInMs / (1000 * 60))); // Convert to whole minutes
+            } else if (typeof editedActivity.time_spent === 'number') {
+                timeSpent = editedActivity.time_spent;
+            } else if (typeof editedActivity.duration_minutes === 'number') {
+                timeSpent = editedActivity.duration_minutes;
+            }
 
             // Map frontend fields to backend Activity interface
             const updateData = {
@@ -422,7 +479,7 @@ const ActivityDetailsPage: FC = () => {
                 site_name: editedActivity.site_name || '',
                 building: editedActivity.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
-                duration_minutes: Math.max(1, Math.round(timeSpent)) // Ensure positive integer
+                duration_minutes: Math.max(1, Math.round(timeSpent)) // Ensure positive whole number
             };
 
             console.log('Updating activity with data:', updateData);
@@ -465,7 +522,24 @@ const ActivityDetailsPage: FC = () => {
 
         setEditedActivity(prev => {
             if (!prev) return prev;
-            return { ...prev, [field]: value };
+            const updated = { ...prev, [field]: value };
+            
+            // Recalculate total time when start or end time changes
+            if (field === 'service_datetime' || field === 'created_at' || field === 'end_time') {
+                const startTime = field === 'service_datetime' || field === 'created_at' ? value : (updated.service_datetime || updated.created_at);
+                const endTime = field === 'end_time' ? value : updated.end_time;
+                
+                if (startTime && endTime) {
+                    const start = new Date(startTime);
+                    const end = new Date(endTime);
+                    const diffInMs = end.getTime() - start.getTime();
+                    const diffInMinutes = Math.max(0, Math.round(diffInMs / (1000 * 60))); // Round to whole minutes
+                    updated.time_spent = diffInMinutes;
+                    updated.duration_minutes = diffInMinutes;
+                }
+            }
+            
+            return updated;
         });
     };
 
@@ -628,13 +702,29 @@ const ActivityDetailsPage: FC = () => {
                                 icon={Clock}
                                 label="Date and Time of Service"
                                 value=""
-                                startTime="2024-03-20T09:00:00"
-                                endTime="2024-03-20T10:30:00"
+                                startTime={(() => {
+                                    const time = editedActivity.service_datetime || editedActivity.created_at;
+                                    return time ? (typeof time === 'string' ? time : time.toISOString()) : '';
+                                })()}
+                                endTime={(() => {
+                                    // If we have an explicit end_time, use it
+                                    if (editedActivity.end_time) {
+                                        return String(editedActivity.end_time);
+                                    }
+                                    // Otherwise, calculate end time from start + duration
+                                    const startTime = editedActivity.service_datetime || editedActivity.created_at;
+                                    const duration = editedActivity.duration_minutes || editedActivity.time_spent || 0;
+                                    if (startTime && duration > 0) {
+                                        const start = new Date(startTime);
+                                        const end = new Date(start.getTime() + (duration * 60 * 1000));
+                                        return end.toISOString();
+                                    }
+                                    return '';
+                                })()}
                                 isEditing={isEditing}
                                 editType="datetime"
                                 onStartTimeEdit={(value) => {
                                     handleFieldChange('service_datetime', value);
-                                    handleFieldChange('created_at', value);
                                 }}
                                 onEndTimeEdit={(value) => handleFieldChange('end_time', value)}
                                 calculateTimeDifference={calculateTimeDifference}
@@ -701,7 +791,7 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Clock}
                                 label="Total Time"
-                                value={formatTimeSpent(editedActivity)}
+                                value={calculateTimeDifference()}
                                 isEditing={isEditing}
                                 editType="number"
                                 onEdit={(value) => {
