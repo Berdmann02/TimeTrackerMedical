@@ -10,6 +10,8 @@ import SitesPage from "./pages/sites/SitesPage";
 import MedicalActivitiesPage from "./pages/medical-activities/MedicalActivitiesPage";
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import ReportsPage from './pages/reports/ReportsPage';
+import SiteReportsPage from './pages/reports/SiteReportsPage';
+import PatientReportsPage from './pages/reports/PatientReportsPage';
 import SiteDetailsPage from './pages/sites/SiteDetailsPage';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AdminRoute } from './components/layout/AdminRoute';
@@ -115,6 +117,26 @@ function App() {
           <ProtectedRoute>
             <RestrictPharmacistRoute>
               <ReportsPage />
+            </RestrictPharmacistRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/site-reports"
+        element={
+          <ProtectedRoute>
+            <RestrictPharmacistRoute>
+              <SiteReportsPage />
+            </RestrictPharmacistRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient-reports"
+        element={
+          <ProtectedRoute>
+            <RestrictPharmacistRoute>
+              <PatientReportsPage />
             </RestrictPharmacistRoute>
           </ProtectedRoute>
         }

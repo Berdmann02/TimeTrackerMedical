@@ -132,6 +132,11 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     try {
       // Validate password fields if any password field is filled
       if (formData.newPassword || formData.confirmPassword) {
+        if (!formData.newPassword) {
+          setError("Current password is required to change password");
+          setIsSubmitting(false); 
+          return;
+        }
         if (formData.newPassword !== formData.confirmPassword) {
           setError("New password and confirm password do not match");
           setIsSubmitting(false);

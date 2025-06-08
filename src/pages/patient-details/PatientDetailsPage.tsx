@@ -1,15 +1,17 @@
 import { useState, useEffect, memo, useMemo } from "react"
-import { User, Activity as ActivityIcon, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock, Trash } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
-import { getPatientById, getPatientActivities, updatePatient, deletePatient } from "../../services/patientService"
-import type { Patient, Activity as ApiActivity } from "../../services/patientService"
-import { getLatestMedicalRecordByPatientId, type MedicalRecord } from '../../services/medicalRecordService'
+import { useAuth } from "../../contexts/AuthContext"
+import { User, Activity as ActivityIcon, Plus, ChevronLeft, Pencil, ClipboardCheck, Heart, Hospital, FileText, Pill, AlertTriangle, Syringe, Save, X, ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, Clock, Trash } from "lucide-react"
+import { 
+  getPatientById, 
+  updatePatient, 
+  deletePatient,
+  type Patient
+} from "../../services/patientService"
 import { getActivitiesByPatientId, type Activity as ServiceActivity } from '../../services/activityService'
+import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
 import AddActivityModal from "../../components/AddActivityModal"
 import StatusHistoryModal from "../../components/StatusHistoryModal"
-import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
-import { getBuildingsBySiteId, type Building } from '../../services/buildingService'
-import { getSiteByName } from '../../services/siteService'
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
 
 // DetailRow component for editable fields that maintains original UI
@@ -22,7 +24,7 @@ interface DetailRowProps {
     editType?: 'text' | 'date' | 'select' | 'checkbox' | 'readonly' | 'textarea';
     editOptions?: string[];
     className?: string;
-    buildings?: Building[];
+    forceReadOnly?: boolean;
 }
 
 // Add this before DetailRow component
@@ -41,7 +43,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({
   editType = 'text', 
   editOptions = [], 
   className = '',
-  buildings = []
+  forceReadOnly = false
 }) => {
   // Format value for display
   const formatValue = (val: DetailRowProps['value']): string => {
@@ -54,7 +56,7 @@ const DetailRow: React.FC<DetailRowProps> = memo(({
   };
 
   const renderValue = () => {
-    if (isEditing) {
+    if (isEditing && !forceReadOnly) {
       switch (editType) {
         case 'date':
           return (
@@ -240,23 +242,6 @@ const getGenderValue = (display: string): GenderCode => {
   return (entry ? entry[0] : display) as GenderCode;
 };
 
-// Update the Activity interface to match backend enriched data
-interface Activity {
-  id: number;
-  patient_id: number;
-  user_id: number;
-  activity_type: string;
-  pharm_flag?: boolean;
-  notes?: string;
-  site_name: string;
-  building?: string;
-  service_datetime: string;
-  duration_minutes: number;
-  created_at?: string;
-  user_initials?: string;
-  time_spent?: number;
-}
-
 // Update the PatientActivity interface to match the display format
 interface PatientActivity {
   activityId: string;
@@ -268,12 +253,6 @@ interface PatientActivity {
   duration_minutes: number;
 }
 
-// Update the PatientWithActivities interface
-interface PatientWithActivities {
-  patient: Patient & { site_name: string };
-  activities: PatientActivity[];
-}
-
 // Local interface for patient data with activities
 interface LocalPatientWithActivities {
   patient: Patient & { site_name: string };
@@ -283,6 +262,7 @@ interface LocalPatientWithActivities {
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
   const { patientId = '' } = useParams<{ patientId: string }>()
+  const { isPharmacist } = useAuth()
   
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -293,7 +273,6 @@ export default function PatientDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLastUpdatedModalOpen, setIsLastUpdatedModalOpen] = useState(false)
-  const [latestMedicalRecord, setLatestMedicalRecord] = useState<MedicalRecord | null>(null)
   const [sitesAndBuildings, setSitesAndBuildings] = useState<SiteWithBuildings[]>([])
   const [availableBuildings, setAvailableBuildings] = useState<string[]>([])
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -356,32 +335,6 @@ export default function PatientDetailsPage() {
       const patientData = await getPatientById(patientId);
       console.log('Fetched patient data:', patientData);
       setPatient(patientData);
-      
-      // Get latest medical record
-      try {
-        const latestRecord = await getLatestMedicalRecordByPatientId(patientId);
-        setLatestMedicalRecord(latestRecord);
-        
-        // Update patient data with latest medical record values
-        if (latestRecord) {
-          setPatient((prev: Patient | null) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              medical_records: latestRecord.medical_records,
-              bp_at_goal: latestRecord.bpAtGoal,
-              hospital_visited_since_last_review: latestRecord.hospitalVisitSinceLastReview,
-              a1c_at_goal: latestRecord.a1cAtGoal,
-              use_benzo: latestRecord.benzodiazepines,
-              use_antipsychotic: latestRecord.antipsychotics,
-              use_opioids: latestRecord.opioids,
-              fall_since_last_visit: latestRecord.fallSinceLastVisit
-            };
-          });
-        }
-      } catch (medicalRecordError) {
-        console.error("Error fetching latest medical record:", medicalRecordError);
-      }
       
       // Get activities with enriched data
       try {
@@ -680,8 +633,7 @@ export default function PatientDetailsPage() {
             </button>
             <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
           </div>
-          <div className="flex space-x-3">
-            {isEditing ? (
+          <div className="flex space-x-3">              {isEditing ? (
               <>
                 <button
                   onClick={handleSave}
@@ -691,13 +643,15 @@ export default function PatientDetailsPage() {
                   <Save className="h-4 w-4 mr-2" />
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
-                >
-                  <Trash className="h-4 w-4 mr-2" />
-                  Delete Patient
-                </button>
+                {!isPharmacist && (
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete Patient
+                  </button>
+                )}
                 <button
                   onClick={handleCancelEdit}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
@@ -736,10 +690,16 @@ export default function PatientDetailsPage() {
                         type="button"
                         role="switch"
                         aria-checked={editedPatient?.is_active}
-                        onClick={() => handleFieldChange('is_active', !editedPatient?.is_active)}
+                        onClick={() => !isPharmacist && handleFieldChange('is_active', !editedPatient?.is_active)}
+                        disabled={isPharmacist}
                         className={`${
                           editedPatient?.is_active ? 'bg-blue-600' : 'bg-gray-200'
-                        } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                        } ${
+                          isPharmacist ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        } relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          !isPharmacist && 'focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                        }`}
+                        title={isPharmacist ? "Pharmacists cannot change patient active status" : "Toggle patient active status"}
                       >
                         <span
                           aria-hidden="true"
@@ -762,31 +722,24 @@ export default function PatientDetailsPage() {
                 </div>
                 <div className="grid grid-cols-4 gap-6">
                   <div className="col-span-1">
-                    {isEditing ? (
-                      <div className="space-y-4">
-                        <DetailRow
-                          label="First Name"
-                          value={editedPatient?.first_name}
-                          isEditing={isEditing}
-                          editType="text"
-                          onEdit={(value) => handleFieldChange('first_name', value)}
-                        />
-                        <DetailRow
-                          label="Last Name"
-                          value={editedPatient?.last_name}
-                          isEditing={isEditing}
-                          editType="text"
-                          onEdit={(value) => handleFieldChange('last_name', value)}
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="text-sm font-medium text-gray-500 block">Full Name</label>
-                        <div className="mt-1">
-                          <span className="text-gray-900">{patient?.first_name} {patient?.last_name}</span>
-                        </div>
-                      </div>
-                    )}
+                    <DetailRow
+                      label="First Name"
+                      value={isEditing ? editedPatient?.first_name : patientData?.patient.first_name}
+                      isEditing={isEditing}
+                      editType="text"
+                      onEdit={(value) => handleFieldChange('first_name', value)}
+                      forceReadOnly={isPharmacist}
+                    />
+                    <div className="mt-6">
+                      <DetailRow
+                        label="Last Name"
+                        value={isEditing ? editedPatient?.last_name : patientData?.patient.last_name}
+                        isEditing={isEditing}
+                        editType="text"
+                        onEdit={(value) => handleFieldChange('last_name', value)}
+                        forceReadOnly={isPharmacist}
+                      />
+                    </div>
                     <div className="mt-6">
                       <DetailRow
                         label="Birth Date"
@@ -794,6 +747,7 @@ export default function PatientDetailsPage() {
                         isEditing={isEditing}
                         editType="date"
                         onEdit={(value) => handleFieldChange('birthdate', value)}
+                        forceReadOnly={isPharmacist}
                       />
                     </div>
                   </div>
@@ -805,6 +759,7 @@ export default function PatientDetailsPage() {
                       editType="select"
                       editOptions={sitesAndBuildings.map(site => site.site_name)}
                       onEdit={(value) => handleFieldChange('site_name', value)}
+                      forceReadOnly={isPharmacist}
                     />
                     <div className="mt-6">
                       <DetailRow
@@ -814,6 +769,7 @@ export default function PatientDetailsPage() {
                         editType="select"
                         editOptions={availableBuildings}
                         onEdit={(value) => handleFieldChange('building', value)}
+                        forceReadOnly={isPharmacist}
                       />
                     </div>
                   </div>
@@ -828,6 +784,7 @@ export default function PatientDetailsPage() {
                       editType="select"
                       editOptions={Object.values(genderOptions)}
                       onEdit={(value) => handleFieldChange('gender', getGenderValue(value))}
+                      forceReadOnly={isPharmacist}
                     />
                     <div className="mt-6">
                       <DetailRow
