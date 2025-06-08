@@ -36,7 +36,7 @@ const Navbar = () => {
       return location.pathname === '/' || location.pathname === '/patients' || location.pathname.startsWith('/patientdetails');
     }
     if (path === '/reports') {
-      return location.pathname === '/reports' || location.pathname === '/site-reports';
+      return location.pathname === '/reports' || location.pathname === '/site-reports' || location.pathname === '/patient-reports';
     }
     return location.pathname.startsWith(path);
   };
@@ -136,6 +136,13 @@ const Navbar = () => {
                         onClick={() => setIsReportsOpen(false)}
                       >
                         Site Reports
+                      </Link>
+                      <Link
+                        to="/patient-reports"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                        onClick={() => setIsReportsOpen(false)}
+                      >
+                        Patient Reports
                       </Link>
                     </div>
                   </div>
@@ -267,6 +274,14 @@ const Navbar = () => {
                 >
                   <FileText className="w-5 h-5" />
                   Site Reports
+                </Link>
+                <Link
+                  to="/patient-reports"
+                  className={getLinkClasses('/patient-reports', true)}
+                  onClick={toggleMenu}
+                >
+                  <FileText className="w-5 h-5" />
+                  Patient Reports
                 </Link>
               </>
             )}
