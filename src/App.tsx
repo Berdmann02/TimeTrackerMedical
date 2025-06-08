@@ -17,6 +17,7 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AdminRoute } from './components/layout/AdminRoute';
 import { PublicRoute } from './components/layout/PublicRoute';
 import RestrictPharmacistRoute from './components/layout/RestrictPharmacistRoute';
+import RestrictNurseRoute from './components/layout/RestrictNurseRoute';
 
 function App() {
   const { isLoading } = useAuth();
@@ -88,7 +89,9 @@ function App() {
         element={
           <ProtectedRoute>
             <RestrictPharmacistRoute>
-              <SitesPage />
+              <RestrictNurseRoute>
+                <SitesPage />
+              </RestrictNurseRoute>
             </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
@@ -98,7 +101,9 @@ function App() {
         element={
           <ProtectedRoute>
             <RestrictPharmacistRoute>
-              <SiteDetailsPage />
+              <RestrictNurseRoute>
+                <SiteDetailsPage />
+              </RestrictNurseRoute>
             </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
@@ -116,7 +121,9 @@ function App() {
         element={
           <ProtectedRoute>
             <RestrictPharmacistRoute>
-              <ReportsPage />
+              <RestrictNurseRoute>
+                <ReportsPage />
+              </RestrictNurseRoute>
             </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
@@ -126,7 +133,9 @@ function App() {
         element={
           <ProtectedRoute>
             <RestrictPharmacistRoute>
-              <SiteReportsPage />
+              <RestrictNurseRoute>
+                <SiteReportsPage />
+              </RestrictNurseRoute>
             </RestrictPharmacistRoute>
           </ProtectedRoute>
         }
@@ -136,7 +145,9 @@ function App() {
         element={
           <ProtectedRoute>
             <RestrictPharmacistRoute>
-              <PatientReportsPage />
+              <RestrictNurseRoute>
+                <PatientReportsPage />
+              </RestrictNurseRoute>
             </RestrictPharmacistRoute>
           </ProtectedRoute>
         }

@@ -10,7 +10,7 @@ import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/sit
 
 export default function PatientsPage() {
   const navigate = useNavigate()
-  const { isPharmacist } = useAuth();
+  const { isPharmacist, isNurse } = useAuth();
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false)
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
   const [selectedPatientId, setSelectedPatientId] = useState<string>("")
@@ -256,7 +256,7 @@ export default function PatientsPage() {
         {/* Header with title and Add Patient button */}
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
-          {!isPharmacist && (
+          {!isPharmacist && !isNurse && (
             <button
               onClick={() => setIsAddPatientModalOpen(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"

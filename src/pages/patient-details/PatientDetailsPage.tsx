@@ -262,7 +262,7 @@ interface LocalPatientWithActivities {
 export default function PatientDetailsPage() {
   const navigate = useNavigate()
   const { patientId = '' } = useParams<{ patientId: string }>()
-  const { isPharmacist } = useAuth()
+  const { isPharmacist, isNurse } = useAuth()
   
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -661,13 +661,15 @@ export default function PatientDetailsPage() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={handleEditPatient}
-                className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
-              >
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit Patient
-              </button>
+              !isNurse && (
+                <button
+                  onClick={handleEditPatient}
+                  className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Patient
+                </button>
+              )
             )}
           </div>
         </div>

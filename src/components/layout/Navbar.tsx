@@ -89,7 +89,7 @@ const Navbar = () => {
               <UserCheck className="w-5 h-5" />
               Patients
             </Link>
-            {!isPharmacist && (
+            {!isPharmacist && !isNurse && (
               <Link
                 to="/sites"
                 className={getLinkClasses('/sites')}
@@ -105,7 +105,7 @@ const Navbar = () => {
               <Activity className="w-5 h-5" />
               Medical Activities
             </Link>
-            {!isPharmacist && (
+            {!isPharmacist && !isNurse && (
               /* Reports Dropdown */
               <div className="relative" ref={reportsDropdownRef}>
                 <button
@@ -239,7 +239,7 @@ const Navbar = () => {
               <UserCheck className="w-5 h-5" />
               Patients
             </Link>
-            {!isPharmacist && (
+            {!isPharmacist && !isNurse && (
               <Link
                 to="/sites"
                 className={getLinkClasses('/sites', true)}
@@ -257,7 +257,7 @@ const Navbar = () => {
               <Activity className="w-5 h-5" />
               Medical Activities
             </Link>
-            {!isPharmacist && (
+            {!isPharmacist && !isNurse && (
               <>
                 <Link
                   to="/reports"
