@@ -6,10 +6,12 @@ import { useAuth } from '../../contexts/AuthContext';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isReportsOpen, setIsReportsOpen] = useState(false)
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, isAdmin, isNurse, isPharmacist, user } = useAuth();
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const reportsDropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -17,6 +19,10 @@ const Navbar = () => {
 
   const toggleProfile = () => {
     setIsProfileOpen(!isProfileOpen)
+  }
+
+  const toggleReports = () => {
+    setIsReportsOpen(!isReportsOpen)
   }
 
   const handleLogout = () => {
@@ -28,6 +34,9 @@ const Navbar = () => {
   const isActivePath = (path: string) => {
     if (path === '/patients' || path === '/') {
       return location.pathname === '/' || location.pathname === '/patients' || location.pathname.startsWith('/patientdetails');
+    }
+    if (path === '/reports') {
+      return location.pathname === '/reports' || location.pathname === '/site-reports';
     }
     return location.pathname.startsWith(path);
   };
@@ -48,6 +57,9 @@ const Navbar = () => {
     const handleOutsideClick = (event: MouseEvent) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
+      }
+      if (reportsDropdownRef.current && !reportsDropdownRef.current.contains(event.target as Node)) {
+        setIsReportsOpen(false);
       }
     };
 
@@ -94,13 +106,41 @@ const Navbar = () => {
               Medical Activities
             </Link>
             {!isPharmacist && (
-              <Link
-                to="/reports"
-                className={getLinkClasses('/reports')}
-              >
-                <FileText className="w-5 h-5" />
-                Reports
-              </Link>
+              /* Reports Dropdown */
+              <div className="relative" ref={reportsDropdownRef}>
+                <button
+                  onClick={toggleReports}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActivePath('/reports') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
+                  }`}
+                >
+                  <FileText className="w-5 h-5" />
+                  <span>Reports</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {/* Reports Dropdown Menu */}
+                {isReportsOpen && (
+                  <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                    <div className="py-1">
+                      <Link
+                        to="/reports"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                        onClick={() => setIsReportsOpen(false)}
+                      >
+                        Overall Reports
+                      </Link>
+                      <Link
+                        to="/site-reports"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                        onClick={() => setIsReportsOpen(false)}
+                      >
+                        Site Reports
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {isAdmin && (
               <Link
@@ -211,14 +251,24 @@ const Navbar = () => {
               Medical Activities
             </Link>
             {!isPharmacist && (
-              <Link
-                to="/reports"
-                className={getLinkClasses('/reports', true)}
-                onClick={toggleMenu}
-              >
-                <FileText className="w-5 h-5" />
-                Reports
-              </Link>
+              <>
+                <Link
+                  to="/reports"
+                  className={getLinkClasses('/reports', true)}
+                  onClick={toggleMenu}
+                >
+                  <FileText className="w-5 h-5" />
+                  Overall Reports
+                </Link>
+                <Link
+                  to="/site-reports"
+                  className={getLinkClasses('/site-reports', true)}
+                  onClick={toggleMenu}
+                >
+                  <FileText className="w-5 h-5" />
+                  Site Reports
+                </Link>
+              </>
             )}
             {isAdmin && (
               <Link
