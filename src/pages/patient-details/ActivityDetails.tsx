@@ -1,6 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import type { FC } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Clock,
     User,
@@ -233,6 +234,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
 const ActivityDetailsPage: FC = () => {
     const { activityId } = useParams<{ activityId: string }>();
     const navigate = useNavigate();
+    const { isPharmacist } = useAuth();
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -599,7 +601,7 @@ const ActivityDetailsPage: FC = () => {
                                         Cancel
                                     </button>
                                 </>
-                            ) : (
+                            ) : !isPharmacist && (
                                 <>
                                     <button
                                         onClick={handleEdit}
