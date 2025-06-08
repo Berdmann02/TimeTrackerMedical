@@ -633,8 +633,7 @@ export default function PatientDetailsPage() {
             </button>
             <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
           </div>
-          <div className="flex space-x-3">
-            {isEditing ? (
+          <div className="flex space-x-3">              {isEditing ? (
               <>
                 <button
                   onClick={handleSave}
@@ -644,13 +643,15 @@ export default function PatientDetailsPage() {
                   <Save className="h-4 w-4 mr-2" />
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
-                <button
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
-                >
-                  <Trash className="h-4 w-4 mr-2" />
-                  Delete Patient
-                </button>
+                {!isPharmacist && (
+                  <button
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete Patient
+                  </button>
+                )}
                 <button
                   onClick={handleCancelEdit}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
@@ -689,10 +690,16 @@ export default function PatientDetailsPage() {
                         type="button"
                         role="switch"
                         aria-checked={editedPatient?.is_active}
-                        onClick={() => handleFieldChange('is_active', !editedPatient?.is_active)}
+                        onClick={() => !isPharmacist && handleFieldChange('is_active', !editedPatient?.is_active)}
+                        disabled={isPharmacist}
                         className={`${
                           editedPatient?.is_active ? 'bg-blue-600' : 'bg-gray-200'
-                        } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                        } ${
+                          isPharmacist ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        } relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          !isPharmacist && 'focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                        }`}
+                        title={isPharmacist ? "Pharmacists cannot change patient active status" : "Toggle patient active status"}
                       >
                         <span
                           aria-hidden="true"
