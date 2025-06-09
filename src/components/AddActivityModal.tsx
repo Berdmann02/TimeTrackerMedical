@@ -285,16 +285,23 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   const formatTimeDifference = (): string => {
     const totalMinutes = calculateTimeDifference();
-    if (totalMinutes === 0) return "0 minutes";
+    if (totalMinutes === 0) return "0.00 minutes";
     
-    // Format as decimal minutes with 1 decimal place
-    const roundedMinutes = Math.round(totalMinutes * 10) / 10;
-    
-    if (roundedMinutes === 1) {
-      return "1 minute";
-    } else {
-      return `${roundedMinutes} minutes`;
+    // If less than 1 minute, show as decimal minutes (seconds converted to decimal)
+    if (totalMinutes < 1) {
+      const decimalMinutes = Math.round(totalMinutes * 100) / 100;
+      return `${decimalMinutes.toFixed(2)} minutes`;
     }
+    
+    // If less than 60 minutes, show as decimal minutes
+    if (totalMinutes < 60) {
+      const decimalMinutes = Math.round(totalMinutes * 100) / 100;
+      return `${decimalMinutes.toFixed(2)} minutes`;
+    }
+    
+    // If 60 minutes or more, show as decimal hours
+    const decimalHours = Math.round((totalMinutes / 60) * 100) / 100;
+    return `${decimalHours.toFixed(2)} hours`;
   };
 
   // Helper function to format ISO string to datetime-local format

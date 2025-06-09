@@ -187,18 +187,23 @@ const MedicalActivitiesPage = () => {
       return 'N/A';
     }
     
-    if (totalMinutes === 0) return "0 minutes";
+    if (totalMinutes === 0) return "0.00 minutes";
     
-    const minutes = Math.floor(totalMinutes);
-    const seconds = Math.round((totalMinutes - minutes) * 60);
-    
-    if (minutes === 0) {
-      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
-    } else if (seconds === 0) {
-      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-    } else {
-      return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+    // If less than 1 minute, show as decimal minutes (seconds converted to decimal)
+    if (totalMinutes < 1) {
+      const decimalMinutes = Math.round(totalMinutes * 100) / 100;
+      return `${decimalMinutes.toFixed(2)} minutes`;
     }
+    
+    // If less than 60 minutes, show as decimal minutes
+    if (totalMinutes < 60) {
+      const decimalMinutes = Math.round(totalMinutes * 100) / 100;
+      return `${decimalMinutes.toFixed(2)} minutes`;
+    }
+    
+    // If 60 minutes or more, show as decimal hours
+    const decimalHours = Math.round((totalMinutes / 60) * 100) / 100;
+    return `${decimalHours.toFixed(2)} hours`;
   };
 
   // Filtering and sorting

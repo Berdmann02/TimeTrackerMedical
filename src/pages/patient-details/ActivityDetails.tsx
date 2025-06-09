@@ -83,18 +83,23 @@ const DetailRow: FC<DetailRowProps> = memo(({
 }) => {
     // Helper function to format time values
     const formatTimeValue = (timeValue: number): string => {
-        const totalMinutes = Math.floor(timeValue);
-        const seconds = Math.round((timeValue - totalMinutes) * 60);
+        if (timeValue === 0) return "0.00 minutes";
         
-        if (totalMinutes === 0 && seconds === 0) {
-            return "0 minutes";
-        } else if (totalMinutes === 0) {
-            return `${seconds} seconds`;
-        } else if (seconds === 0) {
-            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''}`;
-        } else {
-            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+        // If less than 1 minute, show as decimal minutes (seconds converted to decimal)
+        if (timeValue < 1) {
+            const decimalMinutes = Math.round(timeValue * 100) / 100;
+            return `${decimalMinutes.toFixed(2)} minutes`;
         }
+        
+        // If less than 60 minutes, show as decimal minutes
+        if (timeValue < 60) {
+            const decimalMinutes = Math.round(timeValue * 100) / 100;
+            return `${decimalMinutes.toFixed(2)} minutes`;
+        }
+        
+        // If 60 minutes or more, show as decimal hours
+        const decimalHours = Math.round((timeValue / 60) * 100) / 100;
+        return `${decimalHours.toFixed(2)} hours`;
     };
 
     return (
@@ -589,18 +594,23 @@ const ActivityDetailsPage: FC = () => {
             timeValue = Number(activity.duration_minutes);
         }
         
-        const totalMinutes = Math.floor(timeValue);
-        const seconds = Math.round((timeValue - totalMinutes) * 60);
+        if (timeValue === 0) return "0.00 minutes";
         
-        if (totalMinutes === 0 && seconds === 0) {
-            return "0 minutes";
-        } else if (totalMinutes === 0) {
-            return `${seconds} seconds`;
-        } else if (seconds === 0) {
-            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''}`;
-        } else {
-            return `${totalMinutes} minute${totalMinutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+        // If less than 1 minute, show as decimal minutes (seconds converted to decimal)
+        if (timeValue < 1) {
+            const decimalMinutes = Math.round(timeValue * 100) / 100;
+            return `${decimalMinutes.toFixed(2)} minutes`;
         }
+        
+        // If less than 60 minutes, show as decimal minutes
+        if (timeValue < 60) {
+            const decimalMinutes = Math.round(timeValue * 100) / 100;
+            return `${decimalMinutes.toFixed(2)} minutes`;
+        }
+        
+        // If 60 minutes or more, show as decimal hours
+        const decimalHours = Math.round((timeValue / 60) * 100) / 100;
+        return `${decimalHours.toFixed(2)} hours`;
     };
 
     // Loading state
