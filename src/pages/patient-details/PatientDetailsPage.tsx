@@ -561,7 +561,7 @@ export default function PatientDetailsPage() {
 
     // Sort the activities
     return filteredActivities.sort((a, b) => {
-      if (!activitySortField) return Number(a.activityId) - Number(b.activityId); // Default sort by activity ID asc (lowest to greatest)
+      if (!activitySortField) return Number(b.activityId) - Number(a.activityId); // Default sort by activity ID desc (greatest to lowest)
 
       let aValue: any = a[activitySortField];
       let bValue: any = b[activitySortField];

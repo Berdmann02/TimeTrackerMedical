@@ -212,11 +212,6 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                         className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
-                                {startTime && endTime && calculateTimeDifference && (
-                                    <div className="text-sm text-blue-600 font-medium">
-                                        Duration: {formatTimeValue(calculateTimeDifference())}
-                                    </div>
-                                )}
                             </div>
                         )}
                     </>
@@ -805,11 +800,8 @@ const ActivityDetailsPage: FC = () => {
                                 label="Total Time"
                                 value={Number(editedActivity.duration_minutes || editedActivity.time_spent || 0)}
                                 isEditing={isEditing}
-                                editType="number"
-                                onEdit={(value) => {
-                                    handleFieldChange('time_spent', value);
-                                    handleFieldChange('duration_minutes', value);
-                                }}
+                                editType="readonly"
+                                calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
                                 icon={ClipboardCheck}
