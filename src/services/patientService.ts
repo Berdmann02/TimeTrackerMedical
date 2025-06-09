@@ -15,7 +15,7 @@ export interface Activity {
   is_pharmacist?: boolean;
   pharm_flag?: boolean;
   time_spent?: number;
-  duration_minutes?: number;
+  duration_minutes?: number; // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
   created_at?: string;
   service_datetime?: string;
   end_time?: string;

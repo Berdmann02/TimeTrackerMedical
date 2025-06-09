@@ -13,7 +13,7 @@ export interface Activity {
   site_name: string;
   building?: string;
   service_datetime: Date | string;
-  duration_minutes: number;
+  duration_minutes: number; // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
   created_at?: Date | string;
   user_initials?: string; // Added to match backend enriched data
 }
@@ -23,7 +23,7 @@ export interface CreateActivityDTO {
   patient_id: number;
   user_id: number;
   activity_type: string;
-  duration_minutes: number;
+  duration_minutes: number; // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
   site_name: string;
   building?: string;
   notes?: string;
@@ -105,7 +105,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       site_name: activityData.site_name,
       building: activityData.building || '',
       service_datetime: new Date().toISOString(),
-      duration_minutes: Math.max(1, Math.round(activityData.duration_minutes)) // Round to integer, minimum 1 minute
+      duration_minutes: Math.max(0.01, Number(activityData.duration_minutes.toFixed(2))) // Support decimal values for seconds, minimum 0.01 minute (0.6 seconds)
     };
     
     console.log('Creating activity with data:', backendActivityData);

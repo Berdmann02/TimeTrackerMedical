@@ -438,7 +438,7 @@ const ActivityDetailsPage: FC = () => {
             const end = new Date(endTime);
             const diffInMs = end.getTime() - start.getTime();
             const diffInMinutes = diffInMs / (1000 * 60); // Convert milliseconds to minutes
-            return Math.max(0, Math.round(diffInMinutes)); // Round to whole minutes and ensure non-negative
+            return Math.max(0, Number(diffInMinutes.toFixed(2))); // Support decimal values for seconds and ensure non-negative
         }
         
         // Fall back to stored time_spent or duration_minutes if no end time
@@ -469,7 +469,7 @@ const ActivityDetailsPage: FC = () => {
                 const start = new Date(startTime);
                 const end = new Date(endTime);
                 const diffInMs = end.getTime() - start.getTime();
-                timeSpent = Math.max(0, Math.round(diffInMs / (1000 * 60))); // Convert to whole minutes
+                timeSpent = Math.max(0, Number((diffInMs / (1000 * 60)).toFixed(2))); // Support decimal values for seconds
             } else if (typeof editedActivity.time_spent === 'number') {
                 timeSpent = editedActivity.time_spent;
             } else if (typeof editedActivity.duration_minutes === 'number') {
@@ -486,7 +486,7 @@ const ActivityDetailsPage: FC = () => {
                 site_name: editedActivity.site_name || '',
                 building: editedActivity.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
-                duration_minutes: Math.max(1, Math.round(timeSpent)) // Ensure positive whole number
+                duration_minutes: Math.max(0.01, Number(timeSpent.toFixed(2))) // Support decimal values for seconds, minimum 0.01 minute (0.6 seconds)
             };
 
             console.log('Updating activity with data:', updateData);
@@ -540,7 +540,7 @@ const ActivityDetailsPage: FC = () => {
                     const start = new Date(startTime);
                     const end = new Date(endTime);
                     const diffInMs = end.getTime() - start.getTime();
-                    const diffInMinutes = Math.max(0, Math.round(diffInMs / (1000 * 60))); // Round to whole minutes
+                    const diffInMinutes = Math.max(0, Number((diffInMs / (1000 * 60)).toFixed(2))); // Support decimal values for seconds
                     updated.time_spent = diffInMinutes;
                     updated.duration_minutes = diffInMinutes;
                 }

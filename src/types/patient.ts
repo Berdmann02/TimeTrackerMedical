@@ -46,7 +46,7 @@ export interface Activity {
   recordDate: string
   totalTime: number
   time_spent?: number
-  duration_minutes?: number
+  duration_minutes?: number // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
 }
 
 export interface PatientActivity {
@@ -56,7 +56,7 @@ export interface PatientActivity {
     recordDate: string;
     totalTime: number;
     time_spent?: number;
-    duration_minutes?: number;
+    duration_minutes?: number // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
 }
 
 export interface PatientWithActivities {
