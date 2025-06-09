@@ -10,6 +10,7 @@ import {
 } from "../../services/patientService"
 import { getActivitiesByPatientId, type Activity as ServiceActivity } from '../../services/activityService'
 import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
+import { getLatestMedicalRecordByPatientId, type MedicalRecord } from "../../services/medicalRecordService"
 import AddActivityModal from "../../components/AddActivityModal"
 import StatusHistoryModal from "../../components/StatusHistoryModal"
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
@@ -277,6 +278,7 @@ export default function PatientDetailsPage() {
   const [availableBuildings, setAvailableBuildings] = useState<string[]>([])
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingPatient, setIsDeletingPatient] = useState(false);
+  const [latestMedicalRecord, setLatestMedicalRecord] = useState<MedicalRecord | null>(null);
 
   // Add new state variables for activity sorting and filtering
   const [activitySortField, setActivitySortField] = useState<"activityId" | "activityType" | "initials" | "recordDate" | "totalTime" | null>(null)
@@ -559,7 +561,7 @@ export default function PatientDetailsPage() {
 
     // Sort the activities
     return filteredActivities.sort((a, b) => {
-      if (!activitySortField) return new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime(); // Default sort by date desc
+      if (!activitySortField) return Number(a.activityId) - Number(b.activityId); // Default sort by activity ID asc (lowest to greatest)
 
       let aValue: any = a[activitySortField];
       let bValue: any = b[activitySortField];
