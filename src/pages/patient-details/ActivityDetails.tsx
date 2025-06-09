@@ -803,7 +803,7 @@ const ActivityDetailsPage: FC = () => {
                             <DetailRow
                                 icon={Clock}
                                 label="Total Time"
-                                value={calculateTimeDifference()}
+                                value={Number(editedActivity.duration_minutes || editedActivity.time_spent || 0)}
                                 isEditing={isEditing}
                                 editType="number"
                                 onEdit={(value) => {
