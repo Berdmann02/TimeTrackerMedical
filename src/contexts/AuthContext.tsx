@@ -49,12 +49,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
       const response = await authService.login(email, password);
       setUser(response.user);
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      // Re-throw the error so the login page can handle it
+      throw error;
     }
   };
 

@@ -19,8 +19,8 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized error (e.g., redirect to login)
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+      // Only redirect to login if we're not already on the login page
       authService.logout();
       window.location.href = '/login';
     }

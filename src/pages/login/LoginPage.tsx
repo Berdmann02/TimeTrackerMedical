@@ -58,18 +58,44 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setLoginError("")
-
-    if (!validateForm()) return
+    
+    if (!validateForm() || isLoading) return
 
     setIsLoading(true)
+    setLoginError("")
 
     try {
       await login(formData.email, formData.password)
+      // Only navigate on successful login
       navigate("/")
     } catch (error: any) {
       console.error("Login failed:", error)
-      setLoginError(error.response?.data?.message || "Login failed. Please try again.")
+      
+      // Handle different error cases
+      if (error.response?.status === 401) {
+        const errorMessage = error.response?.data?.message?.toLowerCase() || ""
+        
+        if (errorMessage.includes("user not found") || errorMessage.includes("no account") || errorMessage.includes("email")) {
+          // Clear both fields for non-existent user
+          setFormData({
+            email: "",
+            password: "",
+            rememberMe: formData.rememberMe
+          })
+          setLoginError("No account found with this email address. Please check your email or sign up.")
+        } else {
+          // Only clear password for incorrect password
+          setFormData(prev => ({
+            ...prev,
+            password: ""
+          }))
+          setLoginError("Incorrect password. Please try again.")
+        }
+      } else if (error.response?.data?.message) {
+        setLoginError(error.response.data.message)
+      } else {
+        setLoginError("Unable to sign in. Please try again later.")
+      }
     } finally {
       setIsLoading(false)
     }
