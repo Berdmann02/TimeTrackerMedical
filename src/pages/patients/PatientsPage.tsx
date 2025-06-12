@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AddPatientModal from "../../components/AddPatientModal"
 import AddActivityModal from "../../components/AddActivityModal"
-import { getPatients } from "../../services/patientService"
-import type { Patient } from "../../services/patientService"
+import { getPatients, type Patient } from "../../services/patientService"
 import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
+import { getActivitiesByPatientId, type Activity } from "../../services/activityService"
 
 export default function PatientsPage() {
   const navigate = useNavigate()
-  const { isPharmacist, isNurse } = useAuth();
+  const { isPharmacist, isNurse } = useAuth()
   const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false)
   const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false)
   const [selectedPatientId, setSelectedPatientId] = useState<string>("")
@@ -21,6 +21,7 @@ export default function PatientsPage() {
 
   // State for patients data
   const [patients, setPatients] = useState<Patient[]>([])
+  const [patientActivities, setPatientActivities] = useState<{[key: string]: Activity[]}>({})
   const [searchTerm, setSearchTerm] = useState("")
   const [genderFilter, setGenderFilter] = useState<string>("all")
   const [activityFilter, setActivityFilter] = useState<string>("all")
@@ -49,6 +50,21 @@ export default function PatientsPage() {
     try {
       const data = await getPatients();
       setPatients(data);
+      
+      // Fetch activities for each patient
+      const activities: { [key: string]: Activity[] } = {};
+      for (const patient of data) {
+        if (patient.id) {
+          try {
+            const patientActivities = await getActivitiesByPatientId(patient.id);
+            activities[patient.id] = patientActivities;
+          } catch (err) {
+            console.error(`Error fetching activities for patient ${patient.id}:`, err);
+            activities[patient.id] = [];
+          }
+        }
+      }
+      setPatientActivities(activities);
     } catch (err) {
       console.error('Error fetching patients:', err);
       setError('Failed to load patients. Please try again later.');
@@ -98,20 +114,26 @@ export default function PatientsPage() {
 
   // Static data for filters that don't need to be dynamic
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ]
-  const years = [2020, 2021, 2022, 2023, 2024, 2025]
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  // Get all unique years from activities, but only include 2024 and 2025
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    Object.values(patientActivities).forEach(activities => {
+      activities.forEach(activity => {
+        const date = activity.service_datetime || activity.created_at;
+        if (date) {
+          const year = new Date(date).getFullYear();
+          if (year >= 2024 && year <= 2025) {
+            years.add(year);
+          }
+        }
+      });
+    });
+    return Array.from(years).sort((a, b) => a - b);
+  }, [patientActivities]);
 
   // Helper to get full name from first and last name
   const getFullName = (patient: Patient) => {
@@ -141,21 +163,36 @@ export default function PatientsPage() {
       // Building filter
       const matchesBuilding = buildingFilter === "all" || patient.building === buildingFilter;
       
-      // Month and year filters from birthdate
-      const birthdate = patient.birthdate ? new Date(patient.birthdate) : null;
-      const matchesMonth =
-        monthFilter === "all" ||
-        (birthdate && birthdate.getMonth() + 1 === Number.parseInt(monthFilter));
-      
-      const matchesYear =
-        yearFilter === "all" || 
-        (birthdate && birthdate.getFullYear() === Number.parseInt(yearFilter));
+      // Month and year filters from activities
+      const patientHasActivitiesInPeriod = () => {
+        if (!patient.id || monthFilter === "all" || !patientActivities[patient.id]) {
+          return monthFilter === "all" && yearFilter === "all";
+        }
+
+        return patientActivities[patient.id].some(activity => {
+          const activityDate = activity.service_datetime || activity.created_at;
+          if (!activityDate) return false;
+
+          const date = new Date(activityDate);
+          const matchesMonth = monthFilter === "all" || 
+            (date.getMonth() + 1 === Number.parseInt(monthFilter));
+          const matchesYear = yearFilter === "all" || 
+            date.getFullYear() === Number.parseInt(yearFilter);
+          
+          return matchesMonth && matchesYear;
+        });
+      };
       
       // Active status
       const matchesActive = showInactive || patient.is_active;
 
       return (
-        matchesSearch && matchesGender && matchesSite && matchesMonth && matchesYear && matchesActive && matchesBuilding
+        matchesSearch && 
+        matchesGender && 
+        matchesSite && 
+        matchesBuilding && 
+        matchesActive && 
+        patientHasActivitiesInPeriod()
       );
     });
 
@@ -185,7 +222,7 @@ export default function PatientsPage() {
       }
       return 0;
     });
-  }, [patients, searchTerm, genderFilter, siteFilter, buildingFilter, monthFilter, yearFilter, showInactive, sortField, sortDirection]);
+  }, [patients, searchTerm, genderFilter, siteFilter, buildingFilter, monthFilter, yearFilter, showInactive, sortField, sortDirection, patientActivities]);
 
   // Handle sort
   const handleSort = (field: keyof Patient | "name") => {
@@ -214,41 +251,10 @@ export default function PatientsPage() {
     setIsAddActivityModalOpen(true);
   };
 
-  // Dropdown component
-  const Dropdown = ({
-    label,
-    options,
-    value,
-    onChange,
-  }: {
-    label: string
-    options: string[]
-    value: string
-    onChange: (value: string) => void
-  }) => {
-    return (
-      <div className="relative">
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <div className="relative">
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border shadow-sm appearance-none"
-          >
-            <option value="all">All {label}s</option>
-            {options.map((option) => (
-              <option key={option} value={option}>
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Helper to format dates consistently
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString();
+  };
 
   return (
     <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
@@ -347,7 +353,7 @@ export default function PatientsPage() {
               </div>
 
               <div className="relative">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Activity Month</label>
                 <div className="relative">
                   <select
                     value={monthFilter}
@@ -368,7 +374,7 @@ export default function PatientsPage() {
               </div>
 
               <div className="relative">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Activity Year</label>
                 <div className="relative">
                   <select
                     value={yearFilter}
@@ -376,7 +382,7 @@ export default function PatientsPage() {
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Years</option>
-                    {years.map((year) => (
+                    {availableYears.map((year) => (
                       <option key={year} value={year}>
                         {year}
                       </option>
@@ -533,8 +539,8 @@ export default function PatientsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAndSortedPatients.length > 0 ? (
-                    filteredAndSortedPatients.map((patient) => (
+                  {filteredAndSortedPatients.length > 0 
+                    ? filteredAndSortedPatients.map((patient) => (
                       <tr
                         key={patient.id}
                         className="hover:bg-gray-50 transition-colors"
@@ -570,13 +576,12 @@ export default function PatientsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.building || '-'}</td>
                       </tr>
                     ))
-                  ) : (
-                    <tr>
+                    : <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         No patients found matching your filters
                       </td>
                     </tr>
-                  )}
+                  }
                 </tbody>
               </table>
             </div>
