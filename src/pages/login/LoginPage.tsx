@@ -189,20 +189,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                name="rememberMe"
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={handleChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-600">
-                Remember me
-              </label>
-            </div>
-
             {/* Only show QuickAdminLogin in development */}
             {import.meta.env.DEV && (
               <div className="border-t border-gray-200 pt-4">

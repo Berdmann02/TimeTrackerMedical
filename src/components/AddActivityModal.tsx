@@ -13,7 +13,7 @@ import { createActivity, getActivityTypes } from "../services/activityService";
 import type { CreateActivityDTO } from "../services/activityService";
 import { X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { authService } from '../services/auth.service';
+import { useInactivityContext } from '../components/layout/InactivityLogoutProvider';
 
 interface ActivityForm {
   patientId: string;
@@ -54,6 +54,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   patients: providedPatients = [] 
 }) => {
   const { user, isPharmacist } = useAuth();
+  const { setIsModalOpen } = useInactivityContext();
   
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
   const [activityTypes, setActivityTypes] = useState<string[]>([]);
@@ -102,6 +103,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       fallSinceLastVisit: false
     }
   });
+
+  // Update inactivity context when modal opens/closes
+  useEffect(() => {
+    setIsModalOpen(isOpen);
+    return () => setIsModalOpen(false);
+  }, [isOpen, setIsModalOpen]);
 
   // Update patients state when providedPatients changes
   useEffect(() => {
@@ -846,4 +853,4 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   );
 };
 
-export default AddActivityModal; 
+export default AddActivityModal;

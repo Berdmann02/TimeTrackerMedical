@@ -5,14 +5,19 @@ interface UseInactivityLogoutOptions {
   warningTimeout?: number; // Time in ms before showing warning
   logoutTimeout?: number;  // Time in ms before auto logout
   enabled?: boolean;       // Whether the feature is enabled
+  activityTimeoutOverride?: number; // Override for activity tracking
 }
 
 export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) => {
   const {
     warningTimeout = 5000, // 5 seconds for testing
     logoutTimeout = 5000,  // Additional 5 seconds after warning
-    enabled = true
+    enabled = true,
+    activityTimeoutOverride = 0
   } = options;
+
+  // Use the override if provided, otherwise use the default warning timeout
+  const effectiveWarningTimeout = activityTimeoutOverride || warningTimeout;
 
   const { logout, isAuthenticated } = useAuth();
   const [showWarning, setShowWarning] = useState(false);
@@ -42,7 +47,7 @@ export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) =>
   // Start the inactivity timers
   const startTimers = useCallback(() => {
     console.log('⏰ Starting inactivity timers');
-    console.log(`   Warning in ${warningTimeout}ms, logout in ${warningTimeout + logoutTimeout}ms`);
+    console.log(`   Warning in ${effectiveWarningTimeout}ms, logout in ${effectiveWarningTimeout + logoutTimeout}ms`);
     
     // Clear any existing timers first
     clearTimers();
@@ -80,8 +85,8 @@ export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) =>
         setShowWarning(false);
         setWarningCountdown(0);
       }, logoutTimeout);
-    }, warningTimeout);
-  }, [warningTimeout, logoutTimeout, logout, clearTimers]);
+    }, effectiveWarningTimeout);
+  }, [effectiveWarningTimeout, logoutTimeout, logout, clearTimers]);
 
   // Handle user activity - simplified without circular dependencies
   const handleActivity = useCallback(() => {
@@ -174,4 +179,4 @@ export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) =>
     warningCountdown,
     dismissWarning
   };
-}; 
+};
