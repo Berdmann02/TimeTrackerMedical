@@ -1203,7 +1203,11 @@ export default function PatientDetailsPage() {
               </div>
             ) : (
               <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-gray-600">No activities found for this patient.</p>
+                <p className="text-gray-600">
+                  {activityMonthFilter === 'all' 
+                    ? "No activities found for this patient."
+                    : `No activities found for this patient in ${months[parseInt(activityMonthFilter) - 1]} ${activityYearFilter === 'all' ? '' : activityYearFilter}.`}
+                </p>
               </div>
             )}
           </div>

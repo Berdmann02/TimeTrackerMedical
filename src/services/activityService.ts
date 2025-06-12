@@ -24,6 +24,8 @@ export interface CreateActivityDTO {
   user_id: number;
   activity_type: string;
   duration_minutes: number; // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
+  service_datetime?: string; // Add this field for start time
+  end_time?: string; // Add this field for end time
   site_name: string;
   building?: string;
   notes?: string;
@@ -104,7 +106,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       notes: activityData.notes || '',
       site_name: activityData.site_name,
       building: activityData.building || '',
-      service_datetime: new Date().toISOString(),
+      service_datetime: activityData.service_datetime || new Date().toISOString(), // Use provided start time or fall back to current time
       duration_minutes: Math.max(0.01, Number(activityData.duration_minutes.toFixed(2))) // Support decimal values for seconds, minimum 0.01 minute (0.6 seconds)
     };
     

@@ -198,15 +198,14 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   ) => {
     const { name, value } = e.target;
     
-    // Special handling for datetime-local input
+    // Special handling for datetime-local inputs
     if (name === 'startTime' || name === 'endTime') {
-      // For datetime-local inputs, we need to handle the local datetime properly
       if (value) {
-        // Use our helper function to create a proper local date
-        const localDate = createLocalDate(value);
+        // Convert the local datetime to a Date object and then to ISO string
+        const date = createLocalDate(value);
         setFormData(prev => ({
           ...prev,
-          [name]: localDate.toISOString()
+          [name]: date.toISOString()
         }));
       } else {
         setFormData(prev => ({
@@ -316,35 +315,50 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     if (!isoString) return "";
     
     try {
+      // Create a date object from the ISO string
       const date = new Date(isoString);
+      
       // Check if date is valid
       if (isNaN(date.getTime())) return "";
       
-      // Format to local datetime-local format (YYYY-MM-DDTHH:MM)
-      // Using the date methods directly to avoid timezone conversion issues
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
+      // Get the local date components
+      const YYYY = date.getFullYear();
+      const MM = String(date.getMonth() + 1).padStart(2, '0');
+      const DD = String(date.getDate()).padStart(2, '0');
+      const HH = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
       
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
+      // Format as YYYY-MM-DDTHH:mm
+      return `${YYYY}-${MM}-${DD}T${HH}:${mm}`;
     } catch (error) {
       console.error('Error formatting datetime:', error);
       return "";
     }
   };
 
-  // Helper function to create a local date from datetime-local input
+  // Helper function to create a date from datetime-local input
   const createLocalDate = (datetimeLocalValue: string): Date => {
-    // datetime-local format: "YYYY-MM-DDTHH:MM"
-    // We need to create a Date object that represents this exact local time
-    const [datePart, timePart] = datetimeLocalValue.split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    
-    // Create date in local timezone
-    return new Date(year, month - 1, day, hours, minutes);
+    try {
+      // Parse the datetime-local value (YYYY-MM-DDTHH:mm)
+      const [datePart, timePart] = datetimeLocalValue.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      // Create date object using local components
+      const date = new Date();
+      date.setFullYear(year);
+      date.setMonth(month - 1); // Months are 0-based
+      date.setDate(day);
+      date.setHours(hours);
+      date.setMinutes(minutes);
+      date.setSeconds(0);
+      date.setMilliseconds(0);
+      
+      return date;
+    } catch (error) {
+      console.error('Error creating local date:', error);
+      return new Date(); // Return current date as fallback
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -373,9 +387,11 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
-        user_id: parseInt(user.id.toString()), // Ensure user_id is a number
+        user_id: parseInt(user.id.toString()),
         activity_type: formData.activityType,
         duration_minutes: calculateTimeDifference(),
+        service_datetime: formData.startTime, // Use the form's start time
+        end_time: formData.endTime, // Include the end time
         site_name: siteName || selectedPatient?.site_name || "Unknown Site",
         building: selectedPatient?.building || "",
         notes: formData.notes,
