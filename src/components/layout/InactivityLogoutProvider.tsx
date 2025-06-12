@@ -4,6 +4,11 @@ import { InactivityWarningModal } from '../ui/InactivityWarningModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { createContext, useContext, useState } from 'react';
 
+// Constants for timeouts (in milliseconds)
+const DEFAULT_WARNING_TIMEOUT = 30 * 60 * 1000;    // 30 minutes
+const ACTIVITY_WARNING_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
+const WARNING_COUNTDOWN = 30 * 1000;               // 30 seconds
+
 interface InactivityContext {
   setIsModalOpen: (isOpen: boolean) => void;
 }
@@ -27,9 +32,8 @@ export const InactivityLogoutProvider: React.FC<InactivityLogoutProviderProps> =
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const { showWarning, warningCountdown, dismissWarning } = useInactivityLogout({
-    warningTimeout: 5000, // 5 seconds for testing (normally would be much longer like 15 minutes)
-    logoutTimeout: 5000,  // 5 seconds after warning (normally would be 30 seconds to 1 minute)
-    activityTimeoutOverride: isModalOpen ? 15000 : 0, // 15 seconds when modal is open
+    warningTimeout: isModalOpen ? ACTIVITY_WARNING_TIMEOUT : DEFAULT_WARNING_TIMEOUT,
+    logoutTimeout: WARNING_COUNTDOWN,
     enabled: true
   });
 

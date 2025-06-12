@@ -2,18 +2,18 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface UseInactivityLogoutOptions {
-  warningTimeout?: number; // Time in ms before showing warning
-  logoutTimeout?: number;  // Time in ms before auto logout
+  warningTimeout?: number; // Time in ms before showing warning (default 30 minutes)
+  logoutTimeout?: number;  // Time in ms before auto logout after warning (default 30 seconds)
   enabled?: boolean;       // Whether the feature is enabled
-  activityTimeoutOverride?: number; // Override for activity tracking
+  activityTimeoutOverride?: number; // Override for activity tracking (2 hours)
 }
 
 export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) => {
   const {
-    warningTimeout = 5000, // 5 seconds for testing
-    logoutTimeout = 5000,  // Additional 5 seconds after warning
+    warningTimeout = 30 * 60 * 1000, // Default: 30 minutes
+    logoutTimeout = 30 * 1000,       // Default: 30 seconds
     enabled = true,
-    activityTimeoutOverride = 0
+    activityTimeoutOverride = 0      // Allows override for specific cases
   } = options;
 
   // Use the override if provided, otherwise use the default warning timeout
