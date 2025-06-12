@@ -34,11 +34,9 @@ const SitesPage: React.FC = () => {
     navigate(`/sites/${siteId}`);
   };
 
-  // Helper function to capitalize site names
+  // Helper function to capitalize only the first letter of the site name
   const capitalizeSiteName = (name: string) => {
-    return name.split(' ').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
+    return name.charAt(0).toUpperCase() + name.slice(1);
   };
 
   // Filtering and sorting
