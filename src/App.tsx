@@ -18,6 +18,7 @@ import { PublicRoute } from './components/layout/PublicRoute';
 import RestrictPharmacistRoute from './components/layout/RestrictPharmacistRoute';
 import RestrictNurseRoute from './components/layout/RestrictNurseRoute';
 import { InactivityLogoutProvider } from './components/layout/InactivityLogoutProvider';
+import NotFoundPage from './pages/not-found/NotFoundPage';
 
 function App() {
   const { isLoading } = useAuth();
@@ -145,6 +146,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </InactivityLogoutProvider>
   );
