@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/login/LoginPage';
 import PatientsPage from "./pages/patients/PatientsPage";
-import ActivityPage from "./pages/activities/ActivityPage";
 import PatientDetailsPage from "./pages/patient-details/PatientDetailsPage";
 import ActivityDetailsPage from "./pages/patient-details/ActivityDetails";
 import UsersPage from "./pages/users/UsersPage";
@@ -51,14 +50,6 @@ function App() {
           element={
             <ProtectedRoute>
               <PatientsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/activity"
-          element={
-            <ProtectedRoute>
-              <ActivityPage />
             </ProtectedRoute>
           }
         />
