@@ -118,7 +118,7 @@ export default function PatientsPage() {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Get all unique years from activities, but only include 2024 and 2025
+  // Get all unique years from activities dynamically
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     Object.values(patientActivities).forEach(activities => {
@@ -126,9 +126,7 @@ export default function PatientsPage() {
         const date = activity.service_datetime || activity.created_at;
         if (date) {
           const year = new Date(date).getFullYear();
-          if (year >= 2024 && year <= 2025) {
-            years.add(year);
-          }
+          years.add(year);
         }
       });
     });
@@ -165,8 +163,9 @@ export default function PatientsPage() {
       
       // Month and year filters from activities
       const patientHasActivitiesInPeriod = () => {
-        if (!patient.id || monthFilter === "all" || !patientActivities[patient.id]) {
-          return monthFilter === "all" && yearFilter === "all";
+        // If we don't have a patient ID or their activities, only show them when no filters are applied
+        if (!patient.id || !patientActivities[patient.id]) {
+          return yearFilter === "all";
         }
 
         return patientActivities[patient.id].some(activity => {
