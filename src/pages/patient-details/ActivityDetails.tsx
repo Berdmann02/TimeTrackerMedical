@@ -465,11 +465,27 @@ const ActivityDetailsPage: FC = () => {
                 const end = new Date(endTime);
                 const diffInMs = end.getTime() - start.getTime();
                 timeSpent = Math.max(0, Number((diffInMs / (1000 * 60)).toFixed(2))); // Support decimal values for seconds
-            } else if (typeof editedActivity.time_spent === 'number') {
-                timeSpent = editedActivity.time_spent;
-            } else if (typeof editedActivity.duration_minutes === 'number') {
-                timeSpent = editedActivity.duration_minutes;
+            } else {
+                // Use existing duration values, prioritizing time_spent, then duration_minutes, then original activity values
+                // Handle both number and string types (since database might return strings)
+                const editedTimeSpent = Number(editedActivity.time_spent);
+                const editedDurationMinutes = Number(editedActivity.duration_minutes);
+                const originalTimeSpent = Number(activity?.time_spent);
+                const originalDurationMinutes = Number(activity?.duration_minutes);
+                
+                if (!isNaN(editedTimeSpent) && editedTimeSpent > 0) {
+                    timeSpent = editedTimeSpent;
+                } else if (!isNaN(editedDurationMinutes) && editedDurationMinutes > 0) {
+                    timeSpent = editedDurationMinutes;
+                } else if (!isNaN(originalTimeSpent) && originalTimeSpent > 0) {
+                    timeSpent = originalTimeSpent;
+                } else if (!isNaN(originalDurationMinutes) && originalDurationMinutes > 0) {
+                    timeSpent = originalDurationMinutes;
+                }
             }
+
+            // Only apply minimum if we don't have an existing duration
+            const finalTimeSpent = timeSpent > 0 ? timeSpent : 0.01;
 
             // Map frontend fields to backend Activity interface
             const updateData = {
@@ -481,7 +497,7 @@ const ActivityDetailsPage: FC = () => {
                 site_name: editedActivity.site_name || '',
                 building: editedActivity.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
-                duration_minutes: Math.max(0.01, Number(timeSpent.toFixed(2))) // Support decimal values for seconds, minimum 0.01 minute (0.6 seconds)
+                duration_minutes: Number(finalTimeSpent.toFixed(2))
             };
 
             console.log('Updating activity with data:', updateData);
@@ -751,11 +767,7 @@ const ActivityDetailsPage: FC = () => {
                                 startTime={editedActivity.site_start_time}
                                 endTime={editedActivity.site_end_time}
                                 isEditing={isEditing}
-                                editType="select"
-                                editOptions={sites.map(site => site.name)}
-                                onEdit={(value) => handleFieldChange('site_name', value)}
-                                onStartTimeEdit={(value) => handleFieldChange('site_start_time', value)}
-                                onEndTimeEdit={(value) => handleFieldChange('site_end_time', value)}
+                                editType="readonly"
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
@@ -763,9 +775,7 @@ const ActivityDetailsPage: FC = () => {
                                 label="Building"
                                 value={editedActivity.building || editedActivity.building_name || 'Main Medical Center'}
                                 isEditing={isEditing}
-                                editType="select"
-                                editOptions={buildings.map(building => building.name)}
-                                onEdit={(value) => handleFieldChange('building', value)}
+                                editType="readonly"
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
