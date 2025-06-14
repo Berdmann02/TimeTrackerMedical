@@ -53,7 +53,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   siteName,
   patients: providedPatients = [] 
 }) => {
-  const { user, isPharmacist } = useAuth();
+  const { user, isPharmacist, isAdmin } = useAuth();
   const { setIsModalOpen } = useInactivityContext();
   
   const [patients, setPatients] = useState<Patient[]>(providedPatients);
@@ -529,14 +529,17 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                 </div>
               </div>
 
-              {/* Medical Checklist - Only show for pharmacists */}
-              {isPharmacist && (
+              {/* Medical Checklist - Only show for pharmacists and admins */}
+              {(isPharmacist || isAdmin) && (
                 <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center mb-6 pb-4 border-b border-gray-200">
-                    <FaClipboardList className="w-5 h-5 text-gray-500 mr-2" />
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Medical Checklist
-                    </h3>
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                    <div className="flex items-center">
+                      <FaClipboardList className="w-5 h-5 text-gray-500 mr-2" />
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Medical Checklist
+                      </h3>
+                    </div>
+                    <span className="text-sm font-normal text-gray-500">* leave blank if not applicable</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">

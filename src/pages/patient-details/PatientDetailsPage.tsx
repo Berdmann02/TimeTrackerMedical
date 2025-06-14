@@ -288,16 +288,27 @@ export default function PatientDetailsPage() {
   const currentDate = new Date()
   const currentMonth = (currentDate.getMonth() + 1).toString() // getMonth() returns 0-11, so add 1
   const currentYear = currentDate.getFullYear().toString()
-  
+
+  // Get unique years from activities
+  const activityYears = useMemo(() => {
+    if (!activities) return [currentYear];
+    
+    const years = activities.map(activity => {
+      const date = new Date(activity.service_datetime || activity.created_at || new Date());
+      return date.getFullYear().toString();
+    });
+    
+    return [...new Set(years)].sort((a, b) => Number(a) - Number(b)); // Sort ascending
+  }, [activities]);
+
   const [activityMonthFilter, setActivityMonthFilter] = useState<string>(currentMonth)
   const [activityYearFilter, setActivityYearFilter] = useState<string>(currentYear)
 
-  // Add months and years arrays for filters
+  // Add months array for filters
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ]
-  const years = [2020, 2021, 2022, 2023, 2024, 2025]
 
   // Add this mock data - would be replaced with real data later
   const statusUpdates: StatusUpdate[] = [
@@ -1033,14 +1044,15 @@ export default function PatientDetailsPage() {
                 <div className="relative">
                   <select
                     value={activityYearFilter}
-                    onChange={(e) => setActivityYearFilter(e.target.value)}
+                    onChange={(e) => {
+                      setActivityYearFilter(e.target.value);
+                      setActivityMonthFilter("all"); // Reset month filter to "all" when year changes
+                    }}
                     className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Years</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
+                    {activityYears.map((year) => (
+                      <option key={year} value={year}>{year}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
