@@ -1,68 +1,41 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronDownIcon, SearchIcon, Plus, ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { getActivitiesWithDetails } from '../../services/activityService';
+import { getSitesAndBuildings } from '../../services/siteService';
 import AddActivityModal from '../../components/AddActivityModal';
-import { getActivityTypes, getActivityById, getActivitiesWithDetails } from '../../services/activityService';
-import type { Activity as ServiceActivity } from '../../services/activityService';
-import { getSitesAndBuildings, type SiteWithBuildings } from '../../services/siteService';
 
-// Base interface for enriched activity data from backend
-interface EnrichedActivity extends ServiceActivity {
-  patient_name?: string;
-  user_initials?: string;
-  building_name?: string;
+// Add missing type definitions
+interface SiteWithBuildings {
+  site_name: string;
+  building_names: string[];
 }
 
-// Local interface for activities with required fields
-interface ActivityWithDetails {
+// Enrich the Activity type with additional fields from the backend
+interface EnrichedActivity {
   id: number;
-  patient_id: number;
-  user_id: number;
+  patient_id: number; // Changed to number to match backend
+  user_id: number;  // Changed to number to match backend
   activity_type: string;
   pharm_flag?: boolean;
   notes?: string;
   site_name: string;
   building?: string;
-  service_datetime: string;
+  service_datetime: string; // Keep as string to match backend
   duration_minutes: number;
-  created_at?: string;
+  created_at?: string; // Keep as string to match backend
   patient_name: string;
   user_initials: string;
-  time_spent?: number;
   building_name?: string;
+  time_spent?: number;
 }
 
-// Remove mock data and replace with state
+// Constants
 const months = ['All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-const years = ['All', '2023', '2024', '2025'];
-
 const monthNames = [
   'All', 'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
-
-interface User {
-  id: number;
-  first_name: string;
-  last_name: string;
-}
-
-// Update the interface to match backend data
-interface Activity {
-  id: number;
-  patient_id: number;
-  user_id: number;
-  activity_type: string;
-  pharm_flag?: boolean;
-  notes?: string;
-  site_name: string;
-  building?: string;
-  service_datetime: string;
-  duration_minutes: number;
-  created_at?: string;
-  user_initials?: string;
-  patient_name?: string; // Added from backend join
-}
 
 const MedicalActivitiesPage = () => {
   const navigate = useNavigate();
@@ -73,19 +46,39 @@ const MedicalActivitiesPage = () => {
   // State for sites and buildings data
   const [sitesAndBuildings, setSitesAndBuildings] = useState<SiteWithBuildings[]>([]);
   
-  // Get current date for default filters
+  // Get current date for retrieving available years
   const currentDate = new Date();
-  const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() returns 0-11, so add 1
-  const currentYear = currentDate.getFullYear().toString();
   
   const [monthFilter, setMonthFilter] = useState('All');
   const [yearFilter, setYearFilter] = useState('All');
   const [sortField, setSortField] = useState<string>('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [activities, setActivities] = useState<ActivityWithDetails[]>([]);
+  const [activities, setActivities] = useState<EnrichedActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Get unique years from activities
+  const availableYears = useMemo(() => {
+    const years = activities
+      .map(activity => {
+        const date = activity.service_datetime || activity.created_at;
+        if (!date) return null;
+        const year = new Date(date).getFullYear();
+        return isNaN(year) ? null : year;
+      })
+      .filter((year): year is number => year !== null);
+    
+    // Get unique years and sort in descending order
+    const uniqueYears = Array.from(new Set(years)).sort((a, b) => b - a);
+    
+    // If no years available, include current year
+    if (uniqueYears.length === 0) {
+      uniqueYears.push(currentDate.getFullYear());
+    }
+    
+    return uniqueYears;
+  }, [activities]);
 
   // Helper function to safely create a Date
   const getDateValue = (dateStr?: string): number => {
@@ -133,28 +126,7 @@ const MedicalActivitiesPage = () => {
       setIsLoading(true);
       const activitiesData = await getActivitiesWithDetails() as EnrichedActivity[];
       
-      // Convert to ActivityWithDetails and ensure required fields
-      const enrichedActivities: ActivityWithDetails[] = activitiesData
-        .filter((activity): activity is EnrichedActivity & { id: number } => activity.id !== undefined)
-        .map(activity => ({
-          id: activity.id,
-          patient_id: activity.patient_id,
-          user_id: activity.user_id,
-          activity_type: activity.activity_type,
-          pharm_flag: activity.pharm_flag,
-          notes: activity.notes,
-          site_name: activity.site_name,
-          building: activity.building,
-          service_datetime: activity.service_datetime.toString(),
-          duration_minutes: activity.duration_minutes,
-          created_at: activity.created_at?.toString(),
-          patient_name: activity.patient_name || 'Unknown',
-          user_initials: activity.user_initials || 'N/A',
-          time_spent: activity.duration_minutes,
-          building_name: activity.building
-        }));
-      
-      setActivities(enrichedActivities);
+      setActivities(activitiesData);
       setError(null);
     } catch (err) {
       console.error('Error fetching activities:', err);
@@ -172,8 +144,15 @@ const MedicalActivitiesPage = () => {
     fetchSitesAndBuildingsData();
   }, []);
 
+  // Format date
+  const formatDate = (dateStr?: string | Date): string => {
+    if (!dateStr) return 'N/A';
+    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+  };
+
   // Format time spent
-  const formatTimeSpent = (activity: ActivityWithDetails) => {
+  const formatTimeSpent = (activity: EnrichedActivity) => {
     const timeSpent = activity.time_spent;
     const durationMinutes = activity.duration_minutes;
     
@@ -281,287 +260,10 @@ const MedicalActivitiesPage = () => {
     navigate(`/patientdetails/${patientId}`);
   };
 
-  if (isLoading) {
-    return (
-      <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-        <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
-          <div className="flex justify-between items-center mb-4 flex-shrink-0">
-            <h1 className="text-3xl font-bold text-gray-900">Medical Activities</h1>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Activity
-            </button>
-          </div>
-
-          <AddActivityModal
-            isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
-            onActivityAdded={handleActivityAdded}
-            siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
-          />
-
-          <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
-            <div className="flex flex-col space-y-3">
-              {/* Top row with search */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div className="relative w-full md:w-64">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Filter dropdowns - more compact layout */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
-                  <div className="relative">
-                    <select
-                      value={siteFilter}
-                      onChange={(e) => setSiteFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      <option value="All">All Sites</option>
-                      {siteNames.map((site) => (
-                        <option key={site} value={site}>{site}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Building</label>
-                  <div className="relative">
-                    <select
-                      value={buildingFilter}
-                      onChange={(e) => setBuildingFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      <option value="All">
-                        {siteFilter === "All" 
-                          ? "All Buildings" 
-                          : siteNames.length === 0 
-                            ? `No buildings for ${siteFilter}` 
-                            : "All Buildings"}
-                      </option>
-                      {availableBuildings.map((building) => (
-                        <option key={building} value={building}>
-                          {building}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
-                  <div className="relative">
-                    <select
-                      value={monthFilter}
-                      onChange={(e) => setMonthFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      {months.map((month, index) => (
-                        <option key={month} value={month}>{monthNames[index]}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
-                  <div className="relative">
-                    <select
-                      value={yearFilter}
-                      onChange={(e) => setYearFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      {years.map((year) => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading state for table */}
-          <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center max-h-[60vh]">
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-              <div className="text-gray-500">Loading activities data...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
-        <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
-          <div className="flex justify-between items-center mb-4 flex-shrink-0">
-            <h1 className="text-3xl font-bold text-gray-900">Medical Activities</h1>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Activity
-            </button>
-          </div>
-
-          <AddActivityModal
-            isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
-            onActivityAdded={handleActivityAdded}
-            siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
-          />
-
-          <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
-            <div className="flex flex-col space-y-3">
-              {/* Top row with search */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div className="relative w-full md:w-64">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Filter dropdowns - more compact layout */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
-                  <div className="relative">
-                    <select
-                      value={siteFilter}
-                      onChange={(e) => setSiteFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      <option value="All">All Sites</option>
-                      {siteNames.map((site) => (
-                        <option key={site} value={site}>{site}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Building</label>
-                  <div className="relative">
-                    <select
-                      value={buildingFilter}
-                      onChange={(e) => setBuildingFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      <option value="All">
-                        {siteFilter === "All" 
-                          ? "All Buildings" 
-                          : siteNames.length === 0 
-                            ? `No buildings for ${siteFilter}` 
-                            : "All Buildings"}
-                      </option>
-                      {availableBuildings.map((building) => (
-                        <option key={building} value={building}>
-                          {building}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
-                  <div className="relative">
-                    <select
-                      value={monthFilter}
-                      onChange={(e) => setMonthFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      {months.map((month, index) => (
-                        <option key={month} value={month}>{monthNames[index]}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
-                  <div className="relative">
-                    <select
-                      value={yearFilter}
-                      onChange={(e) => setYearFilter(e.target.value)}
-                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
-                    >
-                      {years.map((year) => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Error display */}
-          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 max-h-[60vh] flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-xl font-semibold mb-2">Error</p>
-              <p>{error}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const formatDate = (dateStr?: string | Date): string => {
-    if (!dateStr) return 'N/A';
-    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
-  };
-
   return (
     <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
       <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
+        {/* Header with title and Add Activity button */}
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <h1 className="text-3xl font-bold text-gray-900">Medical Activities</h1>
           <button
@@ -573,13 +275,7 @@ const MedicalActivitiesPage = () => {
           </button>
         </div>
 
-        <AddActivityModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onActivityAdded={handleActivityAdded}
-          siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
-        />
-
+        {/* Filters and Search */}
         <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex-shrink-0">
           <div className="flex flex-col space-y-3">
             {/* Top row with search */}
@@ -618,6 +314,7 @@ const MedicalActivitiesPage = () => {
                   </div>
                 </div>
               </div>
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Building</label>
                 <div className="relative">
@@ -626,17 +323,9 @@ const MedicalActivitiesPage = () => {
                     onChange={(e) => setBuildingFilter(e.target.value)}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
-                    <option value="All">
-                      {siteFilter === "All" 
-                        ? "All Buildings" 
-                        : siteNames.length === 0 
-                          ? `No buildings for ${siteFilter}` 
-                          : "All Buildings"}
-                    </option>
+                    <option value="All">All Buildings</option>
                     {availableBuildings.map((building) => (
-                      <option key={building} value={building}>
-                        {building}
-                      </option>
+                      <option key={building} value={building}>{building}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -644,6 +333,7 @@ const MedicalActivitiesPage = () => {
                   </div>
                 </div>
               </div>
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Month</label>
                 <div className="relative">
@@ -652,8 +342,9 @@ const MedicalActivitiesPage = () => {
                     onChange={(e) => setMonthFilter(e.target.value)}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
-                    {months.map((month, index) => (
-                      <option key={month} value={month}>{monthNames[index]}</option>
+                    <option value="All">All Months</option>
+                    {months.slice(1).map((month, index) => (
+                      <option key={month} value={month}>{monthNames[index + 1]}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -661,6 +352,7 @@ const MedicalActivitiesPage = () => {
                   </div>
                 </div>
               </div>
+
               <div className="relative">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Year</label>
                 <div className="relative">
@@ -669,8 +361,9 @@ const MedicalActivitiesPage = () => {
                     onChange={(e) => setYearFilter(e.target.value)}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
-                    {years.map((year) => (
-                      <option key={year} value={year}>{year}</option>
+                    <option value="All">All Years</option>
+                    {availableYears.map((year) => (
+                      <option key={year} value={year.toString()}>{year}</option>
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -682,127 +375,244 @@ const MedicalActivitiesPage = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 flex flex-col max-h-[60vh] min-h-0">
-          {/* Scrollable Table with Fixed Header */}
-          <div className="flex-1 overflow-auto min-h-0 table-container">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 sticky top-0 z-10">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('id')}>
-                    <div className="flex items-center">
-                      <span>Activity #</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'id' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'id' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('patient_name')}>
-                    <div className="flex items-center">
-                      <span>Patient Name</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'patient_name' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'patient_name' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('activity_type')}>
-                    <div className="flex items-center">
-                      <span>Activity Type</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'activity_type' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'activity_type' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('user_initials')}>
-                    <div className="flex items-center">
-                      <span>Initials</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'user_initials' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'user_initials' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('service_datetime')}>
-                    <div className="flex items-center">
-                      <span>Record Date</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'service_datetime' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'service_datetime' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('time_spent')}>
-                    <div className="flex items-center">
-                      <span>Total Time</span>
-                      <div className="ml-1 flex">
-                        <ArrowUpIcon className={`h-3 w-3 ${sortField === 'time_spent' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                        <ArrowDownIcon className={`h-3 w-3 ${sortField === 'time_spent' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
-                      </div>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sortedActivities.map((activity) => (
-                  <tr key={activity.id} className="hover:bg-gray-50 transition-colors">
-                    <td 
-                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
-                      onClick={() => handleActivityClick(activity.id)}
-                    >
-                      {activity.id}
-                    </td>
-                    <td 
-                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-900 hover:underline"
-                      onClick={() => handlePatientClick(activity.patient_id)}
-                    >
-                      {activity.patient_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {activity.activity_type}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {activity.user_initials || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(activity.service_datetime || activity.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatTimeSpent(activity)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Error display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 flex-shrink-0">
+            <p>{error}</p>
+            <button 
+              onClick={fetchActivities} 
+              className="mt-2 text-red-600 hover:text-red-800 underline"
+            >
+              Try again
+            </button>
           </div>
+        )}
 
-          {/* Table Footer - Fixed */}
-          <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Previous
-              </button>
-              <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                Next
-              </button>
+        {/* Loading state */}
+        {isLoading && (
+          <div className="bg-white rounded-lg border border-gray-200 p-8 flex justify-center items-center max-h-[60vh]">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <div className="text-gray-500">Loading activities data...</div>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{sortedActivities.length}</span> of{" "}
-                  <span className="font-medium">{sortedActivities.length}</span> results
-                </p>
+          </div>
+        )}
+
+        {/* Table */}
+        {!isLoading && !error && (
+          <div className="bg-white rounded-lg border border-gray-200 flex flex-col max-h-[60vh] min-h-0">
+            <div className="flex-1 overflow-auto min-h-0">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('id')}
+                    >
+                      <div className="flex items-center">
+                        <span>Activity #</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'id' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'id' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('patient_name')}
+                    >
+                      <div className="flex items-center">
+                        <span>Patient Name</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'patient_name' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'patient_name' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('activity_type')}
+                    >
+                      <div className="flex items-center">
+                        <span>Activity Type</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'activity_type' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'activity_type' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('user_initials')}
+                    >
+                      <div className="flex items-center">
+                        <span>Initials</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'user_initials' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'user_initials' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('service_datetime')}
+                    >
+                      <div className="flex items-center">
+                        <span>Record Date</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'service_datetime' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'service_datetime' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('duration_minutes')}
+                    >
+                      <div className="flex items-center">
+                        <span>Total Time</span>
+                        <div className="ml-1 flex">
+                          <ArrowUpIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'duration_minutes' && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                          <ArrowDownIcon
+                            className={`h-3 w-3 ${
+                              sortField === 'duration_minutes' && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedActivities.map((activity) => (
+                    <tr 
+                      key={activity.id}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleActivityClick(activity.id)}
+                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                        >
+                          {activity.id}
+                        </button>
+                      </td>
+                      <td 
+                        className="px-6 py-4 whitespace-nowrap text-sm"
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePatientClick(activity.patient_id);
+                          }}
+                          className="inline-flex items-center px-2 py-1 rounded text-blue-600 hover:text-blue-900 hover:underline transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                        >
+                          {activity.patient_name}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {activity.activity_type}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {activity.user_initials || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(activity.service_datetime)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatTimeSpent(activity)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Table Footer */}
+            <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Previous
+                </button>
+                <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Next
+                </button>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">
-                  Scroll to view more activities
-                </p>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{sortedActivities.length}</span> of{" "}
+                    <span className="font-medium">{sortedActivities.length}</span> results
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">
+                    Scroll to view more activities
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Add Activity Modal */}
+      <AddActivityModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onActivityAdded={handleActivityAdded}
+        siteName={siteFilter === 'All' ? (sitesAndBuildings.length > 1 ? sitesAndBuildings[1].site_name : 'CP Greater San Antonio') : siteFilter}
+      />
     </div>
   );
 };
