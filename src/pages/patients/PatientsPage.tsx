@@ -23,7 +23,6 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [patientActivities, setPatientActivities] = useState<{[key: string]: Activity[]}>({})
   const [searchTerm, setSearchTerm] = useState("")
-  const [genderFilter, setGenderFilter] = useState<string>("all")
   const [activityFilter, setActivityFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<keyof Patient | "name" | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
@@ -31,7 +30,7 @@ export default function PatientsPage() {
   
   // Get current date for default filters
   const currentDate = new Date();
-  const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() returns 0-11, so add 1
+  const currentMonth = (currentDate.getMonth() + 1).toString();
   const currentYear = currentDate.getFullYear().toString();
   
   const [monthFilter, setMonthFilter] = useState<string>("all")
@@ -152,8 +151,6 @@ export default function PatientsPage() {
       const matchesSearch =
         fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         String(patient.id).toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesGender = genderFilter === "all" || patient.gender === genderFilter;
       
       // Site filter
       const matchesSite = siteFilter === "all" || patient.site_name === siteFilter;
@@ -163,9 +160,14 @@ export default function PatientsPage() {
       
       // Month and year filters from activities
       const patientHasActivitiesInPeriod = () => {
-        // If we don't have a patient ID or their activities, only show them when no filters are applied
+        // If no month/year filters are applied, show all patients
+        if (monthFilter === "all" && yearFilter === "all") {
+          return true;
+        }
+
+        // If we don't have activities for this patient, only show them when no filters are applied
         if (!patient.id || !patientActivities[patient.id]) {
-          return yearFilter === "all";
+          return false;
         }
 
         return patientActivities[patient.id].some(activity => {
@@ -187,7 +189,6 @@ export default function PatientsPage() {
 
       return (
         matchesSearch && 
-        matchesGender && 
         matchesSite && 
         matchesBuilding && 
         matchesActive && 
@@ -221,7 +222,7 @@ export default function PatientsPage() {
       }
       return 0;
     });
-  }, [patients, searchTerm, genderFilter, siteFilter, buildingFilter, monthFilter, yearFilter, showInactive, sortField, sortDirection, patientActivities]);
+  }, [patients, searchTerm, siteFilter, buildingFilter, monthFilter, yearFilter, showInactive, sortField, sortDirection, patientActivities]);
 
   // Handle sort
   const handleSort = (field: keyof Patient | "name") => {
