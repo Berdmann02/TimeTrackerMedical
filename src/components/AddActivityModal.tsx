@@ -480,29 +480,46 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Patient and Activity Type Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Patient Selection */}
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
-                    <span className="flex items-center">
-                      <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
-                      Patient
-                    </span>
-                  </label>
-                  <select
-                    name="patientId"
-                    value={formData.patientId}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                    required
-                  >
-                    <option value="">Select Patient</option>
-                    {patients.map(patient => (
-                      <option key={patient.id} value={patient.id}>
-                        {patient.last_name}, {patient.first_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Patient Selection - Only show dropdown if no patientId is provided, otherwise show locked field */}
+                {initialPatientId ? (
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-medium text-gray-700">
+                      <span className="flex items-center">
+                        <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
+                        Patient
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedPatientName || patientName || ''}
+                      disabled
+                      className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-100 rounded-lg shadow-sm cursor-not-allowed text-gray-500"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-medium text-gray-700">
+                      <span className="flex items-center">
+                        <FaHospital className="w-4 h-4 text-gray-400 mr-2" />
+                        Patient
+                      </span>
+                    </label>
+                    <select
+                      name="patientId"
+                      value={formData.patientId}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                      required
+                    >
+                      <option value="">Select Patient</option>
+                      {patients.map(patient => (
+                        <option key={patient.id} value={patient.id}>
+                          {patient.last_name}, {patient.first_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Activity Type */}
                 <div className="space-y-1.5">
