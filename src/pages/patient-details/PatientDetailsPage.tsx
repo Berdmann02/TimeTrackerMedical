@@ -860,169 +860,80 @@ export default function PatientDetailsPage() {
                   >
                     <Clock className="w-4 h-4 text-gray-500" />
                     <span>Last Updated</span>
-                    <span className="text-blue-600 font-medium">#{statusUpdates[0].activityId}</span>
+                    <span className="text-blue-600 font-medium">
+                      {latestMedicalRecord?.createdAt 
+                        ? new Date(latestMedicalRecord.createdAt).toLocaleDateString()
+                        : 'N/A'
+                      }
+                    </span>
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Medical Status */}
                   <div>
                     <div className="grid grid-cols-2 gap-4">
-                      {isEditing ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <ClipboardCheck className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="Medical Records"
-                              value={editedPatient?.medical_records}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('medical_records', value)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Heart className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="BP at Goal"
-                              value={editedPatient?.bp_at_goal}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('bp_at_goal', value)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Hospital className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="Hospital Visit Since Last Review"
-                              value={editedPatient?.hospital_visited_since_last_review}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('hospital_visited_since_last_review', value)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="A1C at Goal"
-                              value={editedPatient?.a1c_at_goal}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('a1c_at_goal', value)}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <ClipboardCheck className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">Medical Records:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.medical_records ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.medical_records ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Heart className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">BP at Goal:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.bp_at_goal ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.bp_at_goal ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Hospital className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">Hospital Visit Since Last Review:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.hospital_visited_since_last_review ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.hospital_visited_since_last_review ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">A1C at Goal:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.a1c_at_goal ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.a1c_at_goal ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                        </>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <ClipboardCheck className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Medical Records:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.medical_records ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.medical_records ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">BP at Goal:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.bp_at_goal ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.bp_at_goal ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Hospital className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Hospital Visit Since Last Review:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.hospital_visited_since_last_review ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.hospital_visited_since_last_review ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">A1C at Goal:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.a1c_at_goal ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.a1c_at_goal ? 'Yes' : 'No'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Medication Status */}
                   <div>
                     <div className="grid grid-cols-2 gap-4">
-                      {isEditing ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Pill className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="Benzodiazepines"
-                              value={editedPatient?.use_benzo}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('use_benzo', value)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Syringe className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="Antipsychotics"
-                              value={editedPatient?.use_antipsychotic}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('use_antipsychotic', value)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Pill className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="Opioids"
-                              value={editedPatient?.use_opioids}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('use_opioids', value)}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-gray-400" />
-                            <DetailRow
-                              label="Fall Since Last Visit"
-                              value={editedPatient?.fall_since_last_visit}
-                              isEditing={isEditing}
-                              editType="checkbox"
-                              onEdit={(value) => handleFieldChange('fall_since_last_visit', value)}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Pill className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">Benzodiazepines:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.use_benzo ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.use_benzo ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Syringe className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">Antipsychotics:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.use_antipsychotic ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.use_antipsychotic ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Pill className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">Opioids:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.use_opioids ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.use_opioids ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
-                            <span className={`text-sm font-medium ${patientData?.patient.fall_since_last_visit ? 'text-green-600' : 'text-red-600'}`}>
-                              {patientData?.patient.fall_since_last_visit ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                        </>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Pill className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Benzodiazepines:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.use_benzo ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.use_benzo ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Syringe className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Antipsychotics:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.use_antipsychotic ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.use_antipsychotic ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Pill className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Opioids:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.use_opioids ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.use_opioids ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
+                        <span className={`text-sm font-medium ${patientData?.patient.fall_since_last_visit ? 'text-green-600' : 'text-red-600'}`}>
+                          {patientData?.patient.fall_since_last_visit ? 'Yes' : 'No'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
