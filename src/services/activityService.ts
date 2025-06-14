@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_URL } from '../config';
 import { createMedicalRecord } from './medicalRecordService';
+import { updatePatient } from './patientService';
 
 // Activity interface matching the backend schema
 export interface Activity {
@@ -116,9 +117,10 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
     const response = await axios.post(`${API_URL}/activities`, backendActivityData);
     const createdActivity = response.data;
     
-    // If medical checks were performed, create a medical record
+    // If medical checks were performed, create a medical record and update patient status
     if (hasChecks && activityData.medical_checks) {
       try {
+        // Create medical record
         await createMedicalRecord({
           patientId: activityData.patient_id,
           medical_records: activityData.medical_checks.medical_records,
@@ -130,10 +132,23 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
           opioids: activityData.medical_checks.opioids,
           fallSinceLastVisit: activityData.medical_checks.fall_since_last_visit
         });
-        console.log('Medical record created for activity');
+
+        // Update patient status fields
+        await updatePatient(activityData.patient_id, {
+          medical_records: activityData.medical_checks.medical_records,
+          bp_at_goal: activityData.medical_checks.bp_at_goal,
+          hospital_visited_since_last_review: activityData.medical_checks.hospital_visit,
+          a1c_at_goal: activityData.medical_checks.a1c_at_goal,
+          use_benzo: activityData.medical_checks.benzodiazepines,
+          use_antipsychotic: activityData.medical_checks.antipsychotics,
+          use_opioids: activityData.medical_checks.opioids,
+          fall_since_last_visit: activityData.medical_checks.fall_since_last_visit
+        });
+
+        console.log('Medical record created and patient status updated for activity');
       } catch (medicalRecordError) {
-        console.error('Error creating medical record:', medicalRecordError);
-        // Don't fail the activity creation if medical record fails
+        console.error('Error creating medical record or updating patient status:', medicalRecordError);
+        // Don't fail the activity creation if medical record/patient update fails
       }
     }
     

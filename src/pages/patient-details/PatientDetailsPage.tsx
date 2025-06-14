@@ -347,8 +347,27 @@ export default function PatientDetailsPage() {
       // First, try to get the patient details
       const patientData = await getPatientById(patientId);
       console.log('Fetched patient data:', patientData);
+
+      // Fetch the latest medical record and merge its fields into the patient object
+      try {
+        const latestRecord = await getLatestMedicalRecordByPatientId(patientId);
+        setLatestMedicalRecord(latestRecord);
+        if (latestRecord) {
+          patientData.medical_records = latestRecord.medical_records;
+          patientData.bp_at_goal = latestRecord.bpAtGoal;
+          patientData.hospital_visited_since_last_review = latestRecord.hospitalVisitSinceLastReview;
+          patientData.a1c_at_goal = latestRecord.a1cAtGoal;
+          patientData.use_benzo = latestRecord.benzodiazepines;
+          patientData.use_antipsychotic = latestRecord.antipsychotics;
+          patientData.use_opioids = latestRecord.opioids;
+          patientData.fall_since_last_visit = latestRecord.fallSinceLastVisit;
+        }
+      } catch (medicalRecordError) {
+        console.error("Error fetching latest medical record:", medicalRecordError);
+      }
+
       setPatient(patientData);
-      
+
       // Get activities with enriched data
       try {
         const activitiesData = await getActivitiesByPatientId(patientId);
