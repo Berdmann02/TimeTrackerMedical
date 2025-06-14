@@ -72,68 +72,84 @@ const ReportsPage = () => {
         });
       });
 
-      // For each site, gather all medical records for all patients for the selected month/year
+      // For each site, process patients and their current medical status
       for (const site of sites) {
         const sitePatients = allPatients.filter(patient => patient.site_name === site.name);
         const siteStats = siteDataMap.get(site.name)!;
-        let allRecords = [];
+
+        // Set total to the number of patients at this site
+        siteStats.medRecComplete.total = sitePatients.length;
+        siteStats.bpAtGoal.total = sitePatients.length;
+        siteStats.hospitalVisitSinceLastReview.total = sitePatients.length;
+        siteStats.a1cAtGoal.total = sitePatients.length;
+        siteStats.fallSinceLastVisit.total = sitePatients.length;
+        siteStats.useBenzo.total = sitePatients.length;
+        siteStats.useOpioids.total = sitePatients.length;
+        siteStats.useAntipsychotic.total = sitePatients.length;
+
+        // Get the most recent medical record for each patient
         for (const patient of sitePatients) {
           if (patient.id) {
             try {
               const records = await getMedicalRecordsByPatientId(patient.id);
-              // Filter records by month/year
-              const filteredRecords = records.filter(record => {
-                const recordDate = new Date(record.createdAt || '');
-                return recordDate.getMonth() + 1 === month && recordDate.getFullYear() === year;
-              });
-              allRecords.push(...filteredRecords);
+              if (records.length > 0) {
+                // Sort records by date and get the most recent one
+                const sortedRecords = records.sort((a, b) => {
+                  const dateA = new Date(a.createdAt || '');
+                  const dateB = new Date(b.createdAt || '');
+                  return dateB.getTime() - dateA.getTime();
+                });
+                const mostRecentRecord = sortedRecords[0];
+
+                // Update statistics based on the most recent record
+                // If the checkbox is checked, count as yes, otherwise no
+                if (mostRecentRecord.medical_records) siteStats.medRecComplete.yes++;
+                else siteStats.medRecComplete.no++;
+
+                if (mostRecentRecord.bpAtGoal) siteStats.bpAtGoal.yes++;
+                else siteStats.bpAtGoal.no++;
+
+                if (mostRecentRecord.hospitalVisitSinceLastReview) siteStats.hospitalVisitSinceLastReview.yes++;
+                else siteStats.hospitalVisitSinceLastReview.no++;
+
+                if (mostRecentRecord.a1cAtGoal) siteStats.a1cAtGoal.yes++;
+                else siteStats.a1cAtGoal.no++;
+
+                if (mostRecentRecord.fallSinceLastVisit) siteStats.fallSinceLastVisit.yes++;
+                else siteStats.fallSinceLastVisit.no++;
+
+                if (mostRecentRecord.benzodiazepines) siteStats.useBenzo.yes++;
+                else siteStats.useBenzo.no++;
+
+                if (mostRecentRecord.opioids) siteStats.useOpioids.yes++;
+                else siteStats.useOpioids.no++;
+
+                if (mostRecentRecord.antipsychotics) siteStats.useAntipsychotic.yes++;
+                else siteStats.useAntipsychotic.no++;
+              } else {
+                // If no records exist, count as no for all criteria
+                siteStats.medRecComplete.no++;
+                siteStats.bpAtGoal.no++;
+                siteStats.hospitalVisitSinceLastReview.no++;
+                siteStats.a1cAtGoal.no++;
+                siteStats.fallSinceLastVisit.no++;
+                siteStats.useBenzo.no++;
+                siteStats.useOpioids.no++;
+                siteStats.useAntipsychotic.no++;
+              }
             } catch (err) {
               console.error(`Error fetching records for patient ${patient.id}:`, err);
-              // Continue with other patients if one fails
+              // If there's an error, count as no for all criteria
+              siteStats.medRecComplete.no++;
+              siteStats.bpAtGoal.no++;
+              siteStats.hospitalVisitSinceLastReview.no++;
+              siteStats.a1cAtGoal.no++;
+              siteStats.fallSinceLastVisit.no++;
+              siteStats.useBenzo.no++;
+              siteStats.useOpioids.no++;
+              siteStats.useAntipsychotic.no++;
             }
           }
-        }
-        // Calculate statistics across all records for this site
-        for (const record of allRecords) {
-          // Med Rec Complete
-          if (record.medical_records) siteStats.medRecComplete.yes++;
-          else siteStats.medRecComplete.no++;
-          siteStats.medRecComplete.total++;
-
-          // BP at Goal
-          if (record.bpAtGoal) siteStats.bpAtGoal.yes++;
-          else siteStats.bpAtGoal.no++;
-          siteStats.bpAtGoal.total++;
-
-          // Hospital Visit Since Last Review
-          if (record.hospitalVisitSinceLastReview) siteStats.hospitalVisitSinceLastReview.yes++;
-          else siteStats.hospitalVisitSinceLastReview.no++;
-          siteStats.hospitalVisitSinceLastReview.total++;
-
-          // A1C at Goal
-          if (record.a1cAtGoal) siteStats.a1cAtGoal.yes++;
-          else siteStats.a1cAtGoal.no++;
-          siteStats.a1cAtGoal.total++;
-
-          // Fall Since Last Visit
-          if (record.fallSinceLastVisit) siteStats.fallSinceLastVisit.yes++;
-          else siteStats.fallSinceLastVisit.no++;
-          siteStats.fallSinceLastVisit.total++;
-
-          // Use Benzo
-          if (record.benzodiazepines) siteStats.useBenzo.yes++;
-          else siteStats.useBenzo.no++;
-          siteStats.useBenzo.total++;
-
-          // Use Opioids
-          if (record.opioids) siteStats.useOpioids.yes++;
-          else siteStats.useOpioids.no++;
-          siteStats.useOpioids.total++;
-
-          // Use Antipsychotic
-          if (record.antipsychotics) siteStats.useAntipsychotic.yes++;
-          else siteStats.useAntipsychotic.no++;
-          siteStats.useAntipsychotic.total++;
         }
       }
 

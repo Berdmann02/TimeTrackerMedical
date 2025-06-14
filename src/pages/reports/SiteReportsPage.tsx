@@ -97,78 +97,82 @@ const SiteReportsPage = () => {
         return;
       }
 
-      // Gather all medical records for all patients in the site for the selected month/year
-      let allRecords: MedicalRecord[] = [];
+      // Initialize statistics with total being the number of patients at the site
+      const stats = {
+        siteName: selectedSite,
+        medRecComplete: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        bpAtGoal: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        hospitalVisitSinceLastReview: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        a1cAtGoal: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        fallSinceLastVisit: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        useBenzo: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        useOpioids: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+        useAntipsychotic: { yes: 0, no: 0, total: sitePatients.length, percentage: 0 },
+      };
+
+      // Get the most recent medical record for each patient
       for (const patient of sitePatients) {
         if (patient.id) {
           try {
             const records = await getMedicalRecordsByPatientId(patient.id);
-            // Filter records by month/year
-            const filteredRecords = records.filter(record => {
-              const recordDate = new Date(record.createdAt || '');
-              return recordDate.getMonth() + 1 === month && recordDate.getFullYear() === year;
-            });
-            allRecords.push(...filteredRecords);
+            if (records.length > 0) {
+              // Sort records by date and get the most recent one
+              const sortedRecords = records.sort((a, b) => {
+                const dateA = new Date(a.createdAt || '');
+                const dateB = new Date(b.createdAt || '');
+                return dateB.getTime() - dateA.getTime();
+              });
+              const mostRecentRecord = sortedRecords[0];
+
+              // Update statistics based on the most recent record
+              // If the checkbox is checked, count as yes, otherwise no
+              if (mostRecentRecord.medical_records) stats.medRecComplete.yes++;
+              else stats.medRecComplete.no++;
+
+              if (mostRecentRecord.bpAtGoal) stats.bpAtGoal.yes++;
+              else stats.bpAtGoal.no++;
+
+              if (mostRecentRecord.hospitalVisitSinceLastReview) stats.hospitalVisitSinceLastReview.yes++;
+              else stats.hospitalVisitSinceLastReview.no++;
+
+              if (mostRecentRecord.a1cAtGoal) stats.a1cAtGoal.yes++;
+              else stats.a1cAtGoal.no++;
+
+              if (mostRecentRecord.fallSinceLastVisit) stats.fallSinceLastVisit.yes++;
+              else stats.fallSinceLastVisit.no++;
+
+              if (mostRecentRecord.benzodiazepines) stats.useBenzo.yes++;
+              else stats.useBenzo.no++;
+
+              if (mostRecentRecord.opioids) stats.useOpioids.yes++;
+              else stats.useOpioids.no++;
+
+              if (mostRecentRecord.antipsychotics) stats.useAntipsychotic.yes++;
+              else stats.useAntipsychotic.no++;
+            } else {
+              // If no records exist, count as no for all criteria
+              stats.medRecComplete.no++;
+              stats.bpAtGoal.no++;
+              stats.hospitalVisitSinceLastReview.no++;
+              stats.a1cAtGoal.no++;
+              stats.fallSinceLastVisit.no++;
+              stats.useBenzo.no++;
+              stats.useOpioids.no++;
+              stats.useAntipsychotic.no++;
+            }
           } catch (err) {
             console.error(`Error fetching records for patient ${patient.id}:`, err);
-            // Continue with other patients if one fails
+            // If there's an error, count as no for all criteria
+            stats.medRecComplete.no++;
+            stats.bpAtGoal.no++;
+            stats.hospitalVisitSinceLastReview.no++;
+            stats.a1cAtGoal.no++;
+            stats.fallSinceLastVisit.no++;
+            stats.useBenzo.no++;
+            stats.useOpioids.no++;
+            stats.useAntipsychotic.no++;
           }
         }
-      }
-
-      // Calculate statistics across all records
-      const stats = {
-        siteName: selectedSite,
-        medRecComplete: { yes: 0, no: 0, total: 0, percentage: 0 },
-        bpAtGoal: { yes: 0, no: 0, total: 0, percentage: 0 },
-        hospitalVisitSinceLastReview: { yes: 0, no: 0, total: 0, percentage: 0 },
-        a1cAtGoal: { yes: 0, no: 0, total: 0, percentage: 0 },
-        fallSinceLastVisit: { yes: 0, no: 0, total: 0, percentage: 0 },
-        useBenzo: { yes: 0, no: 0, total: 0, percentage: 0 },
-        useOpioids: { yes: 0, no: 0, total: 0, percentage: 0 },
-        useAntipsychotic: { yes: 0, no: 0, total: 0, percentage: 0 },
-      };
-
-      for (const record of allRecords) {
-        // Med Rec Complete
-        if (record.medical_records) stats.medRecComplete.yes++;
-        else stats.medRecComplete.no++;
-        stats.medRecComplete.total++;
-
-        // BP at Goal
-        if (record.bpAtGoal) stats.bpAtGoal.yes++;
-        else stats.bpAtGoal.no++;
-        stats.bpAtGoal.total++;
-
-        // Hospital Visit Since Last Review
-        if (record.hospitalVisitSinceLastReview) stats.hospitalVisitSinceLastReview.yes++;
-        else stats.hospitalVisitSinceLastReview.no++;
-        stats.hospitalVisitSinceLastReview.total++;
-
-        // A1C at Goal
-        if (record.a1cAtGoal) stats.a1cAtGoal.yes++;
-        else stats.a1cAtGoal.no++;
-        stats.a1cAtGoal.total++;
-
-        // Fall Since Last Visit
-        if (record.fallSinceLastVisit) stats.fallSinceLastVisit.yes++;
-        else stats.fallSinceLastVisit.no++;
-        stats.fallSinceLastVisit.total++;
-
-        // Use Benzo
-        if (record.benzodiazepines) stats.useBenzo.yes++;
-        else stats.useBenzo.no++;
-        stats.useBenzo.total++;
-
-        // Use Opioids
-        if (record.opioids) stats.useOpioids.yes++;
-        else stats.useOpioids.no++;
-        stats.useOpioids.total++;
-
-        // Use Antipsychotic
-        if (record.antipsychotics) stats.useAntipsychotic.yes++;
-        else stats.useAntipsychotic.no++;
-        stats.useAntipsychotic.total++;
       }
 
       // Calculate percentages
