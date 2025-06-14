@@ -72,11 +72,11 @@ const ReportsPage = () => {
         });
       });
 
-      // Process each site's patients
+      // For each site, gather all medical records for all patients for the selected month/year
       for (const site of sites) {
         const sitePatients = allPatients.filter(patient => patient.site_name === site.name);
         const siteStats = siteDataMap.get(site.name)!;
-
+        let allRecords = [];
         for (const patient of sitePatients) {
           if (patient.id) {
             try {
@@ -86,102 +86,54 @@ const ReportsPage = () => {
                 const recordDate = new Date(record.createdAt || '');
                 return recordDate.getMonth() + 1 === month && recordDate.getFullYear() === year;
               });
-
-              // Use the latest record for this month, or patient's current status
-              const latestRecord = filteredRecords.length > 0 ? filteredRecords[filteredRecords.length - 1] : null;
-
-              // Medical Records Complete
-              const medRecValue = latestRecord?.medical_records ?? patient.medical_records ?? false;
-              if (medRecValue) siteStats.medRecComplete.yes++;
-              else siteStats.medRecComplete.no++;
-              siteStats.medRecComplete.total++;
-
-              // BP at Goal
-              const bpValue = latestRecord?.bpAtGoal ?? patient.bp_at_goal ?? false;
-              if (bpValue) siteStats.bpAtGoal.yes++;
-              else siteStats.bpAtGoal.no++;
-              siteStats.bpAtGoal.total++;
-
-              // Hospital Visit Since Last Review
-              const hospitalValue = latestRecord?.hospitalVisitSinceLastReview ?? patient.hospital_visited_since_last_review ?? false;
-              if (hospitalValue) siteStats.hospitalVisitSinceLastReview.yes++;
-              else siteStats.hospitalVisitSinceLastReview.no++;
-              siteStats.hospitalVisitSinceLastReview.total++;
-
-              // A1C at Goal
-              const a1cValue = latestRecord?.a1cAtGoal ?? patient.a1c_at_goal ?? false;
-              if (a1cValue) siteStats.a1cAtGoal.yes++;
-              else siteStats.a1cAtGoal.no++;
-              siteStats.a1cAtGoal.total++;
-
-              // Fall Since Last Visit
-              const fallValue = latestRecord?.fallSinceLastVisit ?? patient.fall_since_last_visit ?? false;
-              if (fallValue) siteStats.fallSinceLastVisit.yes++;
-              else siteStats.fallSinceLastVisit.no++;
-              siteStats.fallSinceLastVisit.total++;
-
-              // Use Benzo
-              const benzoValue = latestRecord?.benzodiazepines ?? patient.use_benzo ?? false;
-              if (benzoValue) siteStats.useBenzo.yes++;
-              else siteStats.useBenzo.no++;
-              siteStats.useBenzo.total++;
-
-              // Use Opioids
-              const opioidsValue = latestRecord?.opioids ?? patient.use_opioids ?? false;
-              if (opioidsValue) siteStats.useOpioids.yes++;
-              else siteStats.useOpioids.no++;
-              siteStats.useOpioids.total++;
-
-              // Use Antipsychotic
-              const antipsychoticValue = latestRecord?.antipsychotics ?? patient.use_antipsychotic ?? false;
-              if (antipsychoticValue) siteStats.useAntipsychotic.yes++;
-              else siteStats.useAntipsychotic.no++;
-              siteStats.useAntipsychotic.total++;
-
+              allRecords.push(...filteredRecords);
             } catch (err) {
               console.error(`Error fetching records for patient ${patient.id}:`, err);
-              // Count patient with current status if records fail
-              const medRecValue = patient.medical_records ?? false;
-              if (medRecValue) siteStats.medRecComplete.yes++;
-              else siteStats.medRecComplete.no++;
-              siteStats.medRecComplete.total++;
-
-              const bpValue = patient.bp_at_goal ?? false;
-              if (bpValue) siteStats.bpAtGoal.yes++;
-              else siteStats.bpAtGoal.no++;
-              siteStats.bpAtGoal.total++;
-
-              const hospitalValue = patient.hospital_visited_since_last_review ?? false;
-              if (hospitalValue) siteStats.hospitalVisitSinceLastReview.yes++;
-              else siteStats.hospitalVisitSinceLastReview.no++;
-              siteStats.hospitalVisitSinceLastReview.total++;
-
-              const a1cValue = patient.a1c_at_goal ?? false;
-              if (a1cValue) siteStats.a1cAtGoal.yes++;
-              else siteStats.a1cAtGoal.no++;
-              siteStats.a1cAtGoal.total++;
-
-              const fallValue = patient.fall_since_last_visit ?? false;
-              if (fallValue) siteStats.fallSinceLastVisit.yes++;
-              else siteStats.fallSinceLastVisit.no++;
-              siteStats.fallSinceLastVisit.total++;
-
-              const benzoValue = patient.use_benzo ?? false;
-              if (benzoValue) siteStats.useBenzo.yes++;
-              else siteStats.useBenzo.no++;
-              siteStats.useBenzo.total++;
-
-              const opioidsValue = patient.use_opioids ?? false;
-              if (opioidsValue) siteStats.useOpioids.yes++;
-              else siteStats.useOpioids.no++;
-              siteStats.useOpioids.total++;
-
-              const antipsychoticValue = patient.use_antipsychotic ?? false;
-              if (antipsychoticValue) siteStats.useAntipsychotic.yes++;
-              else siteStats.useAntipsychotic.no++;
-              siteStats.useAntipsychotic.total++;
+              // Continue with other patients if one fails
             }
           }
+        }
+        // Calculate statistics across all records for this site
+        for (const record of allRecords) {
+          // Med Rec Complete
+          if (record.medical_records) siteStats.medRecComplete.yes++;
+          else siteStats.medRecComplete.no++;
+          siteStats.medRecComplete.total++;
+
+          // BP at Goal
+          if (record.bpAtGoal) siteStats.bpAtGoal.yes++;
+          else siteStats.bpAtGoal.no++;
+          siteStats.bpAtGoal.total++;
+
+          // Hospital Visit Since Last Review
+          if (record.hospitalVisitSinceLastReview) siteStats.hospitalVisitSinceLastReview.yes++;
+          else siteStats.hospitalVisitSinceLastReview.no++;
+          siteStats.hospitalVisitSinceLastReview.total++;
+
+          // A1C at Goal
+          if (record.a1cAtGoal) siteStats.a1cAtGoal.yes++;
+          else siteStats.a1cAtGoal.no++;
+          siteStats.a1cAtGoal.total++;
+
+          // Fall Since Last Visit
+          if (record.fallSinceLastVisit) siteStats.fallSinceLastVisit.yes++;
+          else siteStats.fallSinceLastVisit.no++;
+          siteStats.fallSinceLastVisit.total++;
+
+          // Use Benzo
+          if (record.benzodiazepines) siteStats.useBenzo.yes++;
+          else siteStats.useBenzo.no++;
+          siteStats.useBenzo.total++;
+
+          // Use Opioids
+          if (record.opioids) siteStats.useOpioids.yes++;
+          else siteStats.useOpioids.no++;
+          siteStats.useOpioids.total++;
+
+          // Use Antipsychotic
+          if (record.antipsychotics) siteStats.useAntipsychotic.yes++;
+          else siteStats.useAntipsychotic.no++;
+          siteStats.useAntipsychotic.total++;
         }
       }
 
@@ -288,9 +240,6 @@ const ReportsPage = () => {
         }), { siteName: 'All', yes: 0, no: 0, total: 0, percentage: 0 });
 
         criteria.total.percentage = criteria.total.total > 0 ? (criteria.total.yes / criteria.total.total) * 100 : 0;
-
-        // Don't filter out sites - show all sites even with 0 data
-        // criteria.sites = criteria.sites.filter(site => site.total > 0);
       });
 
       setCriteriaData(criteriaList);
