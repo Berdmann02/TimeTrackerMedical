@@ -97,9 +97,8 @@ const SiteReportsPage = () => {
         return;
       }
 
-      // Get medical records for all patients in the site for the selected month/year
-      const patientMedicalRecords: { patient: Patient; records: MedicalRecord[] }[] = [];
-
+      // Gather all medical records for all patients in the site for the selected month/year
+      let allRecords: MedicalRecord[] = [];
       for (const patient of sitePatients) {
         if (patient.id) {
           try {
@@ -109,102 +108,84 @@ const SiteReportsPage = () => {
               const recordDate = new Date(record.createdAt || '');
               return recordDate.getMonth() + 1 === month && recordDate.getFullYear() === year;
             });
-            patientMedicalRecords.push({ patient, records: filteredRecords });
+            allRecords.push(...filteredRecords);
           } catch (err) {
             console.error(`Error fetching records for patient ${patient.id}:`, err);
             // Continue with other patients if one fails
-            patientMedicalRecords.push({ patient, records: [] });
           }
         }
       }
 
-      // Calculate statistics
-      const stats = calculateSiteStatistics(patientMedicalRecords);
-      setReportData(stats);
+      // Calculate statistics across all records
+      const stats = {
+        siteName: selectedSite,
+        medRecComplete: { yes: 0, no: 0, total: 0, percentage: 0 },
+        bpAtGoal: { yes: 0, no: 0, total: 0, percentage: 0 },
+        hospitalVisitSinceLastReview: { yes: 0, no: 0, total: 0, percentage: 0 },
+        a1cAtGoal: { yes: 0, no: 0, total: 0, percentage: 0 },
+        fallSinceLastVisit: { yes: 0, no: 0, total: 0, percentage: 0 },
+        useBenzo: { yes: 0, no: 0, total: 0, percentage: 0 },
+        useOpioids: { yes: 0, no: 0, total: 0, percentage: 0 },
+        useAntipsychotic: { yes: 0, no: 0, total: 0, percentage: 0 },
+      };
 
+      for (const record of allRecords) {
+        // Med Rec Complete
+        if (record.medical_records) stats.medRecComplete.yes++;
+        else stats.medRecComplete.no++;
+        stats.medRecComplete.total++;
+
+        // BP at Goal
+        if (record.bpAtGoal) stats.bpAtGoal.yes++;
+        else stats.bpAtGoal.no++;
+        stats.bpAtGoal.total++;
+
+        // Hospital Visit Since Last Review
+        if (record.hospitalVisitSinceLastReview) stats.hospitalVisitSinceLastReview.yes++;
+        else stats.hospitalVisitSinceLastReview.no++;
+        stats.hospitalVisitSinceLastReview.total++;
+
+        // A1C at Goal
+        if (record.a1cAtGoal) stats.a1cAtGoal.yes++;
+        else stats.a1cAtGoal.no++;
+        stats.a1cAtGoal.total++;
+
+        // Fall Since Last Visit
+        if (record.fallSinceLastVisit) stats.fallSinceLastVisit.yes++;
+        else stats.fallSinceLastVisit.no++;
+        stats.fallSinceLastVisit.total++;
+
+        // Use Benzo
+        if (record.benzodiazepines) stats.useBenzo.yes++;
+        else stats.useBenzo.no++;
+        stats.useBenzo.total++;
+
+        // Use Opioids
+        if (record.opioids) stats.useOpioids.yes++;
+        else stats.useOpioids.no++;
+        stats.useOpioids.total++;
+
+        // Use Antipsychotic
+        if (record.antipsychotics) stats.useAntipsychotic.yes++;
+        else stats.useAntipsychotic.no++;
+        stats.useAntipsychotic.total++;
+      }
+
+      // Calculate percentages
+      Object.keys(stats).forEach(key => {
+        if (key !== 'siteName' && key !== 'siteId') {
+          const stat = stats[key as keyof Omit<SiteReportData, 'siteName' | 'siteId'>] as { yes: number; no: number; total: number; percentage: number };
+          stat.percentage = stat.total > 0 ? (stat.yes / stat.total) * 100 : 0;
+        }
+      });
+
+      setReportData(stats);
     } catch (err) {
       console.error('Error fetching report data:', err);
       setError('Failed to load report data');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const calculateSiteStatistics = (patientRecords: { patient: Patient; records: MedicalRecord[] }[]): SiteReportData => {
-    const stats: SiteReportData = {
-      siteName: selectedSite,
-      medRecComplete: { yes: 0, no: 0, total: 0, percentage: 0 },
-      bpAtGoal: { yes: 0, no: 0, total: 0, percentage: 0 },
-      hospitalVisitSinceLastReview: { yes: 0, no: 0, total: 0, percentage: 0 },
-      a1cAtGoal: { yes: 0, no: 0, total: 0, percentage: 0 },
-      fallSinceLastVisit: { yes: 0, no: 0, total: 0, percentage: 0 },
-      useBenzo: { yes: 0, no: 0, total: 0, percentage: 0 },
-      useOpioids: { yes: 0, no: 0, total: 0, percentage: 0 },
-      useAntipsychotic: { yes: 0, no: 0, total: 0, percentage: 0 },
-    };
-
-    patientRecords.forEach(({ patient, records }) => {
-      // Use the latest record for this month, or patient's current status
-      const latestRecord = records.length > 0 ? records[records.length - 1] : null;
-
-      // Medical Records Complete
-      const medRecValue = latestRecord?.medical_records ?? patient.medical_records ?? false;
-      if (medRecValue) stats.medRecComplete.yes++;
-      else stats.medRecComplete.no++;
-      stats.medRecComplete.total++;
-
-      // BP at Goal
-      const bpValue = latestRecord?.bpAtGoal ?? patient.bp_at_goal ?? false;
-      if (bpValue) stats.bpAtGoal.yes++;
-      else stats.bpAtGoal.no++;
-      stats.bpAtGoal.total++;
-
-      // Hospital Visit Since Last Review
-      const hospitalValue = latestRecord?.hospitalVisitSinceLastReview ?? patient.hospital_visited_since_last_review ?? false;
-      if (hospitalValue) stats.hospitalVisitSinceLastReview.yes++;
-      else stats.hospitalVisitSinceLastReview.no++;
-      stats.hospitalVisitSinceLastReview.total++;
-
-      // A1C at Goal
-      const a1cValue = latestRecord?.a1cAtGoal ?? patient.a1c_at_goal ?? false;
-      if (a1cValue) stats.a1cAtGoal.yes++;
-      else stats.a1cAtGoal.no++;
-      stats.a1cAtGoal.total++;
-
-      // Fall Since Last Visit
-      const fallValue = latestRecord?.fallSinceLastVisit ?? patient.fall_since_last_visit ?? false;
-      if (fallValue) stats.fallSinceLastVisit.yes++;
-      else stats.fallSinceLastVisit.no++;
-      stats.fallSinceLastVisit.total++;
-
-      // Use Benzo
-      const benzoValue = latestRecord?.benzodiazepines ?? patient.use_benzo ?? false;
-      if (benzoValue) stats.useBenzo.yes++;
-      else stats.useBenzo.no++;
-      stats.useBenzo.total++;
-
-      // Use Opioids
-      const opioidsValue = latestRecord?.opioids ?? patient.use_opioids ?? false;
-      if (opioidsValue) stats.useOpioids.yes++;
-      else stats.useOpioids.no++;
-      stats.useOpioids.total++;
-
-      // Use Antipsychotic
-      const antipsychoticValue = latestRecord?.antipsychotics ?? patient.use_antipsychotic ?? false;
-      if (antipsychoticValue) stats.useAntipsychotic.yes++;
-      else stats.useAntipsychotic.no++;
-      stats.useAntipsychotic.total++;
-    });
-
-    // Calculate percentages
-    Object.keys(stats).forEach(key => {
-      if (key !== 'siteName' && key !== 'siteId') {
-        const stat = stats[key as keyof Omit<SiteReportData, 'siteName' | 'siteId'>] as { yes: number; no: number; total: number; percentage: number };
-        stat.percentage = stat.total > 0 ? (stat.yes / stat.total) * 100 : 0;
-      }
-    });
-
-    return stats;
   };
 
   return (
