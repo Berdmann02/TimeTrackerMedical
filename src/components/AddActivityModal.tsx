@@ -363,37 +363,24 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.patientId || !formData.activityType) {
-      alert("Please fill in all required fields");
-      return;
-    }
-    
-    if (!formData.startTime || !formData.endTime) {
-      alert("Please track time by using the Start and Stop buttons");
-      return;
-    }
-    
-    if (!user?.id) {
-      alert("You must be logged in to create an activity");
-      return;
-    }
-    
     setIsSubmitting(true);
-    
+
     try {
-      // Find the selected patient to get site info
-      const selectedPatient = patients.find(p => p.id?.toString() === formData.patientId);
-      
+      // Calculate duration in minutes from the stored end time
+      const startTime = new Date(formData.startTime);
+      const endTime = new Date(formData.endTime);
+      const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+
+      // Create activity data
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
-        user_id: parseInt(user.id.toString()),
+        user_id: user?.id || 0,
         activity_type: formData.activityType,
-        duration_minutes: calculateTimeDifference(),
-        service_datetime: formData.startTime, // Use the form's start time
-        end_time: formData.endTime, // Include the end time
-        site_name: siteName || selectedPatient?.site_name || "Unknown Site",
-        building: selectedPatient?.building || "",
+        service_datetime: formData.startTime,
+        end_time: formData.endTime,
+        duration_minutes: durationMinutes,
+        site_name: siteName || '',
+        building: '',
         notes: formData.notes,
         medical_checks: {
           medical_records: formData.medicalChecks.medicalRecords,
@@ -406,22 +393,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
           fall_since_last_visit: formData.medicalChecks.fallSinceLastVisit
         }
       };
-      
+
       await createActivity(activityData);
-      
+      onClose();
       if (onActivityAdded) {
         onActivityAdded();
       }
-      
-      onClose();
-    } catch (err) {
-      console.error("Error creating activity:", err);
-      // More detailed error handling
-      if (err instanceof Error) {
-        setError(`Failed to create activity: ${err.message}`);
-      } else {
-        setError("Failed to create activity. Please try again.");
-      }
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      setError('Failed to create activity. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
