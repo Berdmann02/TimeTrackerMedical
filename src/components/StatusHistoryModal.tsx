@@ -48,7 +48,8 @@ const StatusHistoryModal: React.FC<StatusHistoryModalProps> = ({ isOpen, onClose
       benzodiazepines: 'Benzodiazepines',
       antipsychotics: 'Antipsychotics',
       opioids: 'Opioids',
-      fallSinceLastVisit: 'Fall Since Last Visit'
+      fallSinceLastVisit: 'Fall Since Last Visit',
+      medical_records: 'Medical Records'
     };
     return labels[key] || key;
   };
