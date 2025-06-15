@@ -48,7 +48,7 @@ interface DetailRowProps {
     label: string;
     value: string | boolean | number | null | undefined;
     startTime?: string;
-    endTime?: string;
+    service_endtime?: string;
     isEditing?: boolean;
     onEdit?: (value: any) => void;
     onStartTimeEdit?: (value: string) => void;
@@ -68,7 +68,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
     label,
     value,
     startTime,
-    endTime,
+    service_endtime,
     isEditing = false,
     onEdit,
     onStartTimeEdit,
@@ -190,9 +190,9 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                     <label className="block text-xs text-gray-500 mb-1">End Time</label>
                                     <input
                                         type="datetime-local"
-                                        value={endTime ? (() => {
+                                        value={service_endtime ? (() => {
                                             try {
-                                                const date = new Date(endTime);
+                                                const date = new Date(service_endtime);
                                                 // Adjust for local timezone to prevent date shifting
                                                 const offset = date.getTimezoneOffset();
                                                 const localDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -239,7 +239,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                 value
                             )}
                         </p>
-                        {(startTime || endTime) && (
+                        {(startTime || service_endtime) && (
                             <div className="text-sm text-gray-600 space-y-1">
                                 {startTime && (
                                     <div className="flex items-center space-x-2">
@@ -247,10 +247,10 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                         <span>Start: {new Date(startTime).toLocaleString()}</span>
                                     </div>
                                 )}
-                                {endTime && (
+                                {service_endtime && (
                                     <div className="flex items-center space-x-2">
                                         <TimerOff className="h-4 w-4" />
-                                        <span>End: {new Date(endTime).toLocaleString()}</span>
+                                        <span>End: {new Date(service_endtime).toLocaleString()}</span>
                                     </div>
                                 )}
                             </div>
@@ -413,7 +413,7 @@ const ActivityDetailsPage: FC = () => {
             if (!prev) return prev;
             return {
                 ...prev,
-                end_time: endTime,
+                service_endtime: endTime,
                 time_spent: durationMinutes,
                 duration_minutes: durationMinutes
             };
@@ -426,7 +426,7 @@ const ActivityDetailsPage: FC = () => {
 
         // If we have both start and end time, calculate the difference
         const startTime = editedActivity.service_datetime || editedActivity.created_at;
-        const endTime = editedActivity.end_time;
+        const endTime = editedActivity.service_endtime;
         
         if (startTime && endTime) {
             const start = new Date(startTime);
@@ -457,7 +457,7 @@ const ActivityDetailsPage: FC = () => {
             // Calculate time spent based on start/end times or use existing value
             let timeSpent = 0;
             const startTime = editedActivity.service_datetime || editedActivity.created_at;
-            const endTime = editedActivity.end_time;
+            const endTime = editedActivity.service_endtime;
             
             if (startTime && endTime) {
                 // Calculate duration from start and end times
@@ -543,9 +543,9 @@ const ActivityDetailsPage: FC = () => {
             const updated = { ...prev, [field]: value };
             
             // Recalculate total time when start or end time changes
-            if (field === 'service_datetime' || field === 'created_at' || field === 'end_time') {
+            if (field === 'service_datetime' || field === 'created_at' || field === 'service_endtime') {
                 const startTime = field === 'service_datetime' || field === 'created_at' ? value : (updated.service_datetime || updated.created_at);
-                const endTime = field === 'end_time' ? value : updated.end_time;
+                const endTime = field === 'service_endtime' ? value : updated.service_endtime;
                 
                 if (startTime && endTime) {
                     const start = new Date(startTime);
@@ -729,10 +729,10 @@ const ActivityDetailsPage: FC = () => {
                                     const time = editedActivity.service_datetime || editedActivity.created_at;
                                     return time ? (typeof time === 'string' ? time : time.toISOString()) : '';
                                 })()}
-                                endTime={(() => {
+                                service_endtime={(() => {
                                     // If we have an explicit end_time, use it
-                                    if (editedActivity.end_time) {
-                                        return String(editedActivity.end_time);
+                                    if (editedActivity.service_endtime) {
+                                        return String(editedActivity.service_endtime);
                                     }
                                     // Otherwise, calculate end time from start + duration
                                     const startTime = editedActivity.service_datetime || editedActivity.created_at;
@@ -749,7 +749,7 @@ const ActivityDetailsPage: FC = () => {
                                 onStartTimeEdit={(value) => {
                                     handleFieldChange('service_datetime', value);
                                 }}
-                                onEndTimeEdit={(value) => handleFieldChange('end_time', value)}
+                                onEndTimeEdit={(value) => handleFieldChange('service_endtime', value)}
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                             <DetailRow
@@ -765,7 +765,7 @@ const ActivityDetailsPage: FC = () => {
                                 label="Site Name"
                                 value={editedActivity.site_name || 'CP Greater San Antonio'}
                                 startTime={editedActivity.site_start_time}
-                                endTime={editedActivity.site_end_time}
+                                service_endtime={editedActivity.site_end_time}
                                 isEditing={isEditing}
                                 editType="readonly"
                                 calculateTimeDifference={calculateTimeDifference}
@@ -783,7 +783,7 @@ const ActivityDetailsPage: FC = () => {
                                 label="Personnel Initials"
                                 value={editedActivity.personnel_initials || editedActivity.user_initials || 'Unknown'}
                                 startTime={editedActivity.personnel_start_time}
-                                endTime={editedActivity.personnel_end_time}
+                                service_endtime={editedActivity.personnel_end_time}
                                 isEditing={false}
                                 editType="readonly"
                                 onStartTimeEdit={(value) => handleFieldChange('personnel_start_time', value)}
@@ -796,7 +796,7 @@ const ActivityDetailsPage: FC = () => {
                                 label="Activity Type"
                                 value={editedActivity.activity_type || ''}
                                 startTime={editedActivity.activity_start_time}
-                                endTime={editedActivity.activity_end_time}
+                                service_endtime={editedActivity.activity_end_time}
                                 isEditing={isEditing}
                                 editType="select"
                                 editOptions={activityTypes}
@@ -818,7 +818,7 @@ const ActivityDetailsPage: FC = () => {
                                 label="Notes"
                                 value={editedActivity.notes || ''}
                                 startTime={editedActivity.notes_start_time}
-                                endTime={editedActivity.notes_end_time}
+                                service_endtime={editedActivity.notes_end_time}
                                 isEditing={isEditing}
                                 editType="text"
                                 onEdit={(value) => handleFieldChange('notes', value)}

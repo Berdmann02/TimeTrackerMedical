@@ -19,7 +19,7 @@ interface ActivityForm {
   patientId: string;
   activityType: string;
   startTime: string;
-  endTime: string;
+  service_endtime: string;
   notes: string;
   medicalChecks: {
     medicalRecords: boolean;
@@ -67,7 +67,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     patientId: initialPatientId || "",
     activityType: "",
     startTime: "",
-    endTime: "",
+    service_endtime: "",
     notes: "",
     medicalChecks: {
       medicalRecords: false,
@@ -83,7 +83,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   const [dateErrors, setDateErrors] = useState({
     startTime: "",
-    endTime: ""
+    service_endtime: ""
   });
 
   // Helper function to compare dates without time
@@ -148,7 +148,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     patientId: initialPatientId || "",
     activityType: "",
     startTime: "",
-    endTime: "",
+    service_endtime: "",
     notes: "",
     medicalChecks: {
       medicalRecords: false,
@@ -186,7 +186,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setHasStopped(false);
       setError(null);
       setIsSubmitting(false);
-      setDateErrors({ startTime: "", endTime: "" }); // Clear date errors
+      setDateErrors({ startTime: "", service_endtime: "" }); // Clear date errors
     }
     // If modal is opened, load initial data and reset form
     if (isOpen && !prevIsOpen.current) {
@@ -209,7 +209,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setHasStarted(false);
       setHasStopped(false);
       setError(null);
-      setDateErrors({ startTime: "", endTime: "" }); // Clear date errors
+      setDateErrors({ startTime: "", service_endtime: "" }); // Clear date errors
     }
   }, [initialPatientId]);
 
@@ -259,7 +259,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     const { name, value } = e.target;
     
     // Special handling for datetime-local inputs
-    if (name === 'startTime' || name === 'endTime') {
+    if (name === 'startTime' || name === 'service_endtime') {
       if (value) {
         // Check if the selected date is in the future
         if (isFutureDate(value)) {
@@ -279,24 +279,24 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         // Validate dates
         let newDateErrors = { ...dateErrors };
         
-        if (name === 'startTime' && tempFormData.endTime) {
+        if (name === 'startTime' && tempFormData.service_endtime) {
           const startDate = new Date(newTime);
-          const endDate = new Date(tempFormData.endTime);
+          const endDate = new Date(tempFormData.service_endtime);
           
           if (startDate > endDate) {
             newDateErrors.startTime = getErrorMessage(startDate, endDate);
           } else {
             newDateErrors.startTime = "";
-            newDateErrors.endTime = ""; // Clear end time error if start time is valid
+            newDateErrors.service_endtime = ""; // Clear end time error if start time is valid
           }
-        } else if (name === 'endTime' && tempFormData.startTime) {
+        } else if (name === 'service_endtime' && tempFormData.startTime) {
           const startDate = new Date(tempFormData.startTime);
           const endDate = new Date(newTime);
           
           if (endDate < startDate) {
-            newDateErrors.endTime = getErrorMessage(startDate, endDate);
+            newDateErrors.service_endtime = getErrorMessage(startDate, endDate);
           } else {
-            newDateErrors.endTime = "";
+            newDateErrors.service_endtime = "";
             newDateErrors.startTime = ""; // Clear start time error if end time is valid
           }
         }
@@ -339,7 +339,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     const now = new Date();
     const isoString = now.toISOString();
     // Allow restarting even after stopping (having an end time)
-    setFormData((prev) => ({ ...prev, startTime: isoString, endTime: "" }));
+    setFormData((prev) => ({ ...prev, startTime: isoString, service_endtime: "" }));
     setIsTracking(true);
     setHasStarted(true);
     setHasStopped(false);
@@ -350,18 +350,18 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     if (isTracking) {
       const now = new Date();
       const isoString = now.toISOString();
-      setFormData((prev) => ({ ...prev, endTime: isoString }));
+      setFormData((prev) => ({ ...prev, service_endtime: isoString }));
       setIsTracking(false);
       setHasStopped(true);
     }
   };
 
   const calculateTimeDifference = (): number => {
-    if (!formData.startTime || !formData.endTime) return 0;
+    if (!formData.startTime || !formData.service_endtime) return 0;
     
     try {
       const start = new Date(formData.startTime).getTime();
-      const end = new Date(formData.endTime).getTime();
+      const end = new Date(formData.service_endtime).getTime();
       
       // Calculate difference in milliseconds, then convert to minutes
       const diffMs = end - start;
@@ -370,9 +370,9 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       // Debug logging to help track time calculations
       console.log('Time calculation:', {
         startTime: formData.startTime,
-        endTime: formData.endTime,
+        service_endtime: formData.service_endtime,
         startDate: new Date(formData.startTime).toLocaleString(),
-        endDate: new Date(formData.endTime).toLocaleString(),
+        endDate: new Date(formData.service_endtime).toLocaleString(),
         diffMinutes: diffMinutes.toFixed(2)
       });
       
@@ -385,14 +385,14 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   // Add useEffect to log when form data changes (for debugging)
   useEffect(() => {
-    if (formData.startTime && formData.endTime) {
+    if (formData.startTime && formData.service_endtime) {
       console.log('Form data changed - recalculating time:', {
         start: new Date(formData.startTime).toLocaleString(),
-        end: new Date(formData.endTime).toLocaleString(),
+        end: new Date(formData.service_endtime).toLocaleString(),
         difference: calculateTimeDifference()
       });
     }
-  }, [formData.startTime, formData.endTime]);
+  }, [formData.startTime, formData.service_endtime]);
 
   const formatTimeDifference = (): string => {
     const totalMinutes = calculateTimeDifference();
@@ -470,7 +470,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     e.preventDefault();
 
     // Check for date validation errors
-    if (dateErrors.startTime || dateErrors.endTime) {
+    if (dateErrors.startTime || dateErrors.service_endtime) {
       // Don't set error state, just return to prevent submission
       return;
     }
@@ -482,7 +482,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     try {
       // Calculate duration in minutes from the stored end time
       const startTime = new Date(formData.startTime);
-      const endTime = new Date(formData.endTime);
+      const endTime = new Date(formData.service_endtime);
       const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
       // Create activity data
@@ -491,7 +491,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
         user_id: user?.id || 0,
         activity_type: formData.activityType,
         service_datetime: formData.startTime,
-        end_time: formData.endTime,
+        service_endtime: formData.service_endtime,
         duration_minutes: durationMinutes,
         site_name: siteName || '',
         building: '',
@@ -925,7 +925,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     </div>
                     
                     {/* Manual End Date/Time Input */}
-                    {formData.endTime && (
+                    {formData.service_endtime && (
                       <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-700">
                           End Date & Time
@@ -933,19 +933,19 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                         <div className="space-y-1">
                           <input
                             type="datetime-local"
-                            name="endTime"
-                            value={formatDateTimeLocal(formData.endTime)}
+                            name="service_endtime"
+                            value={formatDateTimeLocal(formData.service_endtime)}
                             onChange={handleInputChange}
                             max={`${getMaxDate()}T23:59`}
                             className={`mt-1 block w-full px-3 py-2 text-base border ${
-                              dateErrors.endTime 
+                              dateErrors.service_endtime 
                                 ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
                                 : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                             } bg-gray-50 focus:outline-none focus:ring-1 rounded-lg shadow-sm transition-colors`}
                           />
-                          {dateErrors.endTime && (
+                          {dateErrors.service_endtime && (
                             <p className="text-sm text-red-600 mt-1">
-                              {dateErrors.endTime}
+                              {dateErrors.service_endtime}
                             </p>
                           )}
                         </div>
@@ -955,7 +955,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                 </div>
                 
                 {/* Total Time Display */}
-                {formData.startTime && formData.endTime && (
+                {formData.startTime && formData.service_endtime && (
                   <div className="mt-6 pt-4 border-t border-gray-200 text-center">
                     <p className="text-sm text-gray-600">
                       Total time: <span className="font-semibold">{formatTimeDifference()}</span>
