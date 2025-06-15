@@ -195,7 +195,9 @@ const MedicalActivitiesPage = () => {
     const matchesSite = siteFilter === 'All' || activity.site_name === siteFilter;
     
     // Filter by building if needed
-    const matchesBuilding = buildingFilter === 'All' || activity.building_name === buildingFilter;
+    const matchesBuilding = buildingFilter === 'All' || 
+      activity.building === buildingFilter || 
+      activity.building_name === buildingFilter;
     
     // Filter by date if needed
     const dateStr = activity.service_datetime || activity.created_at;
