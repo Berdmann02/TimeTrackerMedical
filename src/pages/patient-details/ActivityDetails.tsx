@@ -497,6 +497,7 @@ const ActivityDetailsPage: FC = () => {
                 site_name: editedActivity.site_name || '',
                 building: editedActivity.building || editedActivity.building_name || '',
                 service_datetime: editedActivity.service_datetime || editedActivity.created_at || new Date().toISOString(),
+                service_endtime: editedActivity.service_endtime || new Date().toISOString(),
                 duration_minutes: Number(finalTimeSpent.toFixed(2))
             };
 
@@ -729,21 +730,7 @@ const ActivityDetailsPage: FC = () => {
                                     const time = editedActivity.service_datetime || editedActivity.created_at;
                                     return time ? (typeof time === 'string' ? time : time.toISOString()) : '';
                                 })()}
-                                service_endtime={(() => {
-                                    // If we have an explicit end_time, use it
-                                    if (editedActivity.service_endtime) {
-                                        return String(editedActivity.service_endtime);
-                                    }
-                                    // Otherwise, calculate end time from start + duration
-                                    const startTime = editedActivity.service_datetime || editedActivity.created_at;
-                                    const duration = editedActivity.duration_minutes || editedActivity.time_spent || 0;
-                                    if (startTime && duration > 0) {
-                                        const start = new Date(startTime);
-                                        const end = new Date(start.getTime() + (duration * 60 * 1000));
-                                        return end.toISOString();
-                                    }
-                                    return '';
-                                })()}
+                                service_endtime={editedActivity.service_endtime ? String(editedActivity.service_endtime) : ''}
                                 isEditing={isEditing}
                                 editType="datetime"
                                 onStartTimeEdit={(value) => {
