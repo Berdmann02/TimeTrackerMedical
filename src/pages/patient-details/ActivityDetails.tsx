@@ -284,6 +284,7 @@ const ActivityDetailsPage: FC = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [sites, setSites] = useState<Site[]>([]);
     const [buildings, setBuildings] = useState<Building[]>([]);
+    const [dateError, setDateError] = useState<string>("");
 
     useEffect(() => {
         const fetchActivityData = async () => {
@@ -517,47 +518,40 @@ const ActivityDetailsPage: FC = () => {
     const handleFieldChange = (field: string, value: any) => {
         if (!editedActivity) return;
 
-        // Special handling for personnel initials
-        if (field === 'personnel_initials' || field === 'user_initials') {
-            // If the value is a full name (contains a space), generate initials
-            if (typeof value === 'string' && value.includes(' ')) {
-                const nameParts = value.split(' ');
-                if (nameParts.length >= 2) {
-                    const firstName = nameParts[0];
-                    const lastName = nameParts[nameParts.length - 1];
-                    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-                    setEditedActivity(prev => {
-                        if (!prev) return prev;
-                        return {
-                            ...prev,
-                            personnel_initials: initials,
-                            user_initials: initials
-                        };
-                    });
-                    return;
-                }
-            }
-        }
-
         setEditedActivity(prev => {
             if (!prev) return prev;
             const updated = { ...prev, [field]: value };
-            
+
+            // Check for invalid time order and set warning
+            if ((field === 'service_datetime' || field === 'service_endtime')) {
+                const startTime = field === 'service_datetime' ? value : updated.service_datetime || updated.created_at;
+                const endTime = field === 'service_endtime' ? value : updated.service_endtime;
+                if (startTime && endTime) {
+                    const start = new Date(startTime);
+                    const end = new Date(endTime);
+                    if (end < start) {
+                        setDateError('Warning: End time is before start time.');
+                    } else {
+                        setDateError('');
+                    }
+                } else {
+                    setDateError('');
+                }
+            }
+
             // Recalculate total time when start or end time changes
             if (field === 'service_datetime' || field === 'created_at' || field === 'service_endtime') {
                 const startTime = field === 'service_datetime' || field === 'created_at' ? value : (updated.service_datetime || updated.created_at);
                 const endTime = field === 'service_endtime' ? value : updated.service_endtime;
-                
                 if (startTime && endTime) {
                     const start = new Date(startTime);
                     const end = new Date(endTime);
                     const diffInMs = end.getTime() - start.getTime();
-                    const diffInMinutes = Math.max(0, Number((diffInMs / (1000 * 60)).toFixed(2))); // Support decimal values for seconds
+                    const diffInMinutes = Math.max(0, Number((diffInMs / (1000 * 60)).toFixed(2)));
                     updated.time_spent = diffInMinutes;
                     updated.duration_minutes = diffInMinutes;
                 }
             }
-            
             return updated;
         });
     };
@@ -682,12 +676,21 @@ const ActivityDetailsPage: FC = () => {
                             {isEditing ? (
                                 <>
                                     <button
+                                        type="button"
                                         onClick={handleSave}
-                                        disabled={isSaving}
-                                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                                        disabled={isSaving || !!dateError}
+                                        className={`inline-flex items-center px-6 py-2.5 rounded-lg text-base font-medium shadow-sm transition-all cursor-pointer ${
+                                            isSaving || dateError ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        }`}
                                     >
-                                        <Save className="h-4 w-4 mr-2" />
-                                        {isSaving ? "Saving..." : "Save Changes"}
+                                        {isSaving ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            'Save Changes'
+                                        )}
                                     </button>
                                     <button
                                         onClick={handleCancelEdit}
@@ -814,6 +817,9 @@ const ActivityDetailsPage: FC = () => {
                                 calculateTimeDifference={calculateTimeDifference}
                             />
                         </div>
+                        {dateError && (
+                            <div className="text-red-600 text-sm font-medium mb-2">{dateError}</div>
+                        )}
                     </div>
                 </div>
             </div>
