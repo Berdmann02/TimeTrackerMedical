@@ -81,6 +81,64 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     }
   });
 
+  const [dateErrors, setDateErrors] = useState({
+    startTime: "",
+    endTime: ""
+  });
+
+  // Helper function to compare dates without time
+  const compareDates = (date1: Date, date2: Date): boolean => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  // Helper function to get error message based on date/time comparison
+  const getErrorMessage = (start: Date, end: Date): string => {
+    // Compare dates without time
+    const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+    if (endDate < startDate) {
+      return "End date cannot be earlier than start date";
+    } else if (endDate > startDate) {
+      return "Start date cannot be later than end date";
+    } else {
+      // Same date, compare times
+      if (end < start) {
+        return "End time cannot be earlier than start time";
+      } else {
+        return "Start time cannot be later than end time";
+      }
+    }
+  };
+
+  // Add helper function to get max date in local datetime-local format
+  const getMaxDate = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper function to validate if a date is in the future
+  const isFutureDate = (dateString: string): boolean => {
+    const inputDate = new Date(dateString);
+    const today = new Date();
+    
+    return (
+      inputDate.getFullYear() > today.getFullYear() ||
+      (inputDate.getFullYear() === today.getFullYear() &&
+        inputDate.getMonth() > today.getMonth()) ||
+      (inputDate.getFullYear() === today.getFullYear() &&
+        inputDate.getMonth() === today.getMonth() &&
+        inputDate.getDate() > today.getDate())
+    );
+  };
+
   const [isTracking, setIsTracking] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [hasStopped, setHasStopped] = useState(false);
@@ -128,6 +186,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setHasStopped(false);
       setError(null);
       setIsSubmitting(false);
+      setDateErrors({ startTime: "", endTime: "" }); // Clear date errors
     }
     // If modal is opened, load initial data and reset form
     if (isOpen && !prevIsOpen.current) {
@@ -150,6 +209,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setHasStarted(false);
       setHasStopped(false);
       setError(null);
+      setDateErrors({ startTime: "", endTime: "" }); // Clear date errors
     }
   }, [initialPatientId]);
 
@@ -201,14 +261,59 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     // Special handling for datetime-local inputs
     if (name === 'startTime' || name === 'endTime') {
       if (value) {
+        // Check if the selected date is in the future
+        if (isFutureDate(value)) {
+          return; // Don't update the state if it's a future date
+        }
+
         // Convert the local datetime to a Date object and then to ISO string
         const date = createLocalDate(value);
+        const newTime = date.toISOString();
+
+        // Create temp form data to check validation
+        const tempFormData = {
+          ...formData,
+          [name]: newTime
+        };
+
+        // Validate dates
+        let newDateErrors = { ...dateErrors };
+        
+        if (name === 'startTime' && tempFormData.endTime) {
+          const startDate = new Date(newTime);
+          const endDate = new Date(tempFormData.endTime);
+          
+          if (startDate > endDate) {
+            newDateErrors.startTime = getErrorMessage(startDate, endDate);
+          } else {
+            newDateErrors.startTime = "";
+            newDateErrors.endTime = ""; // Clear end time error if start time is valid
+          }
+        } else if (name === 'endTime' && tempFormData.startTime) {
+          const startDate = new Date(tempFormData.startTime);
+          const endDate = new Date(newTime);
+          
+          if (endDate < startDate) {
+            newDateErrors.endTime = getErrorMessage(startDate, endDate);
+          } else {
+            newDateErrors.endTime = "";
+            newDateErrors.startTime = ""; // Clear start time error if end time is valid
+          }
+        }
+
+        setDateErrors(newDateErrors);
+        
         setFormData(prev => ({
           ...prev,
-          [name]: date.toISOString()
+          [name]: newTime
         }));
       } else {
         setFormData(prev => ({
+          ...prev,
+          [name]: ""
+        }));
+        // Clear errors when field is emptied
+        setDateErrors(prev => ({
           ...prev,
           [name]: ""
         }));
@@ -363,6 +468,15 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check for date validation errors
+    if (dateErrors.startTime || dateErrors.endTime) {
+      // Don't set error state, just return to prevent submission
+      return;
+    }
+
+    // Clear any previous errors and start submission
+    setError(null);
     setIsSubmitting(true);
 
     try {
@@ -736,10 +850,12 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
               {/* Time Tracking */}
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center mb-6 pb-4 border-b border-gray-200">
-                  <FaClock className="w-5 h-5 text-gray-500 mr-2" />
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Time Tracking
-                  </h3>
+                  <div className="flex items-center">
+                    <FaClock className="w-5 h-5 text-gray-500 mr-2" />
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Time Tracking
+                    </h3>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -767,13 +883,25 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                         <label className="block text-sm font-medium text-gray-700">
                           Start Date & Time
                         </label>
-                        <input
-                          type="datetime-local"
-                          name="startTime"
-                          value={formatDateTimeLocal(formData.startTime)}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
-                        />
+                        <div className="space-y-1">
+                          <input
+                            type="datetime-local"
+                            name="startTime"
+                            value={formatDateTimeLocal(formData.startTime)}
+                            onChange={handleInputChange}
+                            max={`${getMaxDate()}T23:59`}
+                            className={`mt-1 block w-full px-3 py-2 text-base border ${
+                              dateErrors.startTime 
+                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                            } bg-gray-50 focus:outline-none focus:ring-1 rounded-lg shadow-sm transition-colors`}
+                          />
+                          {dateErrors.startTime && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {dateErrors.startTime}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -802,13 +930,25 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                         <label className="block text-sm font-medium text-gray-700">
                           End Date & Time
                         </label>
-                        <input
-                          type="datetime-local"
-                          name="endTime"
-                          value={formatDateTimeLocal(formData.endTime)}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded-lg shadow-sm transition-colors"
-                        />
+                        <div className="space-y-1">
+                          <input
+                            type="datetime-local"
+                            name="endTime"
+                            value={formatDateTimeLocal(formData.endTime)}
+                            onChange={handleInputChange}
+                            max={`${getMaxDate()}T23:59`}
+                            className={`mt-1 block w-full px-3 py-2 text-base border ${
+                              dateErrors.endTime 
+                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                            } bg-gray-50 focus:outline-none focus:ring-1 rounded-lg shadow-sm transition-colors`}
+                          />
+                          {dateErrors.endTime && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {dateErrors.endTime}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
