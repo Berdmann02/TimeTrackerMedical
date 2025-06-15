@@ -890,11 +890,13 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                             value={formatDateTimeLocal(formData.startTime)}
                             onChange={handleInputChange}
                             max={`${getMaxDate()}T23:59`}
-                            className={`mt-1 block w-full px-3 py-2 text-base border ${
-                              dateErrors.startTime 
-                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                            } bg-gray-50 focus:outline-none focus:ring-1 rounded-lg shadow-sm transition-colors`}
+                            onKeyDown={(e) => {
+                              // Only prevent if it's not Tab or arrow keys
+                              if (e.key !== 'Tab' && !e.key.includes('Arrow')) {
+                                e.preventDefault();
+                              }
+                            }}
+                            className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 rounded-lg shadow-sm cursor-pointer transition-colors hover:bg-gray-100 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                           />
                           {dateErrors.startTime && (
                             <p className="text-sm text-red-600 mt-1">
@@ -937,11 +939,13 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                             value={formatDateTimeLocal(formData.service_endtime)}
                             onChange={handleInputChange}
                             max={`${getMaxDate()}T23:59`}
-                            className={`mt-1 block w-full px-3 py-2 text-base border ${
-                              dateErrors.service_endtime 
-                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                            } bg-gray-50 focus:outline-none focus:ring-1 rounded-lg shadow-sm transition-colors`}
+                            onKeyDown={(e) => {
+                              // Only prevent if it's not Tab or arrow keys
+                              if (e.key !== 'Tab' && !e.key.includes('Arrow')) {
+                                e.preventDefault();
+                              }
+                            }}
+                            className="mt-1 block w-full px-3 py-2 text-base border border-gray-300 bg-gray-50 rounded-lg shadow-sm cursor-pointer transition-colors hover:bg-gray-100 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                           />
                           {dateErrors.service_endtime && (
                             <p className="text-sm text-red-600 mt-1">

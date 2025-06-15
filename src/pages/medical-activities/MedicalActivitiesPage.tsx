@@ -69,8 +69,8 @@ const MedicalActivitiesPage = () => {
       })
       .filter((year): year is number => year !== null);
     
-    // Get unique years and sort in descending order
-    const uniqueYears = Array.from(new Set(years)).sort((a, b) => b - a);
+    // Get unique years and sort in ascending order
+    const uniqueYears = Array.from(new Set(years)).sort((a, b) => a - b);
     
     // If no years available, include current year
     if (uniqueYears.length === 0) {
