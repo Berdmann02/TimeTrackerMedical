@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Shield, X } from 'lucide-react';
 import { updateUser, type User as UserType } from "../services/userService";
-import { getSites, type Site } from "../services/siteService";
+import { getSites, getAllSitesForAdmin, type Site } from "../services/siteService";
+import { authService } from "../services/auth.service";
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -85,7 +86,11 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
     setIsLoading(true);
     setSitesError(null);
     try {
-      const siteData = await getSites();
+      // Check if current user is admin to determine which endpoint to use
+      const currentUser = authService.getCurrentUser();
+      const isAdmin = authService.isAdmin();
+      
+      const siteData = isAdmin ? await getAllSitesForAdmin() : await getSites();
       const activeSites = siteData.filter(site => site.is_active);
       setSites(activeSites);
       

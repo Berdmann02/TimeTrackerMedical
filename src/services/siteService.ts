@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../config';
+import { authService } from './auth.service';
 
 export interface Site {
   id: number;
@@ -41,7 +42,10 @@ export const createSite = async (data: CreateSiteDto): Promise<Site> => {
 };
 
 export const getSites = async (): Promise<Site[]> => {
-  const response = await axios.get(`${API_URL}/sites`);
+  const currentUser = authService.getCurrentUser();
+  const userId = currentUser?.id;
+  const url = userId ? `${API_URL}/sites?userId=${userId}` : `${API_URL}/sites`;
+  const response = await axios.get(url);
   return response.data;
 };
 
@@ -91,10 +95,23 @@ export const getAllSiteNames = async (): Promise<string[]> => {
 
 export const getSitesAndBuildings = async (): Promise<SiteWithBuildings[]> => {
   try {
-    const response = await axios.get(`${API_URL}/sites/sites-and-buildings`);
+    const currentUser = authService.getCurrentUser();
+    const userId = currentUser?.id;
+    const url = userId ? `${API_URL}/sites/sites-and-buildings?userId=${userId}` : `${API_URL}/sites/sites-and-buildings`;
+    const response = await axios.get(url);
     return response.data;
   } catch (error) {
     console.error('Error fetching sites and buildings:', error);
+    throw error;
+  }
+};
+
+export const getAllSitesForAdmin = async (): Promise<Site[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/sites/admin/all`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all sites for admin:', error);
     throw error;
   }
 }; 
