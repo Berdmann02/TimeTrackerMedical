@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { getSites } from '../../services/siteService';
 import { getMedicalRecordsByPatientId } from '../../services/medicalRecordService';
 import { getPatients } from '../../services/patientService';
@@ -268,6 +269,96 @@ const ReportsPage = () => {
     }
   };
 
+  // Export function for overall reports
+  const handleExportData = () => {
+    console.log('Export function called', { criteriaDataLength: criteriaData.length });
+    
+    if (criteriaData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    try {
+      console.log('Starting export process...');
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+
+      // Get all unique site names from the first criteria
+      const siteNames = criteriaData[0]?.sites.map(site => site.siteName) || [];
+
+      // Create comprehensive data that matches the screen layout
+      const exportData: (string | number)[][] = [];
+      
+      // Add title rows at the very top, above table headers
+      exportData.push(['Overall Outcomes Report']);
+      exportData.push([`Month: ${month}, Year: ${year}`]);
+      exportData.push(['']); // Empty row for spacing
+      
+      // Add table headers
+      const headerRow: (string | number)[] = ['Criteria', ...siteNames, 'All Sites'];
+      exportData.push(headerRow);
+
+      // For each criteria, create rows for Yes, No, Total, and Percentage
+      criteriaData.forEach(criteria => {
+        // Criteria header
+        const criteriaHeaderRow: (string | number)[] = [criteria.criteriaName, ...siteNames.map(() => ''), ''];
+        exportData.push(criteriaHeaderRow);
+
+        // Yes row
+        const yesRow: (string | number)[] = ['Yes'];
+        criteria.sites.forEach(site => {
+          yesRow.push(site.yes);
+        });
+        yesRow.push(criteria.total.yes);
+        exportData.push(yesRow);
+
+        // No row
+        const noRow: (string | number)[] = ['No'];
+        criteria.sites.forEach(site => {
+          noRow.push(site.no);
+        });
+        noRow.push(criteria.total.no);
+        exportData.push(noRow);
+
+        // Total row
+        const totalRow: (string | number)[] = ['Total'];
+        criteria.sites.forEach(site => {
+          totalRow.push(site.total);
+        });
+        totalRow.push(criteria.total.total);
+        exportData.push(totalRow);
+
+        // Percentage row
+        const percentageRow: (string | number)[] = ['Percentage'];
+        criteria.sites.forEach(site => {
+          percentageRow.push(site.percentage.toFixed(4) + '%');
+        });
+        percentageRow.push(criteria.total.percentage.toFixed(4) + '%');
+        exportData.push(percentageRow);
+
+        // Empty row for spacing between criteria
+        exportData.push(['', ...siteNames.map(() => ''), '']);
+      });
+
+      // Create worksheet from array of arrays instead of JSON
+      const ws = XLSX.utils.aoa_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Overall Outcomes');
+
+      // Generate filename with current date and filters
+      const currentDate = new Date().toISOString().split('T')[0];
+      const filename = `Overall_Outcomes_${month}_${year}_${currentDate}.xlsx`;
+
+      // Save the file
+      console.log('About to save file:', filename);
+      XLSX.writeFile(wb, filename);
+      console.log('File saved successfully');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -275,6 +366,13 @@ const ReportsPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Overall Outcomes</h1>
           <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleExportData}
+              disabled={isLoading || criteriaData.length === 0}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Export Data
+            </button>
             <button
               onClick={() => navigate('/site-reports')}
               className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"

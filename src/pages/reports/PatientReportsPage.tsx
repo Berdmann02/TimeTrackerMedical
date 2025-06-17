@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { getSites } from '../../services/siteService';
 import { getPatients } from '../../services/patientService';
 import { getActivitiesWithDetails } from '../../services/activityService';
@@ -228,6 +229,86 @@ const PatientReportsPage = () => {
     }
   }, [siteData, groupBySite, showUnderTwentyMin]);
 
+  // Export function for patient reports
+  const handleExportData = () => {
+    if (processedData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    // Prepare data for export with title at the top
+    const exportData: (string | number)[][] = [];
+    
+    // Add title rows at the very top, above table headers
+    exportData.push(['Patient Reports']);
+    exportData.push([`Month: ${month}, Year: ${year}`]);
+    if (showUnderTwentyMin) {
+      exportData.push(['Filter: Showing only patients under 20 minutes']);
+    }
+    if (!groupBySite) {
+      exportData.push(['View: All patients (ungrouped by site)']);
+    }
+    exportData.push(['']); // Empty row for spacing
+    
+    // Add table headers
+    const headers = ['Patient Name'];
+    if (!groupBySite) {
+      headers.push('Site');
+    }
+    headers.push('Total Hours', 'Total Minutes', 'Activity Count');
+    exportData.push(headers);
+    
+    // Add data rows
+    processedData.forEach(site => {
+      if (groupBySite && site.siteName !== "All Sites") {
+        // Add site header when grouping by site
+        exportData.push([`--- ${site.siteName} ---`, '', '', '', '']);
+      }
+      
+      site.patients.forEach((patient: any) => {
+        const row: (string | number)[] = [patient.patientName];
+        if (!groupBySite) {
+          row.push(patient.siteName);
+        }
+        row.push(
+          patient.totalHours.toFixed(2),
+          patient.totalMinutes.toFixed(2),
+          patient.activityCount
+        );
+        exportData.push(row);
+      });
+      
+      if (groupBySite && site.siteName !== "All Sites") {
+        // Add site totals when grouping by site
+        const totalRow: (string | number)[] = [`Total for ${site.siteName}`];
+        if (!groupBySite) {
+          totalRow.push('');
+        }
+        totalRow.push(
+          (site.totalSiteMinutes / 60).toFixed(2),
+          site.totalSiteMinutes.toFixed(2),
+          site.totalSiteActivities
+        );
+        exportData.push(totalRow);
+        exportData.push(['']); // Empty row between sites
+      }
+    });
+
+    // Create workbook and worksheet from array of arrays
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Patient Reports');
+
+    // Generate filename with current date and filters
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `Patient_Reports_${month}_${year}_${currentDate}.xlsx`;
+
+    // Save the file
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -235,6 +316,13 @@ const PatientReportsPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Patient Reports</h1>
           <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleExportData}
+              disabled={isLoading || processedData.length === 0}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Export Data
+            </button>
             <button
               onClick={() => navigate('/reports')}
               className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"

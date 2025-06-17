@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { getSites } from '../../services/siteService';
 import { getMedicalRecordsByPatientId } from '../../services/medicalRecordService';
 import { getPatients } from '../../services/patientService';
@@ -192,6 +193,98 @@ const SiteReportsPage = () => {
     }
   };
 
+  // Export function for site reports
+  const handleExportData = () => {
+    if (!reportData) {
+      alert('No data to export');
+      return;
+    }
+
+    // Prepare data for export with title at the top
+    const exportData: (string | number)[][] = [];
+    
+    // Add title rows at the very top, above table headers
+    exportData.push([`Site Report: ${selectedSite}`]);
+    exportData.push([`Month: ${month}, Year: ${year}`]);
+    exportData.push(['']); // Empty row for spacing
+    
+    // Add table headers
+    exportData.push(['Criteria', 'Yes', 'No', 'Total', 'Percentage']);
+    
+    // Add data rows matching the exact order and names shown on screen
+    exportData.push([
+      'Med Rec Complete',
+      reportData.medRecComplete.yes,
+      reportData.medRecComplete.no,
+      reportData.medRecComplete.total,
+      reportData.medRecComplete.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'BP at Goal',
+      reportData.bpAtGoal.yes,
+      reportData.bpAtGoal.no,
+      reportData.bpAtGoal.total,
+      reportData.bpAtGoal.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'Hospital Visit Since Last Review',
+      reportData.hospitalVisitSinceLastReview.yes,
+      reportData.hospitalVisitSinceLastReview.no,
+      reportData.hospitalVisitSinceLastReview.total,
+      reportData.hospitalVisitSinceLastReview.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'A1C at Goal',
+      reportData.a1cAtGoal.yes,
+      reportData.a1cAtGoal.no,
+      reportData.a1cAtGoal.total,
+      reportData.a1cAtGoal.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'Fall Since Last Visit',
+      reportData.fallSinceLastVisit.yes,
+      reportData.fallSinceLastVisit.no,
+      reportData.fallSinceLastVisit.total,
+      reportData.fallSinceLastVisit.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'Use Benzo',
+      reportData.useBenzo.yes,
+      reportData.useBenzo.no,
+      reportData.useBenzo.total,
+      reportData.useBenzo.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'Use Opioids',
+      reportData.useOpioids.yes,
+      reportData.useOpioids.no,
+      reportData.useOpioids.total,
+      reportData.useOpioids.percentage.toFixed(4) + '%'
+    ]);
+    exportData.push([
+      'Use Antipsychotic',
+      reportData.useAntipsychotic.yes,
+      reportData.useAntipsychotic.no,
+      reportData.useAntipsychotic.total,
+      reportData.useAntipsychotic.percentage.toFixed(4) + '%'
+    ]);
+
+    // Create workbook and worksheet from array of arrays
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Site Report');
+
+    // Generate filename with current date and filters
+    const currentDate = new Date().toISOString().split('T')[0];
+    const siteName = selectedSite.replace(/[^a-zA-Z0-9]/g, '_'); // Replace special characters for filename
+    const filename = `Site_Report_${siteName}_${month}_${year}_${currentDate}.xlsx`;
+
+    // Save the file
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -199,6 +292,13 @@ const SiteReportsPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Site Report</h1>
           <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleExportData}
+              disabled={isLoading || !reportData}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Export Data
+            </button>
             <button
               onClick={() => navigate('/reports')}
               className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
