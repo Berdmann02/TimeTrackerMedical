@@ -220,7 +220,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
             )}
 
             {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   First Name
@@ -252,7 +252,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
             </div>
 
             {/* Date of Birth and Gender */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Date of Birth
@@ -285,7 +285,7 @@ const AddPatientModal = ({ isOpen, onClose, onPatientAdded, defaultSite, default
             </div>
 
             {/* Site and Building */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Site
