@@ -260,12 +260,12 @@ export default function PatientsPage() {
     <div className="h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
       <div className="flex-1 flex flex-col px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
         {/* Header with title and Add Patient button */}
-        <div className="flex justify-between items-center mb-4 flex-shrink-0">
-          <h1 className="text-3xl font-bold text-gray-900">All Patients</h1>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 flex-shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">All Patients</h1>
           {!isPharmacist && !isNurse && (
             <button
               onClick={() => setIsAddPatientModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer w-full sm:w-auto"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Patient
