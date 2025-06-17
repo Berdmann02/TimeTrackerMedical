@@ -659,7 +659,7 @@ export default function PatientDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/patients')}
@@ -668,14 +668,15 @@ export default function PatientDetailsPage() {
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Patient Details</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Patient Details</h1>
           </div>
-          <div className="flex space-x-3">              {isEditing ? (
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            {isEditing ? (
               <>
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer w-full sm:w-auto"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isSaving ? "Saving..." : "Save Changes"}
@@ -683,7 +684,7 @@ export default function PatientDetailsPage() {
                 {!isPharmacist && (
                   <button
                     onClick={() => setIsDeleteModalOpen(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
+                    className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer w-full sm:w-auto"
                   >
                     <Trash className="h-4 w-4 mr-2" />
                     Delete Patient
@@ -691,7 +692,7 @@ export default function PatientDetailsPage() {
                 )}
                 <button
                   onClick={handleCancelEdit}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer w-full sm:w-auto"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -701,7 +702,7 @@ export default function PatientDetailsPage() {
               !isNurse && (
                 <button
                   onClick={handleEditPatient}
-                  className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                  className="inline-flex items-center justify-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer w-full sm:w-auto"
                 >
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit Patient
@@ -759,8 +760,8 @@ export default function PatientDetailsPage() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-4 gap-6">
-                  <div className="col-span-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="lg:col-span-1">
                     <DetailRow
                       label="First Name"
                       value={isEditing ? editedPatient?.first_name : patientData?.patient.first_name}
@@ -790,7 +791,7 @@ export default function PatientDetailsPage() {
                       />
                     </div>
                   </div>
-                  <div className="col-span-1">
+                  <div className="lg:col-span-1">
                     <DetailRow
                       label="Site Name"
                       value={isEditing ? editedPatient?.site_name : patientData?.patient.site_name}
@@ -812,7 +813,7 @@ export default function PatientDetailsPage() {
                       />
                     </div>
                   </div>
-                  <div className="col-span-1">
+                  <div className="lg:col-span-1">
                     <DetailRow
                       label="Gender"
                       value={isEditing ? 
@@ -835,7 +836,7 @@ export default function PatientDetailsPage() {
                       />
                     </div>
                   </div>
-                  <div className="col-span-1 row-span-2">
+                  <div className="lg:col-span-1 md:col-span-2 lg:row-span-2">
                     <DetailRow
                       label="Notes"
                       value={isEditing ? editedPatient?.notes : patientData?.patient.notes}
@@ -849,14 +850,14 @@ export default function PatientDetailsPage() {
               </div>
 
               <div className="border-t border-gray-200 pt-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <Heart className="w-5 h-5 text-blue-600" />
                     Patient Status
                   </h2>
                   <button
                     onClick={() => setIsLastUpdatedModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md transition-colors w-full sm:w-auto justify-center sm:justify-start"
                   >
                     <Clock className="w-4 h-4 text-gray-500" />
                     <span>Last Updated</span>
@@ -868,33 +869,33 @@ export default function PatientDetailsPage() {
                     </span>
                   </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Medical Status */}
                   <div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
-                        <ClipboardCheck className="w-4 h-4 text-gray-400" />
+                        <ClipboardCheck className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">Medical Records:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.medical_records ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.medical_records ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Heart className="w-4 h-4 text-gray-400" />
+                        <Heart className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">BP at Goal:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.bp_at_goal ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.bp_at_goal ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Hospital className="w-4 h-4 text-gray-400" />
+                        <Hospital className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">Hospital Visit Since Last Review:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.hospital_visited_since_last_review ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.hospital_visited_since_last_review ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-400" />
+                        <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">A1C at Goal:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.a1c_at_goal ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.a1c_at_goal ? 'Yes' : 'No'}
@@ -905,30 +906,30 @@ export default function PatientDetailsPage() {
 
                   {/* Medication Status */}
                   <div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
-                        <Pill className="w-4 h-4 text-gray-400" />
+                        <Pill className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">Benzodiazepines:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.use_benzo ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.use_benzo ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Syringe className="w-4 h-4 text-gray-400" />
+                        <Syringe className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">Antipsychotics:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.use_antipsychotic ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.use_antipsychotic ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Pill className="w-4 h-4 text-gray-400" />
+                        <Pill className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">Opioids:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.use_opioids ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.use_opioids ? 'Yes' : 'No'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-gray-400" />
+                        <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-600">Fall Since Last Visit:</span>
                         <span className={`text-sm font-medium ${patientData?.patient.fall_since_last_visit ? 'text-green-600' : 'text-red-600'}`}>
                           {patientData?.patient.fall_since_last_visit ? 'Yes' : 'No'}
@@ -945,54 +946,57 @@ export default function PatientDetailsPage() {
         {/* Activities Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <ActivityIcon className="w-5 h-5 text-blue-600" />
                 Activities
               </h2>
-              <div className="flex items-center gap-4">
-                {/* Month Filter */}
-                <div className="relative">
-                  <select
-                    value={activityMonthFilter}
-                    onChange={(e) => setActivityMonthFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
-                  >
-                    <option value="all">All Months</option>
-                    {months.map((month, index) => (
-                      <option key={month} value={index + 1}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Filters Container */}
+                <div className="flex flex-col xs:flex-row gap-3">
+                  {/* Month Filter */}
+                  <div className="relative min-w-0 flex-1 xs:w-32">
+                    <select
+                      value={activityMonthFilter}
+                      onChange={(e) => setActivityMonthFilter(e.target.value)}
+                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    >
+                      <option value="all">All Months</option>
+                      {months.map((month, index) => (
+                        <option key={month} value={index + 1}>
+                          {month}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    </div>
                   </div>
-                </div>
 
-                {/* Year Filter */}
-                <div className="relative">
-                  <select
-                    value={activityYearFilter}
-                    onChange={(e) => {
-                      setActivityYearFilter(e.target.value);
-                      setActivityMonthFilter("all"); // Reset month filter to "all" when year changes
-                    }}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
-                  >
-                    <option value="all">All Years</option>
-                    {activityYears.map((year) => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                  {/* Year Filter */}
+                  <div className="relative min-w-0 flex-1 xs:w-28">
+                    <select
+                      value={activityYearFilter}
+                      onChange={(e) => {
+                        setActivityYearFilter(e.target.value);
+                        setActivityMonthFilter("all"); // Reset month filter to "all" when year changes
+                      }}
+                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white border appearance-none"
+                    >
+                      <option value="all">All Years</option>
+                      {activityYears.map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                    </div>
                   </div>
                 </div>
 
                 {patientData?.patient.is_active && (
                   <button
-                    className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
+                    className="inline-flex items-center justify-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer w-full sm:w-auto whitespace-nowrap"
                     onClick={handleAddActivity}
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -1009,11 +1013,12 @@ export default function PatientDetailsPage() {
                     <tr>
                       <th 
                         scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleActivitySort("activityId")}
                       >
                         <div className="flex items-center">
-                          <span>Activity #</span>
+                          <span className="hidden sm:inline">Activity #</span>
+                          <span className="sm:hidden">#</span>
                           <div className="ml-1 flex">
                             <ArrowUpIcon
                               className={`h-3 w-3 ${
@@ -1030,11 +1035,12 @@ export default function PatientDetailsPage() {
                       </th>
                       <th 
                         scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleActivitySort("activityType")}
                       >
                         <div className="flex items-center">
-                          <span>Activity Type</span>
+                          <span className="hidden sm:inline">Activity Type</span>
+                          <span className="sm:hidden">Type</span>
                           <div className="ml-1 flex">
                             <ArrowUpIcon
                               className={`h-3 w-3 ${
@@ -1051,7 +1057,7 @@ export default function PatientDetailsPage() {
                       </th>
                       <th 
                         scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleActivitySort("initials")}
                       >
                         <div className="flex items-center">
@@ -1072,11 +1078,12 @@ export default function PatientDetailsPage() {
                       </th>
                       <th 
                         scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleActivitySort("recordDate")}
                       >
                         <div className="flex items-center">
-                          <span>Activity Date</span>
+                          <span className="hidden sm:inline">Activity Date</span>
+                          <span className="sm:hidden">Date</span>
                           <div className="ml-1 flex">
                             <ArrowUpIcon
                               className={`h-3 w-3 ${
@@ -1093,11 +1100,12 @@ export default function PatientDetailsPage() {
                       </th>
                       <th 
                         scope="col" 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                         onClick={() => handleActivitySort("totalTime")}
                       >
                         <div className="flex items-center">
-                          <span>Total Time</span>
+                          <span className="hidden sm:inline">Total Time</span>
+                          <span className="sm:hidden">Time</span>
                           <div className="ml-1 flex">
                             <ArrowUpIcon
                               className={`h-3 w-3 ${
@@ -1121,21 +1129,28 @@ export default function PatientDetailsPage() {
                         className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                         onClick={() => handleActivityClick(activity.activityId)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <span className="text-blue-600 hover:text-blue-900 hover:underline">
                             {activity.activityId}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {activity.activityType}
+                        <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                          <div className="truncate max-w-32 sm:max-w-none" title={activity.activityType}>
+                            {activity.activityType}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {activity.initials}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(activity.recordDate).toLocaleDateString()}
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="hidden sm:block">
+                            {new Date(activity.recordDate).toLocaleDateString()}
+                          </div>
+                          <div className="sm:hidden">
+                            {new Date(activity.recordDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatTimeSpent(activity)}
                         </td>
                       </tr>
