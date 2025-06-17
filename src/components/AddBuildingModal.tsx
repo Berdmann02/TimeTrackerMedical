@@ -89,13 +89,13 @@ export const AddBuildingModal: React.FC<AddBuildingModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50"
+      className="fixed inset-0 backdrop-blur-[2px] bg-gray-500/30 flex items-center justify-center z-50 p-4"
     >
       <div 
-        className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
+        className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
       >
         {/* Header Section */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Building2 className="h-6 w-6 text-gray-400" />
@@ -118,7 +118,7 @@ export const AddBuildingModal: React.FC<AddBuildingModalProps> = ({
         </div>
 
         {/* Form Content */}
-        <div className="p-6 pt-0 overflow-y-auto">
+        <div className="p-4 sm:p-6 pt-0 overflow-y-auto flex-1">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="p-3 rounded-lg bg-red-50 border border-red-200">
