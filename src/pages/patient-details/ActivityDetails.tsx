@@ -103,21 +103,21 @@ const DetailRow: FC<DetailRowProps> = memo(({
     };
 
     return (
-        <div className="flex items-start space-x-3 py-3">
+        <div className="flex items-start space-x-3 py-3 px-2">
             <Icon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="flex-1 min-w-0 space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
                     {label}
                 </label>
                 {isEditing && editType !== 'readonly' ? (
-                    <>
+                    <div className="space-y-2 w-full">
                         {editType === 'text' && (
                             <input
                                 type="text"
                                 value={String(value || '')}
                                 onChange={(e) => onEdit?.(e.target.value)}
                                 placeholder={placeholder}
-                                className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             />
                         )}
                         {editType === 'number' && (
@@ -128,14 +128,14 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                 placeholder={placeholder}
                                 step="0.01"
                                 min="0"
-                                className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             />
                         )}
                         {editType === 'select' && (
                             <select
                                 value={String(value || '')}
                                 onChange={(e) => onEdit?.(e.target.value)}
-                                className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             >
                                 <option value="">Select {label}</option>
                                 {editOptions?.map((option) => (
@@ -167,7 +167,6 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                         value={startTime ? (() => {
                                             try {
                                                 const date = new Date(startTime);
-                                                // Adjust for local timezone to prevent date shifting
                                                 const offset = date.getTimezoneOffset();
                                                 const localDate = new Date(date.getTime() - (offset * 60 * 1000));
                                                 return localDate.toISOString().slice(0, 16);
@@ -177,13 +176,12 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                         })() : ''}
                                         onChange={(e) => {
                                             if (e.target.value) {
-                                                // Create date and strip seconds for clean minute-based calculation
                                                 const date = new Date(e.target.value);
-                                                date.setSeconds(0, 0); // Set seconds and milliseconds to 0
+                                                date.setSeconds(0, 0);
                                                 onStartTimeEdit?.(date.toISOString());
                                             }
                                         }}
-                                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        className="block w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
                                 <div>
@@ -193,7 +191,6 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                         value={service_endtime ? (() => {
                                             try {
                                                 const date = new Date(service_endtime);
-                                                // Adjust for local timezone to prevent date shifting
                                                 const offset = date.getTimezoneOffset();
                                                 const localDate = new Date(date.getTime() - (offset * 60 * 1000));
                                                 return localDate.toISOString().slice(0, 16);
@@ -203,21 +200,20 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                         })() : ''}
                                         onChange={(e) => {
                                             if (e.target.value) {
-                                                // Create date and strip seconds for clean minute-based calculation
                                                 const date = new Date(e.target.value);
-                                                date.setSeconds(0, 0); // Set seconds and milliseconds to 0
+                                                date.setSeconds(0, 0);
                                                 onEndTimeEdit?.(date.toISOString());
                                             }
                                         }}
-                                        className="block w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        className="block w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
                             </div>
                         )}
-                    </>
+                    </div>
                 ) : (
                     <div className="space-y-2">
-                        <p className="text-base text-gray-900 font-medium">
+                        <p className="text-sm sm:text-base text-gray-900 font-medium break-words">
                             {value === null || value === undefined ? (
                                 'N/A'
                             ) : typeof value === 'number' && label === "Total Time" ? (
@@ -228,7 +224,7 @@ const DetailRow: FC<DetailRowProps> = memo(({
                                 <div className="relative inline-block group">
                                     <span>{activity?.user_initials || activity?.personnel_initials || String(value).replace('0', '')}</span>
                                     {activity?.user_id && (
-                                        <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none">
+                                        <div className="absolute left-0 -top-2 transform -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none z-10">
                                             <div className="bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg">
                                                 {userFullName}
                                             </div>
@@ -240,17 +236,17 @@ const DetailRow: FC<DetailRowProps> = memo(({
                             )}
                         </p>
                         {(startTime || service_endtime) && (
-                            <div className="text-sm text-gray-600 space-y-1">
+                            <div className="text-xs sm:text-sm text-gray-600 space-y-1">
                                 {startTime && (
                                     <div className="flex items-center space-x-2">
-                                        <Timer className="h-4 w-4" />
-                                        <span>Start: {new Date(startTime).toLocaleString()}</span>
+                                        <Timer className="h-4 w-4 flex-shrink-0" />
+                                        <span className="truncate">Start: {new Date(startTime).toLocaleString()}</span>
                                     </div>
                                 )}
                                 {service_endtime && (
                                     <div className="flex items-center space-x-2">
-                                        <TimerOff className="h-4 w-4" />
-                                        <span>End: {new Date(service_endtime).toLocaleString()}</span>
+                                        <TimerOff className="h-4 w-4 flex-shrink-0" />
+                                        <span className="truncate">End: {new Date(service_endtime).toLocaleString()}</span>
                                     </div>
                                 )}
                             </div>
@@ -651,7 +647,7 @@ const ActivityDetailsPage: FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8">
+        <div className="min-h-screen bg-gray-100 py-4 sm:py-8">
             <DeleteConfirmationModal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
@@ -661,70 +657,77 @@ const ActivityDetailsPage: FC = () => {
             />
             <div className="max-w-5xl mx-auto px-4">
                 <div className="bg-white shadow rounded-lg">
-                    <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={handleBack}
-                                className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                                title="Back"
-                            >
-                                <ChevronLeft className="h-5 w-5" />
-                            </button>
-                            <h1 className="text-2xl font-bold text-gray-900">Activity #{activityId} Details</h1>
-                        </div>
-                        <div className="flex space-x-3">
-                            {isEditing ? (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={handleSave}
-                                        disabled={isSaving || !!dateError}
-                                        className={`inline-flex items-center px-6 py-2.5 rounded-lg text-base font-medium shadow-sm transition-all cursor-pointer ${
-                                            isSaving || dateError ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                        }`}
-                                    >
-                                        {isSaving ? (
-                                            <>
-                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            'Save Changes'
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={handleCancelEdit}
-                                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
-                                    >
-                                        <X className="h-4 w-4 mr-2" />
-                                        Cancel
-                                    </button>
-                                </>
-                            ) : (!isNurse && !isPharmacist) ? (
-                                <>
-                                    <button
-                                        onClick={handleEdit}
-                                        className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer"
-                                    >
-                                        <Pencil className="w-4 h-4 mr-2" />
-                                        Edit Activity
-                                    </button>
-                                    <button
-                                        onClick={() => setShowDeleteModal(true)}
-                                        disabled={isDeleting}
-                                       className={`inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium ${isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
+                    {/* Header Section */}
+                    <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                                <button
+                                    onClick={handleBack}
+                                    className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                    title="Back"
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                </button>
+                                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Activity #{activityId} Details</h1>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:ml-auto">
+                                {isEditing ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={handleSave}
+                                            disabled={isSaving || !!dateError}
+                                            className={`inline-flex items-center justify-center px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium shadow-sm transition-all w-full sm:w-auto ${
+                                                isSaving || dateError ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                            }`}
+                                        >
+                                            {isSaving ? (
+                                                <>
+                                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                'Save Changes'
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={handleCancelEdit}
+                                            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer w-full sm:w-auto"
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Cancel
+                                        </button>
+                                    </>
+                                ) : (!isNurse && !isPharmacist) ? (
+                                    <>
+                                        <button
+                                            onClick={handleEdit}
+                                            className="inline-flex items-center justify-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 ease-in-out cursor-pointer w-full sm:w-auto"
+                                        >
+                                            <Pencil className="w-4 h-4 mr-2" />
+                                            Edit Activity
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeleteModal(true)}
+                                            disabled={isDeleting}
+                                            className={`inline-flex items-center justify-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium w-full sm:w-auto ${
+                                                isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-700 hover:bg-red-50 cursor-pointer'
                                             } bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
-                                    >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                    </button>
-                                </>
-                            ) : null}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                        </button>
+                                    </>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mb-6">
+                    {/* Details Grid */}
+                    <div className="p-4 sm:p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
                             <DetailRow
                                 icon={Clock}
                                 label="Date and Time of Service"
@@ -818,7 +821,7 @@ const ActivityDetailsPage: FC = () => {
                             />
                         </div>
                         {dateError && (
-                            <div className="text-red-600 text-sm font-medium mb-2">{dateError}</div>
+                            <div className="text-red-600 text-sm font-medium mb-2 px-2">{dateError}</div>
                         )}
                     </div>
                 </div>
