@@ -94,7 +94,7 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
       const activeSites = siteData.filter(site => site.is_active);
       setSites(activeSites);
       
-      // After sites are loaded, map site names to IDs
+      // After sites are loaded, map site names to IDs"
       if (user) {
         const primarySiteObj = activeSites.find(site => site.name === user.primarySite);
         const assignedSiteObjs = activeSites.filter(site => 

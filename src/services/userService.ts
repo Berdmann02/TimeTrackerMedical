@@ -158,5 +158,3 @@ export const getUsersBySite = async (siteName: string): Promise<UserListItem[]> 
         throw error;
     }
 };
-
-
