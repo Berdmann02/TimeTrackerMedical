@@ -953,9 +953,9 @@ export default function PatientDetailsPage() {
               </h2>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 {/* Filters Container */}
-                <div className="flex flex-col xs:flex-row gap-3">
+                <div className="flex flex-row gap-3">
                   {/* Month Filter */}
-                  <div className="relative min-w-0 flex-1 xs:w-32">
+                  <div className="relative min-w-0 flex-1 w-full sm:w-32">
                     <select
                       value={activityMonthFilter}
                       onChange={(e) => setActivityMonthFilter(e.target.value)}
@@ -974,7 +974,7 @@ export default function PatientDetailsPage() {
                   </div>
 
                   {/* Year Filter */}
-                  <div className="relative min-w-0 flex-1 xs:w-28">
+                  <div className="relative min-w-0 flex-1 w-full sm:w-28">
                     <select
                       value={activityYearFilter}
                       onChange={(e) => {

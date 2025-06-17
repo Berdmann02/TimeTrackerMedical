@@ -181,21 +181,20 @@ const PatientReportsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Patient Reports</h1>
-          
-          <div className="flex flex-col sm:flex-row gap-2">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Patient Reports</h1>
+          <div className="flex gap-2">
             <button
               onClick={() => navigate('/reports')}
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer w-full sm:w-auto"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
             >
               Overall Reports
             </button>
             <button
               onClick={() => navigate('/site-reports')}
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer w-full sm:w-auto"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors whitespace-nowrap cursor-pointer"
             >
               Site Reports
             </button>
@@ -266,19 +265,12 @@ const PatientReportsPage = () => {
         {!isLoading && siteData.length > 0 && (
           <div className="space-y-8">
             {siteData.map((site, index) => (
-              <div key={index} className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
+              <div key={index} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                  <div className="flex justify-between items-center">
                     <h2 className="text-lg font-medium text-gray-900">{site.siteName}</h2>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <span className="font-medium">Total Time:</span>
-                        <span>{formatTimeDisplay(site.totalSiteMinutes)} hours</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="font-medium">Activities:</span>
-                        <span>{site.totalSiteActivities}</span>
-                      </span>
+                    <div className="text-sm text-gray-600">
+                      Total: {formatTimeWithUnits(site.totalSiteMinutes)} | {site.totalSiteActivities} activities
                     </div>
                   </div>
                 </div>
