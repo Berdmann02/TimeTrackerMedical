@@ -83,21 +83,21 @@ export const BuildingsBySite: React.FC<BuildingsBySiteProps> = ({ siteId, expand
         <div className="bg-white rounded-lg border border-gray-200 mb-4">
             <div className={`p-6 ${expanded ? 'border-b border-gray-200' : ''}`}>
                 <div 
-                    className="flex justify-between items-center cursor-pointer"
-                    onClick={onToggle}
+                    className="flex flex-col gap-4"
                 >
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <BuildingIcon className="w-5 h-5 text-blue-600" />
-                        Buildings
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={onToggle}>
+                        <BuildingIcon className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <h2 className="text-lg font-semibold text-gray-900">Buildings</h2>
                         {expanded ? (
-                            <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                            <ChevronDownIcon className="w-5 h-5 text-gray-500 flex-shrink-0" />
                         ) : (
-                            <ChevronRight className="w-5 h-5 text-gray-500" />
+                            <ChevronRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
                         )}
-                    </h2>
+                    </div>
+
                     {expanded && (
-                        <div className="flex items-center space-x-4" onClick={e => e.stopPropagation()}>
-                            <div className="relative w-[200px]">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                            <div className="relative flex-1">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <SearchIcon className="h-5 w-5 text-gray-400" />
                                 </div>
@@ -111,7 +111,7 @@ export const BuildingsBySite: React.FC<BuildingsBySiteProps> = ({ siteId, expand
                             </div>
                             <button
                                 onClick={() => setIsAddBuildingModalOpen(true)}
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer w-full sm:w-auto"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Building

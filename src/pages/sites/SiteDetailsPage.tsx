@@ -496,7 +496,7 @@ export default function SiteDetailsPage() {
         return (
             <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100">
                 <div className="px-4 py-6 max-w-7xl mx-auto w-full">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => navigate('/sites')}
@@ -505,7 +505,7 @@ export default function SiteDetailsPage() {
                             >
                                 <ChevronLeft className="h-5 w-5" />
                             </button>
-                            <h1 className="text-3xl font-bold text-gray-900">Site Details</h1>
+                            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Site Details</h1>
                         </div>
                     </div>
                     
@@ -525,7 +525,7 @@ export default function SiteDetailsPage() {
         return (
             <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100">
                 <div className="px-4 py-6 max-w-7xl mx-auto w-full">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => navigate('/sites')}
@@ -534,7 +534,7 @@ export default function SiteDetailsPage() {
                             >
                                 <ChevronLeft className="h-5 w-5" />
                             </button>
-                            <h1 className="text-3xl font-bold text-gray-900">Site Details</h1>
+                            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Site Details</h1>
                         </div>
                     </div>
                     
@@ -559,7 +559,7 @@ export default function SiteDetailsPage() {
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-gray-50 to-gray-100">
             <div className="px-4 py-6 max-w-7xl mx-auto w-full">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/sites')}
@@ -568,29 +568,29 @@ export default function SiteDetailsPage() {
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
-                        <h1 className="text-3xl font-bold text-gray-900">Site Details</h1>
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Site Details</h1>
                     </div>
-                    <div className="flex space-x-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                         {isEditing ? (
                             <>
                                 <button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                                 >
                                     <Save className="h-4 w-4 mr-2" />
                                     {isSaving ? "Saving..." : "Save Changes"}
                                 </button>
                                 <button
                                     onClick={() => setIsDeleteSiteModalOpen(true)}
-                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
+                                    className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer w-full sm:w-auto"
                                 >
                                     <Trash className="h-4 w-4 mr-2" />
                                     Delete Site
                                 </button>
                                 <button
                                     onClick={handleCancelEdit}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer"
+                                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors cursor-pointer w-full sm:w-auto"
                                 >
                                     <X className="h-4 w-4 mr-2" />
                                     Cancel
@@ -599,7 +599,7 @@ export default function SiteDetailsPage() {
                         ) : (
                             <button
                                 onClick={handleEditSite}
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer w-full sm:w-auto"
                             >
                                 <Pencil className="w-4 h-4 mr-2" />
                                 Edit Site
@@ -613,13 +613,13 @@ export default function SiteDetailsPage() {
                     <div className="space-y-6">
                         {/* Basic Information */}
                         <div>
-                            <div className="flex justify-between items-center mb-4">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                     <Building2 className="w-5 h-5 text-blue-600" />
                                     Basic Information
                                 </h2>
                                 {isEditing ? (
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 justify-center sm:justify-end">
                                         <span className="text-sm text-gray-600">Inactive</span>
                                         <button
                                             type="button"
@@ -640,7 +640,7 @@ export default function SiteDetailsPage() {
                                         <span className="text-sm text-gray-600">Active</span>
                                     </div>
                                 ) : (
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium self-start sm:self-center ${
                                         site.is_active
                                             ? "bg-green-100 text-green-800"
                                             : "bg-red-100 text-red-800"
@@ -649,7 +649,7 @@ export default function SiteDetailsPage() {
                                     </span>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <DetailRow
                                     label="Name"
                                     value={isEditing ? editedSite?.name : site.name}
