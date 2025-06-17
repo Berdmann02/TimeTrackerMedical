@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSites } from '../../services/siteService';
 import { getPatients } from '../../services/patientService';
@@ -68,6 +68,8 @@ const PatientReportsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [siteData, setSiteData] = useState<SitePatientData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showUnderTwentyMin, setShowUnderTwentyMin] = useState(false);
+  const [groupBySite, setGroupBySite] = useState(true);
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
@@ -179,6 +181,53 @@ const PatientReportsPage = () => {
     handleGenerateReports();
   }, []); // Only run on mount, not when month/year changes
 
+  // Process data based on filters
+  const processedData = useMemo(() => {
+    if (!groupBySite) {
+      // Flatten all patients into a single list when not grouping by site
+      const allPatients = siteData.flatMap(site => 
+        site.patients.map(patient => ({
+          ...patient,
+          siteName: site.siteName
+        }))
+      );
+
+      // Filter patients if under 20 minutes filter is active
+      const filteredPatients = showUnderTwentyMin 
+        ? allPatients.filter(patient => patient.totalMinutes < 20)
+        : allPatients;
+
+      // Create a single "site" containing all patients
+      return [{
+        siteName: "All Sites",
+        patients: filteredPatients,
+        totalSiteMinutes: filteredPatients.reduce((sum, p) => sum + p.totalMinutes, 0),
+        totalSiteHours: filteredPatients.reduce((sum, p) => sum + p.totalHours, 0),
+        totalSiteActivities: filteredPatients.reduce((sum, p) => sum + p.activityCount, 0)
+      }];
+    } else {
+      // When grouping by site, filter patients within each site
+      return siteData.map(site => ({
+        ...site,
+        patients: showUnderTwentyMin 
+          ? site.patients.filter(patient => patient.totalMinutes < 20)
+          : site.patients,
+        totalSiteMinutes: showUnderTwentyMin 
+          ? site.patients.filter(patient => patient.totalMinutes < 20)
+              .reduce((sum, p) => sum + p.totalMinutes, 0)
+          : site.totalSiteMinutes,
+        totalSiteHours: showUnderTwentyMin 
+          ? site.patients.filter(patient => patient.totalMinutes < 20)
+              .reduce((sum, p) => sum + p.totalHours, 0)
+          : site.totalSiteHours,
+        totalSiteActivities: showUnderTwentyMin 
+          ? site.patients.filter(patient => patient.totalMinutes < 20)
+              .reduce((sum, p) => sum + p.activityCount, 0)
+          : site.totalSiteActivities
+      }));
+    }
+  }, [siteData, groupBySite, showUnderTwentyMin]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -243,6 +292,26 @@ const PatientReportsPage = () => {
                 </button>
               </div>
             </div>
+            <div className="flex flex-wrap gap-4 mt-2">
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={groupBySite}
+                  onChange={(e) => setGroupBySite(e.target.checked)}
+                  className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Group by Site</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showUnderTwentyMin}
+                  onChange={(e) => setShowUnderTwentyMin(e.target.checked)}
+                  className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Show Only Patients Under 20 Minutes</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -262,9 +331,9 @@ const PatientReportsPage = () => {
         )}
 
         {/* Report Tables */}
-        {!isLoading && siteData.length > 0 && (
+        {!isLoading && processedData.length > 0 && (
           <div className="space-y-8">
-            {siteData.map((site, index) => (
+            {processedData.map((site, index) => (
               <div key={index} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                   <div className="flex justify-between items-center">
@@ -281,6 +350,11 @@ const PatientReportsPage = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Patient Name
                         </th>
+                        {!groupBySite && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Site
+                          </th>
+                        )}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Total Hours
                         </th>
@@ -293,11 +367,16 @@ const PatientReportsPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {site.patients.map((patient, patientIndex) => (
+                      {site.patients.map((patient: any, patientIndex: number) => (
                         <tr key={patientIndex} className={patient.totalMinutes === 0 ? 'bg-gray-50' : ''}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {patient.patientName}
                           </td>
+                          {!groupBySite && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {patient.siteName}
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {patient.totalHours.toFixed(2)} hours
                           </td>
@@ -311,7 +390,7 @@ const PatientReportsPage = () => {
                       ))}
                       {site.patients.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                          <td colSpan={!groupBySite ? 5 : 4} className="px-6 py-4 text-center text-sm text-gray-500">
                             No patients found for this site
                           </td>
                         </tr>
@@ -324,7 +403,7 @@ const PatientReportsPage = () => {
           </div>
         )}
 
-        {!isLoading && siteData.length === 0 && !error && (
+        {!isLoading && processedData.length === 0 && !error && (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
             <p className="text-gray-600">No patient activity data found for the selected month and year. Try selecting a different month or year and click "Generate Reports".</p>
           </div>
