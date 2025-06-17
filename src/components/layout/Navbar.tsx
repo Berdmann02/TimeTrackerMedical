@@ -67,7 +67,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-            <img src="/public/logoNavbar.png" alt="MediTrack Time Logo" className="w-32 h-32 object-contain" />
+            <img src="/logoNavbar.png" alt="MediTrack Time Logo" className="h-8 w-auto" />
             </Link>
           </div>
 
