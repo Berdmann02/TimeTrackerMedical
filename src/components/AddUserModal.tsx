@@ -116,7 +116,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite, defaul
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError("Oops! Your passwords do not match. Please try again.");
       setIsSubmitting(false);
       return;
     }
