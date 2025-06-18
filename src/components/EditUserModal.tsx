@@ -183,14 +183,46 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }: EditUserModalPr
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      // If changing primary site
+      if (name === "primarySiteId") {
+        let newAssignedSiteIds = [...prev.assignedSiteIds];
+        
+        // Remove old primary site if it exists
+        if (prev.primarySiteId) {
+          newAssignedSiteIds = newAssignedSiteIds.filter(id => id !== prev.primarySiteId);
+        }
+        
+        // Add new primary site if one is selected
+        if (value) {
+          newAssignedSiteIds.push(value);
+        }
+        
+        return {
+          ...prev,
+          [name]: value,
+          assignedSiteIds: newAssignedSiteIds
+        };
+      }
+      
+      return { ...prev, [name]: value };
+    });
   };
   
   const handleSiteCheckbox = (siteId: string) => {
     setFormData(prev => {
-      const newAssignedSiteIds = prev.assignedSiteIds.includes(siteId)
+      let newAssignedSiteIds = prev.assignedSiteIds.includes(siteId)
         ? prev.assignedSiteIds.filter(id => id !== siteId)
         : [...prev.assignedSiteIds, siteId];
+      
+      // If unchecking the primary site, clear the primary site selection
+      if (siteId === prev.primarySiteId && !newAssignedSiteIds.includes(siteId)) {
+        return {
+          ...prev,
+          primarySiteId: "",
+          assignedSiteIds: newAssignedSiteIds
+        };
+      }
       
       return {
         ...prev,
