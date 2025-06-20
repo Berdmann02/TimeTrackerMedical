@@ -6,6 +6,7 @@ import {
   FaStickyNote,
   FaPlay,
   FaStop,
+  FaPause,
 } from "react-icons/fa";
 import { getPatients } from "../services/patientService";
 import type { Patient } from "../services/patientService";
@@ -21,6 +22,7 @@ interface ActivityForm {
   startTime: string;
   service_endtime: string;
   notes: string;
+  pausePeriods: Array<{ start: string; end: string }>;
   medicalChecks: {
     medicalRecords: boolean;
     bpAtGoal: boolean;
@@ -69,6 +71,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     startTime: "",
     service_endtime: "",
     notes: "",
+    pausePeriods: [],
     medicalChecks: {
       medicalRecords: false,
       bpAtGoal: false,
@@ -142,6 +145,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
   const [isTracking, setIsTracking] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [hasStopped, setHasStopped] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentPauseStart, setCurrentPauseStart] = useState<string>("");
+  const [totalElapsedTime, setTotalElapsedTime] = useState<number>(0);
+  const [lastResumeTime, setLastResumeTime] = useState<string>("");
 
   // Create initial form state function
   const getInitialFormState = (): ActivityForm => ({
@@ -150,6 +157,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     startTime: "",
     service_endtime: "",
     notes: "",
+    pausePeriods: [],
     medicalChecks: {
       medicalRecords: false,
       bpAtGoal: false,
@@ -184,6 +192,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setIsTracking(false);
       setHasStarted(false);
       setHasStopped(false);
+      setIsPaused(false);
+      setCurrentPauseStart("");
+      setTotalElapsedTime(0);
+      setLastResumeTime("");
       setError(null);
       setIsSubmitting(false);
       setDateErrors({ startTime: "", service_endtime: "" }); // Clear date errors
@@ -194,6 +206,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setIsTracking(false);
       setHasStarted(false);
       setHasStopped(false);
+      setIsPaused(false);
+      setCurrentPauseStart("");
+      setTotalElapsedTime(0);
+      setLastResumeTime("");
       setError(null);
       setIsSubmitting(false);
       loadInitialData();
@@ -208,6 +224,10 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       setIsTracking(false);
       setHasStarted(false);
       setHasStopped(false);
+      setIsPaused(false);
+      setCurrentPauseStart("");
+      setTotalElapsedTime(0);
+      setLastResumeTime("");
       setError(null);
       setDateErrors({ startTime: "", service_endtime: "" }); // Clear date errors
     }
@@ -343,40 +363,110 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     setIsTracking(true);
     setHasStarted(true);
     setHasStopped(false);
+    setTotalElapsedTime(0);
+    setLastResumeTime(isoString);
   };
 
   const handleEndTime = () => {
-    // Only set endTime if we're currently tracking
-    if (isTracking) {
+    // Only set endTime if we have started
+    if (hasStarted) {
       const now = new Date();
       const isoString = now.toISOString();
-      setFormData((prev) => ({ ...prev, service_endtime: isoString }));
+      
+      // Calculate final elapsed time if currently tracking
+      if (isTracking) {
+        const lastResume = new Date(lastResumeTime).getTime();
+        const currentTime = now.getTime();
+        const elapsedMs = currentTime - lastResume;
+        const elapsedMinutes = elapsedMs / (1000 * 60);
+        setTotalElapsedTime(prev => prev + elapsedMinutes);
+      }
+      
+      // If currently paused, add the current pause period before stopping
+      if (isPaused && currentPauseStart) {
+        setFormData((prev) => ({
+          ...prev,
+          service_endtime: isoString,
+          pausePeriods: [...prev.pausePeriods, { start: currentPauseStart, end: isoString }]
+        }));
+        setCurrentPauseStart("");
+        setIsPaused(false);
+      } else {
+        setFormData((prev) => ({ ...prev, service_endtime: isoString }));
+      }
+      
       setIsTracking(false);
       setHasStopped(true);
     }
   };
 
+  const handlePause = () => {
+    if (isTracking && !isPaused) {
+      const now = new Date();
+      const isoString = now.toISOString();
+      
+      // Calculate elapsed time since last resume/start
+      const lastResume = new Date(lastResumeTime).getTime();
+      const currentTime = now.getTime();
+      const elapsedMs = currentTime - lastResume;
+      const elapsedMinutes = elapsedMs / (1000 * 60);
+      
+      // Add to total elapsed time
+      setTotalElapsedTime(prev => prev + elapsedMinutes);
+      
+      setCurrentPauseStart(isoString);
+      setIsPaused(true);
+      setIsTracking(false);
+    }
+  };
+
+  const handleResume = () => {
+    if (isPaused && currentPauseStart) {
+      const now = new Date();
+      const isoString = now.toISOString();
+      
+      // Add the pause period to the list
+      setFormData((prev) => ({
+        ...prev,
+        pausePeriods: [...prev.pausePeriods, { start: currentPauseStart, end: isoString }]
+      }));
+      
+      setCurrentPauseStart("");
+      setIsPaused(false);
+      setIsTracking(true);
+      setLastResumeTime(isoString);
+    }
+  };
+
   const calculateTimeDifference = (): number => {
-    if (!formData.startTime || !formData.service_endtime) return 0;
+    if (!formData.startTime) return 0;
     
     try {
-      const start = new Date(formData.startTime).getTime();
-      const end = new Date(formData.service_endtime).getTime();
+      let totalMinutes = totalElapsedTime;
       
-      // Calculate difference in milliseconds, then convert to minutes
-      const diffMs = end - start;
-      const diffMinutes = diffMs / (1000 * 60);
+      // If currently tracking (not paused and not stopped), add current session time
+      if (isTracking && !hasStopped) {
+        const lastResume = new Date(lastResumeTime).getTime();
+        const currentTime = new Date().getTime();
+        const currentSessionMs = currentTime - lastResume;
+        const currentSessionMinutes = currentSessionMs / (1000 * 60);
+        totalMinutes += currentSessionMinutes;
+      }
       
       // Debug logging to help track time calculations
       console.log('Time calculation:', {
         startTime: formData.startTime,
-        service_endtime: formData.service_endtime,
-        startDate: new Date(formData.startTime).toLocaleString(),
-        endDate: new Date(formData.service_endtime).toLocaleString(),
-        diffMinutes: diffMinutes.toFixed(2)
+        service_endtime: formData.service_endtime || 'running',
+        totalElapsedTime: totalElapsedTime.toFixed(2),
+        isTracking,
+        isPaused,
+        hasStopped,
+        lastResumeTime,
+        currentSessionTime: isTracking && !hasStopped ? ((new Date().getTime() - new Date(lastResumeTime).getTime()) / (1000 * 60)).toFixed(2) : '0',
+        totalMinutes: totalMinutes.toFixed(2)
       });
       
-      return Math.max(0, diffMinutes);
+      return Math.max(0, totalMinutes);
     } catch (error) {
       console.error('Error calculating time difference:', error);
       return 0;
@@ -393,6 +483,24 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       });
     }
   }, [formData.startTime, formData.service_endtime]);
+
+  // Real-time time update when activity is running or paused
+  useEffect(() => {
+    let interval: number;
+    
+    if (hasStarted && !hasStopped) {
+      interval = setInterval(() => {
+        // Force re-render to update time display
+        setFormData(prev => ({ ...prev }));
+      }, 1000); // Update every second
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [hasStarted, hasStopped, isTracking, isPaused]);
 
   const formatTimeDifference = (): string => {
     const totalMinutes = calculateTimeDifference();
@@ -957,13 +1065,53 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Pause/Resume Button - Centered between Start and Stop */}
+                {hasStarted && !hasStopped && (
+                  <div className="flex justify-center mt-6 mb-4">
+                    {isPaused ? (
+                      <button
+                        type="button"
+                        onClick={handleResume}
+                        className="inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-all cursor-pointer bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        <FaPlay className="w-4 h-4 mr-2" />
+                        Resume
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handlePause}
+                        disabled={!isTracking}
+                        className={`inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-all cursor-pointer ${
+                          !isTracking
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-yellow-600 text-white hover:bg-yellow-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                        }`}
+                      >
+                        <FaPause className="w-4 h-4 mr-2" />
+                        Pause
+                      </button>
+                    )}
+                  </div>
+                )}
                 
                 {/* Total Time Display */}
-                {formData.startTime && formData.service_endtime && (
+                {formData.startTime && (
                   <div className="mt-6 pt-4 border-t border-gray-200 text-center">
                     <p className="text-sm text-gray-600">
                       Total time: <span className="font-semibold">{formatTimeDifference()}</span>
                     </p>
+                    {formData.pausePeriods.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Paused {formData.pausePeriods.length} time{formData.pausePeriods.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {isPaused && (
+                      <p className="text-xs text-yellow-600 mt-1">
+                        Currently paused
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

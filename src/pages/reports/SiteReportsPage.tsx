@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
 import { getSites } from '../../services/siteService';
 import { getMedicalRecordsByPatientId } from '../../services/medicalRecordService';
 import { getPatients } from '../../services/patientService';
@@ -194,95 +193,95 @@ const SiteReportsPage = () => {
   };
 
   // Export function for site reports
-  const handleExportData = () => {
+  const handleExportData = async () => {
     if (!reportData) {
       alert('No data to export');
       return;
     }
 
-    // Prepare data for export with title at the top
-    const exportData: (string | number)[][] = [];
-    
-    // Add title rows at the very top, above table headers
-    exportData.push([`Site Report: ${selectedSite}`]);
-    exportData.push([`Month: ${month}, Year: ${year}`]);
-    exportData.push(['']); // Empty row for spacing
-    
-    // Add table headers
-    exportData.push(['Criteria', 'Yes', 'No', 'Total', 'Percentage']);
-    
-    // Add data rows matching the exact order and names shown on screen
-    exportData.push([
-      'Med Rec Complete',
-      reportData.medRecComplete.yes,
-      reportData.medRecComplete.no,
-      reportData.medRecComplete.total,
-      reportData.medRecComplete.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'BP at Goal',
-      reportData.bpAtGoal.yes,
-      reportData.bpAtGoal.no,
-      reportData.bpAtGoal.total,
-      reportData.bpAtGoal.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'Hospital Visit Since Last Review',
-      reportData.hospitalVisitSinceLastReview.yes,
-      reportData.hospitalVisitSinceLastReview.no,
-      reportData.hospitalVisitSinceLastReview.total,
-      reportData.hospitalVisitSinceLastReview.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'A1C at Goal',
-      reportData.a1cAtGoal.yes,
-      reportData.a1cAtGoal.no,
-      reportData.a1cAtGoal.total,
-      reportData.a1cAtGoal.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'Fall Since Last Visit',
-      reportData.fallSinceLastVisit.yes,
-      reportData.fallSinceLastVisit.no,
-      reportData.fallSinceLastVisit.total,
-      reportData.fallSinceLastVisit.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'Use Benzo',
-      reportData.useBenzo.yes,
-      reportData.useBenzo.no,
-      reportData.useBenzo.total,
-      reportData.useBenzo.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'Use Opioids',
-      reportData.useOpioids.yes,
-      reportData.useOpioids.no,
-      reportData.useOpioids.total,
-      reportData.useOpioids.percentage.toFixed(4) + '%'
-    ]);
-    exportData.push([
-      'Use Antipsychotic',
-      reportData.useAntipsychotic.yes,
-      reportData.useAntipsychotic.no,
-      reportData.useAntipsychotic.total,
-      reportData.useAntipsychotic.percentage.toFixed(4) + '%'
-    ]);
+    try {
+      // Dynamically import xlsx
+      const XLSX = await import('xlsx') as any;
 
-    // Create workbook and worksheet from array of arrays
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(exportData);
+      // Prepare data for export
+      const exportData = [
+        ['Criteria', 'Yes', 'No', 'Total', 'Percentage'],
+        [
+          'Med Rec Complete',
+          reportData.medRecComplete.yes,
+          reportData.medRecComplete.no,
+          reportData.medRecComplete.total,
+          reportData.medRecComplete.percentage.toFixed(4) + '%'
+        ],
+        [
+          'BP at Goal',
+          reportData.bpAtGoal.yes,
+          reportData.bpAtGoal.no,
+          reportData.bpAtGoal.total,
+          reportData.bpAtGoal.percentage.toFixed(4) + '%'
+        ],
+        [
+          'Hospital Visit Since Last Review',
+          reportData.hospitalVisitSinceLastReview.yes,
+          reportData.hospitalVisitSinceLastReview.no,
+          reportData.hospitalVisitSinceLastReview.total,
+          reportData.hospitalVisitSinceLastReview.percentage.toFixed(4) + '%'
+        ],
+        [
+          'A1C at Goal',
+          reportData.a1cAtGoal.yes,
+          reportData.a1cAtGoal.no,
+          reportData.a1cAtGoal.total,
+          reportData.a1cAtGoal.percentage.toFixed(4) + '%'
+        ],
+        [
+          'Fall Since Last Visit',
+          reportData.fallSinceLastVisit.yes,
+          reportData.fallSinceLastVisit.no,
+          reportData.fallSinceLastVisit.total,
+          reportData.fallSinceLastVisit.percentage.toFixed(4) + '%'
+        ],
+        [
+          'Use Benzo',
+          reportData.useBenzo.yes,
+          reportData.useBenzo.no,
+          reportData.useBenzo.total,
+          reportData.useBenzo.percentage.toFixed(4) + '%'
+        ],
+        [
+          'Use Opioids',
+          reportData.useOpioids.yes,
+          reportData.useOpioids.no,
+          reportData.useOpioids.total,
+          reportData.useOpioids.percentage.toFixed(4) + '%'
+        ],
+        [
+          'Use Antipsychotic',
+          reportData.useAntipsychotic.yes,
+          reportData.useAntipsychotic.no,
+          reportData.useAntipsychotic.total,
+          reportData.useAntipsychotic.percentage.toFixed(4) + '%'
+        ]
+      ];
 
-    // Add the worksheet to the workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Site Report');
+      // Create workbook and worksheet from array of arrays
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(exportData);
 
-    // Generate filename with current date and filters
-    const currentDate = new Date().toISOString().split('T')[0];
-    const siteName = selectedSite.replace(/[^a-zA-Z0-9]/g, '_'); // Replace special characters for filename
-    const filename = `Site_Report_${siteName}_${month}_${year}_${currentDate}.xlsx`;
+      // Add the worksheet to the workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Site Report');
 
-    // Save the file
-    XLSX.writeFile(wb, filename);
+      // Generate filename with current date and filters
+      const currentDate = new Date().toISOString().split('T')[0];
+      const siteName = selectedSite.replace(/[^a-zA-Z0-9]/g, '_'); // Replace special characters for filename
+      const filename = `Site_Report_${siteName}_${month}_${year}_${currentDate}.xlsx`;
+
+      // Save the file
+      XLSX.writeFile(wb, filename);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Failed to export data. Please try again.');
+    }
   };
 
   return (
