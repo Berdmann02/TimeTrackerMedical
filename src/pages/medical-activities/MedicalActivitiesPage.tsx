@@ -166,23 +166,24 @@ const MedicalActivitiesPage = () => {
       return 'N/A';
     }
     
-    if (totalMinutes === 0) return "0.00 minutes";
+    if (totalMinutes === 0) return "0:00";
     
-    // If less than 1 minute, show as decimal minutes (seconds converted to decimal)
-    if (totalMinutes < 1) {
-      const decimalMinutes = Math.round(totalMinutes * 100) / 100;
-      return `${decimalMinutes.toFixed(2)} minutes`;
+    // Convert total minutes to total seconds for precise calculation
+    const totalSeconds = Math.round(totalMinutes * 60);
+    
+    // Calculate hours, minutes, and seconds
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format like a stopwatch
+    if (hours > 0) {
+      // Show H:MM:SS for durations over 1 hour
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+      // Show MM:SS for durations under 1 hour
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
-    
-    // If less than 60 minutes, show as decimal minutes
-    if (totalMinutes < 60) {
-      const decimalMinutes = Math.round(totalMinutes * 100) / 100;
-      return `${decimalMinutes.toFixed(2)} minutes`;
-    }
-    
-    // If 60 minutes or more, show as decimal hours
-    const decimalHours = Math.round((totalMinutes / 60) * 100) / 100;
-    return `${decimalHours.toFixed(2)} hours`;
   };
 
   // Filtering and sorting
