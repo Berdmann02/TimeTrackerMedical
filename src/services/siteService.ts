@@ -42,16 +42,7 @@ export const createSite = async (data: CreateSiteDto): Promise<Site> => {
 };
 
 export const getSites = async (): Promise<Site[]> => {
-  // If user is admin, get all sites
-  if (authService.isAdmin()) {
-    return await getAllSitesForAdmin();
-  }
-  
-  // For non-admin users, get sites based on user ID
-  const currentUser = authService.getCurrentUser();
-  const userId = currentUser?.id;
-  const url = userId ? `${API_URL}/sites?userId=${userId}` : `${API_URL}/sites`;
-  const response = await axios.get(url);
+  const response = await axios.get(`${API_URL}/sites`);
   return response.data;
 };
 
@@ -101,17 +92,7 @@ export const getAllSiteNames = async (): Promise<string[]> => {
 
 export const getSitesAndBuildings = async (): Promise<SiteWithBuildings[]> => {
   try {
-    // If user is admin, get all sites and buildings using admin endpoint
-    if (authService.isAdmin()) {
-      const response = await axios.get(`${API_URL}/sites/admin/sites-and-buildings`);
-      return response.data;
-    }
-    
-    // For non-admin users, get sites and buildings based on user ID
-    const currentUser = authService.getCurrentUser();
-    const userId = currentUser?.id;
-    const url = userId ? `${API_URL}/sites/sites-and-buildings?userId=${userId}` : `${API_URL}/sites/sites-and-buildings`;
-    const response = await axios.get(url);
+    const response = await axios.get(`${API_URL}/sites/sites-and-buildings`);
     return response.data;
   } catch (error) {
     console.error('Error fetching sites and buildings:', error);
