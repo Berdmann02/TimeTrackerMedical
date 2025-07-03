@@ -21,7 +21,7 @@ interface AuthContextType {
   isPharmacist: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,35 +33,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initializeAuth = async () => {
+      setIsLoading(true);
       try {
-        const storedUser = authService.getCurrentUser();
-        if (storedUser) {
-          setUser(storedUser);
-        }
+        const profile = await authService.fetchProfile();
+        setUser(profile);
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
-
     initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      const response = await authService.login(email, password);
-      setUser(response.user);
+      const user = await authService.login(email, password);
+      setUser(user);
     } catch (error) {
-      // Re-throw the error so the login page can handle it
+      setUser(null);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     setIsLoading(true);
     try {
-      authService.logout();
+      await authService.logout();
       setUser(null);
       navigate('/login');
     } finally {
@@ -69,14 +70,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const isAdmin = user?.role === 'admin';
+  const isNurse = user?.role === 'nurse';
+  const isPharmacist = user?.role === 'pharmacist';
+
   return (
     <AuthContext.Provider 
       value={{
         user,
         isAuthenticated: !!user,
-        isAdmin: authService.isAdmin(),
-        isNurse: authService.isNurse(),
-        isPharmacist: authService.isPharmacist(),
+        isAdmin,
+        isNurse,
+        isPharmacist,
         isLoading,
         login,
         logout

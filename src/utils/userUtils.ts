@@ -28,4 +28,16 @@ export const getUserInitialsFromAuthUser = (): string => {
     console.error('Error getting user initials:', error);
     return '';
   }
-}; 
+};
+
+// Utility to get user's initials from a user object
+export interface User {
+  first_name?: string;
+  last_name?: string;
+}
+
+export function getUserInitials(user: User | null | undefined): string {
+  if (!user) return '';
+  const { first_name, last_name } = user;
+  return `${first_name?.[0] || ''}${last_name?.[0] || ''}`.toUpperCase();
+} 
