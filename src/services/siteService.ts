@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 import { API_URL } from '../config';
 import { authService } from './auth.service';
 
@@ -37,18 +37,18 @@ export interface SiteWithBuildings {
 }
 
 export const createSite = async (data: CreateSiteDto): Promise<Site> => {
-  const response = await axios.post(`${API_URL}/sites`, data);
+  const response = await axiosInstance.post(`${API_URL}/sites`, data);
   return response.data;
 };
 
 export const getSites = async (): Promise<Site[]> => {
-  const response = await axios.get(`${API_URL}/sites`);
+  const response = await axiosInstance.get(`${API_URL}/sites`);
   return response.data;
 };
 
 export const getSiteById = async (id: number): Promise<Site> => {
   try {
-    const response = await axios.get(`${API_URL}/sites/${id}`);
+    const response = await axiosInstance.get(`${API_URL}/sites/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching site:', error);
@@ -57,13 +57,13 @@ export const getSiteById = async (id: number): Promise<Site> => {
 };
 
 export const getSiteByName = async (name: string): Promise<Site> => {
-  const response = await axios.get(`${API_URL}/sites/name/${name}`);
+  const response = await axiosInstance.get(`${API_URL}/sites/name/${name}`);
   return response.data;
 };
 
 export const updateSite = async (id: number, data: Partial<CreateSiteDto>): Promise<Site> => {
   try {
-    const response = await axios.put(`${API_URL}/sites/${id}`, data);
+    const response = await axiosInstance.put(`${API_URL}/sites/${id}`, data);
     return response.data;
   } catch (error) {
     console.error('Error updating site:', error);
@@ -73,7 +73,7 @@ export const updateSite = async (id: number, data: Partial<CreateSiteDto>): Prom
 
 export const deleteSite = async (id: number): Promise<void> => {
   try {
-    await axios.delete(`${API_URL}/sites/${id}`);
+    await axiosInstance.delete(`${API_URL}/sites/${id}`);
   } catch (error) {
     console.error('Error deleting site:', error);
     throw error;
@@ -92,7 +92,7 @@ export const getAllSiteNames = async (): Promise<string[]> => {
 
 export const getSitesAndBuildings = async (): Promise<SiteWithBuildings[]> => {
   try {
-    const response = await axios.get(`${API_URL}/sites/sites-and-buildings`);
+    const response = await axiosInstance.get(`${API_URL}/sites/sites-and-buildings`);
     return response.data;
   } catch (error) {
     console.error('Error fetching sites and buildings:', error);
@@ -102,7 +102,7 @@ export const getSitesAndBuildings = async (): Promise<SiteWithBuildings[]> => {
 
 export const getAllSitesForAdmin = async (): Promise<Site[]> => {
   try {
-    const response = await axios.get(`${API_URL}/sites/admin/all`);
+    const response = await axiosInstance.get(`${API_URL}/sites/admin/all`);
     return response.data;
   } catch (error) {
     console.error('Error fetching all sites for admin:', error);

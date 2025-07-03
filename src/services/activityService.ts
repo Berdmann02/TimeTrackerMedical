@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 import { API_URL } from '../config';
 import { createMedicalRecord } from './medicalRecordService';
 import { updatePatient } from './patientService';
@@ -53,7 +53,7 @@ const hasMedicalChecks = (medical_checks?: CreateActivityDTO['medical_checks']):
 // Get all activities - now returns enriched data from backend
 export const getActivities = async (): Promise<Activity[]> => {
   try {
-    const response = await axios.get(`${API_URL}/activities`);
+    const response = await axiosInstance.get(`${API_URL}/activities`);
     return response.data;
   } catch (error) {
     console.error('Error fetching activities:', error);
@@ -64,7 +64,7 @@ export const getActivities = async (): Promise<Activity[]> => {
 // Get activity by ID
 export const getActivityById = async (id: number | string): Promise<Activity> => {
   try {
-    const response = await axios.get(`${API_URL}/activities/${id}`);
+    const response = await axiosInstance.get(`${API_URL}/activities/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching activity with ID ${id}:`, error);
@@ -75,7 +75,7 @@ export const getActivityById = async (id: number | string): Promise<Activity> =>
 // Get activities by patient ID - now returns enriched data from backend
 export const getActivitiesByPatientId = async (patientId: number | string): Promise<Activity[]> => {
   try {
-    const response = await axios.get(`${API_URL}/activities/patient/${patientId}`);
+    const response = await axiosInstance.get(`${API_URL}/activities/patient/${patientId}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching activities for patient ${patientId}:`, error);
@@ -116,7 +116,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
     console.log('Creating activity with data:', backendActivityData);
     console.log('Raw input data:', activityData);
     console.log('Has medical checks:', hasChecks);
-    const response = await axios.post(`${API_URL}/activities`, backendActivityData);
+    const response = await axiosInstance.post(`${API_URL}/activities`, backendActivityData);
     const createdActivity = response.data;
     
     // If medical checks were performed, create a medical record and update patient status
@@ -164,7 +164,7 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
 // Update activity
 export const updateActivity = async (id: number | string, activityData: Partial<Activity>): Promise<Activity> => {
   try {
-    const response = await axios.put(`${API_URL}/activities/${id}`, activityData);
+    const response = await axiosInstance.put(`${API_URL}/activities/${id}`, activityData);
     return response.data;
   } catch (error) {
     console.error(`Error updating activity with ID ${id}:`, error);
@@ -175,7 +175,7 @@ export const updateActivity = async (id: number | string, activityData: Partial<
 // Delete activity
 export const deleteActivity = async (id: number | string): Promise<void> => {
   try {
-    await axios.delete(`${API_URL}/activities/${id}`);
+    await axiosInstance.delete(`${API_URL}/activities/${id}`);
   } catch (error) {
     console.error(`Error deleting activity with ID ${id}:`, error);
     throw error;

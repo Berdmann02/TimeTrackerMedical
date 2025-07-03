@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 import { API_URL } from '../config';
 import type { Patient as PatientType } from '../types/patient';
 import { createMedicalRecord } from './medicalRecordService';
@@ -50,7 +50,7 @@ const hasMedicalStatusChanges = (patientData: Partial<Patient>): boolean => {
 
 export const getPatients = async (): Promise<Patient[]> => {
   try {
-    const response = await axios.get(`${API_URL}/patients`);
+    const response = await axiosInstance.get(`${API_URL}/patients`);
     return response.data;
   } catch (error) {
     console.error('Error fetching patients:', error);
@@ -60,7 +60,7 @@ export const getPatients = async (): Promise<Patient[]> => {
 
 export const getPatientById = async (id: number | string): Promise<Patient> => {
   try {
-    const response = await axios.get(`${API_URL}/patients/${id}`);
+    const response = await axiosInstance.get(`${API_URL}/patients/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching patient with ID ${id}:`, error);
@@ -70,7 +70,7 @@ export const getPatientById = async (id: number | string): Promise<Patient> => {
 
 export const getPatientActivities = async (patientId: number | string): Promise<Activity[]> => {
   try {
-    const response = await axios.get(`${API_URL}/activities/patient/${patientId}`);
+    const response = await axiosInstance.get(`${API_URL}/activities/patient/${patientId}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching activities for patient with ID ${patientId}:`, error);
@@ -80,7 +80,7 @@ export const getPatientActivities = async (patientId: number | string): Promise<
 
 export const getPatientsBySiteId = async (siteId: number): Promise<Patient[]> => {
   try {
-    const response = await axios.get(`${API_URL}/patients/site/${siteId}`);
+    const response = await axiosInstance.get(`${API_URL}/patients/site/${siteId}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching patients for site ID ${siteId}:`, error);
@@ -90,7 +90,7 @@ export const getPatientsBySiteId = async (siteId: number): Promise<Patient[]> =>
 
 export const getPatientsBySiteName = async (siteName: string): Promise<Patient[]> => {
   try {
-    const response = await axios.get(`${API_URL}/patients/site/${siteName}`);
+    const response = await axiosInstance.get(`${API_URL}/patients/site/${siteName}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching patients for site ${siteName}:`, error);
@@ -115,7 +115,7 @@ export interface CreatePatientDto {
 
 export const createPatient = async (patientData: CreatePatientDto): Promise<Patient> => {
   try {
-    const response = await axios.post(`${API_URL}/patients`, patientData);
+    const response = await axiosInstance.post(`${API_URL}/patients`, patientData);
     return response.data;
   } catch (error) {
     console.error('Error creating patient:', error);
@@ -162,7 +162,7 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
     });
 
     console.log('Sending update data to API:', updateData);
-    const response = await axios.put(`${API_URL}/patients/${id}`, updateData);
+    const response = await axiosInstance.put(`${API_URL}/patients/${id}`, updateData);
     console.log('API response:', response.data);
     
     // If any medical status fields were updated, create a new medical record
@@ -189,7 +189,7 @@ export const updatePatient = async (id: number | string, patientData: Partial<Pa
 
 export const deletePatient = async (id: number | string): Promise<void> => {
   try {
-    await axios.delete(`${API_URL}/patients/${id}`);
+    await axiosInstance.delete(`${API_URL}/patients/${id}`);
   } catch (error) {
     console.error(`Error deleting patient with ID ${id}:`, error);
     throw error;

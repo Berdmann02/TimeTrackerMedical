@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 import { API_URL } from '../config';
 
 export interface MedicalRecord {
@@ -17,7 +17,7 @@ export interface MedicalRecord {
 
 export const createMedicalRecord = async (medicalRecordData: Omit<MedicalRecord, 'id' | 'createdAt'>): Promise<MedicalRecord> => {
   try {
-    const response = await axios.post(`${API_URL}/medical-records`, medicalRecordData);
+    const response = await axiosInstance.post(`${API_URL}/medical-records`, medicalRecordData);
     return response.data;
   } catch (error) {
     console.error('Error creating medical record:', error);
@@ -27,7 +27,7 @@ export const createMedicalRecord = async (medicalRecordData: Omit<MedicalRecord,
 
 export const getMedicalRecordsByPatientId = async (patientId: number | string): Promise<MedicalRecord[]> => {
   try {
-    const response = await axios.get(`${API_URL}/medical-records/patient/${patientId}`);
+    const response = await axiosInstance.get(`${API_URL}/medical-records/patient/${patientId}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching medical records for patient with ID ${patientId}:`, error);
@@ -37,7 +37,7 @@ export const getMedicalRecordsByPatientId = async (patientId: number | string): 
 
 export const getLatestMedicalRecordByPatientId = async (patientId: number | string): Promise<MedicalRecord | null> => {
   try {
-    const response = await axios.get(`${API_URL}/medical-records/patient/${patientId}/latest`);
+    const response = await axiosInstance.get(`${API_URL}/medical-records/patient/${patientId}/latest`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching latest medical record for patient with ID ${patientId}:`, error);
