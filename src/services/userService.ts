@@ -1,4 +1,5 @@
 import axiosInstance from './axiosConfig';
+import { isAxiosError } from 'axios';
 import {API_URL} from '../config';
 
 // Interface for the data returned by most GET endpoints (getUsers, getUserById, getUsersBySiteId)
@@ -49,9 +50,9 @@ export const getUsers = async(): Promise<UserListItem[]> => {
     try {
         const response = await axiosInstance.get(`${API_URL}/users`);
         return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error fetching users:', error);
-        if (axiosInstance.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.request) {
@@ -72,9 +73,9 @@ export const getUserById = async (id: number | string): Promise<UserListItem> =>
     try {
         const response = await axiosInstance.get(`${API_URL}/users/${id}`);
         return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`Error fetching user with ID ${id}:`, error);
-        if (axiosInstance.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.request) {
@@ -98,9 +99,9 @@ export const createUser = async (userData: CreateUserDTO): Promise<User> => {
     try {
         const response = await axiosInstance.post(`${API_URL}/users`, userData);
         return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error creating user:', error);
-        if (axiosInstance.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.request) {
@@ -117,9 +118,9 @@ export const updateUser = async (id: number| string, userData: Partial<User>): P
     try {
         const response = await axiosInstance.put(`${API_URL}/users/${id}`, userData);
         return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`Error updating user with ID ${id}:`, error);
-        if (axiosInstance.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.request) {
@@ -134,9 +135,9 @@ export const updateUser = async (id: number| string, userData: Partial<User>): P
 export const deleteUser = async (id: number| string): Promise<void> => {
     try {
         await axiosInstance.delete(`${API_URL}/users/${id}`);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`Error deleting user with ID ${id}:`, error);
-        if (axiosInstance.isAxiosError(error)) {
+        if (isAxiosError(error)) {
             if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else if (error.request) {
