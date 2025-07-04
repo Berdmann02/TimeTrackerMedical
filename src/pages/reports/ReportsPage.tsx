@@ -385,6 +385,12 @@ const ReportsPage = () => {
             >
               Patient Reports
             </button>
+            <button
+              onClick={() => navigate('/patient-detail-report')}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors cursor-pointer"
+            >
+              Patient Detail Report
+            </button>
           </div>
         </div>
 

@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { getSites } from '../../services/siteService';
 import { getPatients } from '../../services/patientService';
 import { getActivitiesWithDetails } from '../../services/activityService';
+import { getBuildings } from '../../services/buildingService';
 import type { Site } from '../../services/siteService';
 import type { Patient } from '../../services/patientService';
 import type { Activity } from '../../services/activityService';
+import type { Building } from '../../services/buildingService';
 
 interface PatientActivityData {
   patientId: number;
@@ -23,6 +26,23 @@ interface SitePatientData {
   totalSiteMinutes: number;
   totalSiteHours: number;
   totalSiteActivities: number;
+}
+
+interface PatientDetailActivity {
+  id?: number;
+  activity_type: string;
+  service_datetime: string;
+  duration_minutes: number;
+  site_name: string;
+  building?: string;
+  notes?: string;
+  user_initials?: string;
+}
+
+interface ChartData {
+  name: string;
+  value: number;
+  fill?: string;
 }
 
 // Utility function to format time display
@@ -71,6 +91,20 @@ const PatientReportsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [showUnderTwentyMin, setShowUnderTwentyMin] = useState(false);
   const [groupBySite, setGroupBySite] = useState(true);
+
+  // Patient Detail Report state
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [patientActivities, setPatientActivities] = useState<PatientDetailActivity[]>([]);
+  const [isLoadingPatientDetail, setIsLoadingPatientDetail] = useState(false);
+  const [patientDetailError, setPatientDetailError] = useState<string | null>(null);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [chartType, setChartType] = useState<'bar' | 'line' | 'pie'>('bar');
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
@@ -177,6 +211,25 @@ const PatientReportsPage = () => {
     }
   };
 
+  // Load initial data for patient detail report
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const [sitesData, buildingsData, patientsData] = await Promise.all([
+          getSites(),
+          getBuildings(),
+          getPatients()
+        ]);
+        setSites(sitesData);
+        setBuildings(buildingsData);
+        setPatients(patientsData);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+    loadInitialData();
+  }, []);
+
   // Auto-load current month's data when component mounts
   useEffect(() => {
     handleGenerateReports();
@@ -228,6 +281,281 @@ const PatientReportsPage = () => {
       }));
     }
   }, [siteData, groupBySite, showUnderTwentyMin]);
+
+  // Generate patient detail report
+  const handleGeneratePatientDetailReport = async () => {
+    if (!selectedPatient) {
+      setPatientDetailError('Please select a patient');
+      return;
+    }
+
+    setIsLoadingPatientDetail(true);
+    setPatientDetailError(null);
+    setPatientActivities([]);
+
+    try {
+      const allActivities = await getActivitiesWithDetails();
+      
+      // Filter activities for the selected patient
+      let filteredActivities = allActivities.filter((activity: Activity) => 
+        activity.patient_id === selectedPatient.id
+      );
+
+      // Apply site filter
+      if (selectedSite) {
+        filteredActivities = filteredActivities.filter((activity: Activity) => 
+          activity.site_name === selectedSite.name
+        );
+      }
+
+      // Apply building filter
+      if (selectedBuilding) {
+        filteredActivities = filteredActivities.filter((activity: Activity) => 
+          activity.building === selectedBuilding.name
+        );
+      }
+
+      // Apply date range filter
+      if (startDate) {
+        filteredActivities = filteredActivities.filter((activity: Activity) => {
+          const activityDate = new Date(activity.service_datetime);
+          const start = new Date(startDate);
+          return activityDate >= start;
+        });
+      }
+
+      if (endDate) {
+        filteredActivities = filteredActivities.filter((activity: Activity) => {
+          const activityDate = new Date(activity.service_datetime);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999); // Include the entire end date
+          return activityDate <= end;
+        });
+      }
+
+      // Transform activities for display
+      const transformedActivities: PatientDetailActivity[] = filteredActivities.map((activity: Activity) => ({
+        id: activity.id,
+        activity_type: activity.activity_type,
+        service_datetime: typeof activity.service_datetime === 'string' ? activity.service_datetime : activity.service_datetime.toISOString(),
+        duration_minutes: activity.duration_minutes,
+        site_name: activity.site_name,
+        building: activity.building,
+        notes: activity.notes,
+        user_initials: activity.user_initials
+      }));
+
+      setPatientActivities(transformedActivities);
+
+    } catch (error) {
+      console.error('Error generating patient detail report:', error);
+      setPatientDetailError('Failed to generate patient detail report');
+    } finally {
+      setIsLoadingPatientDetail(false);
+    }
+  };
+
+  // Prepare chart data for patient detail report
+  const chartData = useMemo(() => {
+    if (!patientActivities.length) return [];
+
+    // Group activities by type and sum duration
+    const activityTypeData = patientActivities.reduce((acc, activity) => {
+      const type = activity.activity_type;
+      if (!acc[type]) {
+        acc[type] = { name: type, value: 0 };
+      }
+      acc[type].value += activity.duration_minutes;
+      return acc;
+    }, {} as Record<string, ChartData>);
+
+    return Object.values(activityTypeData);
+  }, [patientActivities]);
+
+  // Prepare time series data for line chart
+  const timeSeriesData = useMemo(() => {
+    if (!patientActivities.length) return [];
+
+    // Group activities by date and sum duration
+    const dateData = patientActivities.reduce((acc, activity) => {
+      const date = new Date(activity.service_datetime).toLocaleDateString();
+      if (!acc[date]) {
+        acc[date] = { name: date, value: 0 };
+      }
+      acc[date].value += activity.duration_minutes;
+      return acc;
+    }, {} as Record<string, ChartData>);
+
+    return Object.values(dateData).sort((a, b) => 
+      new Date(a.name).getTime() - new Date(b.name).getTime()
+    );
+  }, [patientActivities]);
+
+  // Print patient detail report
+  const handlePrintPatientDetailReport = () => {
+    if (!selectedPatient || patientActivities.length === 0) {
+      alert('No data to print');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the report');
+      return;
+    }
+
+    const totalMinutes = patientActivities.reduce((sum, a) => sum + a.duration_minutes, 0);
+    const totalHours = totalMinutes / 60;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Patient Detail Report - ${selectedPatient.first_name} ${selectedPatient.last_name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .summary { display: flex; justify-content: space-around; margin-bottom: 30px; }
+            .summary-item { text-align: center; }
+            .summary-value { font-size: 24px; font-weight: bold; color: #3B82F6; }
+            .summary-label { font-size: 14px; color: #666; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f8f9fa; font-weight: bold; }
+            .filters { margin-bottom: 20px; font-size: 14px; color: #666; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Patient Detail Report</h1>
+            <h2>${selectedPatient.first_name} ${selectedPatient.last_name}</h2>
+            <p>Generated: ${new Date().toLocaleDateString()}</p>
+          </div>
+          
+          <div class="filters">
+            ${selectedSite ? `<p><strong>Site:</strong> ${selectedSite.name}</p>` : ''}
+            ${selectedBuilding ? `<p><strong>Building:</strong> ${selectedBuilding.name}</p>` : ''}
+            ${startDate || endDate ? `<p><strong>Date Range:</strong> ${startDate || 'Start'} to ${endDate || 'End'}</p>` : ''}
+          </div>
+
+          <div class="summary">
+            <div class="summary-item">
+              <div class="summary-value">${patientActivities.length}</div>
+              <div class="summary-label">Total Activities</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value">${totalMinutes.toFixed(2)}</div>
+              <div class="summary-label">Total Minutes</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value">${totalHours.toFixed(2)}</div>
+              <div class="summary-label">Total Hours</div>
+            </div>
+          </div>
+
+          <h3>Activity Details</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Activity Type</th>
+                <th>Duration (Minutes)</th>
+                <th>Site</th>
+                <th>Building</th>
+                <th>Notes</th>
+                <th>User</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${patientActivities.map((activity) => `
+                <tr>
+                  <td>${new Date(activity.service_datetime).toLocaleDateString()}</td>
+                  <td>${activity.activity_type}</td>
+                  <td>${activity.duration_minutes.toFixed(2)}</td>
+                  <td>${activity.site_name}</td>
+                  <td>${activity.building || '-'}</td>
+                  <td>${activity.notes || '-'}</td>
+                  <td>${activity.user_initials || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Wait for content to load then print
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
+
+  // Export patient detail report
+  const handleExportPatientDetailReport = () => {
+    if (!selectedPatient || patientActivities.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    const exportData: (string | number)[][] = [];
+    
+    // Add title and patient info
+    exportData.push(['Patient Detail Report']);
+    exportData.push([`Patient: ${selectedPatient.first_name} ${selectedPatient.last_name}`]);
+    exportData.push([`Generated: ${new Date().toLocaleDateString()}`]);
+    if (selectedSite) {
+      exportData.push([`Site: ${selectedSite.name}`]);
+    }
+    if (selectedBuilding) {
+      exportData.push([`Building: ${selectedBuilding.name}`]);
+    }
+    if (startDate || endDate) {
+      exportData.push([`Date Range: ${startDate || 'Start'} to ${endDate || 'End'}`]);
+    }
+    exportData.push(['']); // Empty row for spacing
+    
+    // Add table headers
+    exportData.push(['Date', 'Activity Type', 'Duration (Minutes)', 'Site', 'Building', 'Notes', 'User']);
+    
+    // Add data rows
+    patientActivities.forEach((activity) => {
+      const row: (string | number)[] = [
+        new Date(activity.service_datetime).toLocaleDateString(),
+        activity.activity_type,
+        activity.duration_minutes.toFixed(2),
+        activity.site_name,
+        activity.building || '',
+        activity.notes || '',
+        activity.user_initials || ''
+      ];
+      exportData.push(row);
+    });
+
+    // Add summary
+    exportData.push(['']);
+    exportData.push(['Summary']);
+    exportData.push(['Total Activities', patientActivities.length]);
+    exportData.push(['Total Duration (Minutes)', patientActivities.reduce((sum, a) => sum + a.duration_minutes, 0).toFixed(2)]);
+    exportData.push(['Total Duration (Hours)', (patientActivities.reduce((sum, a) => sum + a.duration_minutes, 0) / 60).toFixed(2)]);
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Patient Detail Report');
+
+    // Generate filename
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `Patient_Detail_Report_${selectedPatient.first_name}_${selectedPatient.last_name}_${currentDate}.xlsx`;
+
+    // Save the file
+    XLSX.writeFile(wb, filename);
+  };
 
   // Export function for patient reports
   const handleExportData = () => {
@@ -334,6 +662,12 @@ const PatientReportsPage = () => {
               className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
             >
               Site Reports
+            </button>
+            <button
+              onClick={() => navigate('/patient-detail-report')}
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer"
+            >
+              Patient Detail Report
             </button>
           </div>
         </div>

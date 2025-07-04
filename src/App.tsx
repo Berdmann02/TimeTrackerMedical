@@ -12,6 +12,7 @@ import { LoadingScreen } from './components/ui/LoadingScreen';
 import ReportsPage from './pages/reports/ReportsPage';
 import SiteReportsPage from './pages/reports/SiteReportsPage';
 import PatientReportsPage from './pages/reports/PatientReportsPage';
+import PatientDetailReportPage from './pages/reports/PatientDetailReportPage';
 import SiteDetailsPage from './pages/sites/SiteDetailsPage';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AdminRoute } from './components/layout/AdminRoute';
@@ -142,6 +143,18 @@ function App() {
               <RestrictPharmacistRoute>
                 <RestrictNurseRoute>
                   <PatientReportsPage />
+                </RestrictNurseRoute>
+              </RestrictPharmacistRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/patient-detail-report"
+          element={
+            <ProtectedRoute>
+              <RestrictPharmacistRoute>
+                <RestrictNurseRoute>
+                  <PatientDetailReportPage />
                 </RestrictNurseRoute>
               </RestrictPharmacistRoute>
             </ProtectedRoute>
