@@ -50,6 +50,7 @@ const PatientDetailReportPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState<PatientDetailActivity | null>(null);
   const [showActivityModal, setShowActivityModal] = useState(false);
+  const [showChart, setShowChart] = useState(false);
 
   // Load initial data for patient detail report
   useEffect(() => {
@@ -584,17 +585,17 @@ const PatientDetailReportPage = () => {
                   <div className="text-2xl font-bold text-blue-600">{patientActivities.length}</div>
                   <div className="text-sm text-blue-700">Total Activities</div>
                 </div>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
                     {patientActivities.reduce((sum, a) => sum + (Number(a.duration_minutes) || 0), 0).toFixed(2)}
                   </div>
-                  <div className="text-sm text-blue-700">Total Minutes</div>
+                  <div className="text-sm text-green-700">Total Minutes</div>
                 </div>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
                     {(patientActivities.reduce((sum, a) => sum + (Number(a.duration_minutes) || 0), 0) / 60).toFixed(2)}
                   </div>
-                  <div className="text-sm text-blue-700">Total Hours</div>
+                  <div className="text-sm text-purple-700">Total Hours</div>
                 </div>
               </div>
 
@@ -614,60 +615,82 @@ const PatientDetailReportPage = () => {
                 </button>
               </div>
 
-              {/* Charts */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Activity Analysis</h3>
-                
-                {/* Activity Type Chart */}
-                <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                  <h4 className="text-md font-medium text-gray-700 mb-3">Activity Types by Duration</h4>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={scatterData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          type="number" 
-                          dataKey="x" 
-                          domain={['dataMin', 'dataMax']}
-                          tickFormatter={(value) => new Date(value).toLocaleDateString()}
-                          name="Date"
-                        />
-                        <YAxis 
-                          type="number" 
-                          dataKey="y" 
-                          name="Duration (minutes)"
-                        />
-                        <Tooltip 
-                          cursor={{ strokeDasharray: '3 3' }}
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload as ScatterData;
-                              return (
-                                <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
-                                  <p className="font-medium">{data.activity_type}</p>
-                                  <p className="text-sm text-gray-600">Date: {data.date}</p>
-                                  <p className="text-sm text-gray-600">Duration: {data.y} minutes</p>
-                                  {data.notes && <p className="text-sm text-gray-600">Notes: {data.notes}</p>}
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="y" 
-                          stroke="#3B82F6" 
-                          strokeWidth={2}
-                          dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 2, fill: '#fff' }}
-                          onClick={handleDotClick}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+              {/* Charts Toggle */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">Activity Analysis</h3>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-600">Show Chart</span>
+                    <button
+                      onClick={() => setShowChart(!showChart)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        showChart ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          showChart ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {/* Charts */}
+              {showChart && (
+                <div className="mb-8">
+                  {/* Activity Type Chart */}
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                    <h4 className="text-md font-medium text-gray-700 mb-3">Activity Types by Duration</h4>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={scatterData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            type="number" 
+                            dataKey="x" 
+                            domain={['dataMin', 'dataMax']}
+                            tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                            name="Date"
+                          />
+                          <YAxis 
+                            type="number" 
+                            dataKey="y" 
+                            name="Duration (minutes)"
+                          />
+                          <Tooltip 
+                            cursor={{ strokeDasharray: '3 3' }}
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload as ScatterData;
+                                return (
+                                  <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
+                                    <p className="font-medium">{data.activity_type}</p>
+                                    <p className="text-sm text-gray-600">Date: {data.date}</p>
+                                    <p className="text-sm text-gray-600">Duration: {data.y} minutes</p>
+                                    {data.notes && <p className="text-sm text-gray-600">Notes: {data.notes}</p>}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="y" 
+                            stroke="#3B82F6" 
+                            strokeWidth={2}
+                            dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 2, fill: '#fff' }}
+                            onClick={handleDotClick}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Activities Table */}
               <div>
