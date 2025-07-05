@@ -252,102 +252,140 @@ const PatientDetailReportPage = () => {
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow pop-ups to print the report');
-      return;
-    }
+    try {
+      const totalMinutes = patientActivities.reduce((sum, a) => sum + (Number(a.duration_minutes) || 0), 0);
+      const totalHours = totalMinutes / 60;
 
-    const totalMinutes = patientActivities.reduce((sum, a) => sum + (Number(a.duration_minutes) || 0), 0);
-    const totalHours = totalMinutes / 60;
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Patient Detail Report - ${selectedPatient.first_name} ${selectedPatient.last_name}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-            .summary { display: flex; justify-content: space-around; margin-bottom: 30px; }
-            .summary-item { text-align: center; }
-            .summary-value { font-size: 24px; font-weight: bold; color: #3B82F6; }
-            .summary-label { font-size: 14px; color: #666; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f8f9fa; font-weight: bold; }
-            .filters { margin-bottom: 20px; font-size: 14px; color: #666; }
-            @media print { body { margin: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Patient Detail Report</h1>
-            <h2>${selectedPatient.first_name} ${selectedPatient.last_name}</h2>
-            <p>Generated: ${new Date().toLocaleDateString()}</p>
+      // Create a temporary print container
+      const printContainer = document.createElement('div');
+      printContainer.id = 'print-container';
+      printContainer.innerHTML = `
+        <div style="font-family: Arial, sans-serif; margin: 20px;">
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+            <h1 style="margin: 0; color: #333;">Patient Detail Report</h1>
+            <h2 style="margin: 10px 0; color: #333;">${selectedPatient.first_name} ${selectedPatient.last_name}</h2>
+            <p style="margin: 0; color: #666;">Generated: ${new Date().toLocaleDateString()}</p>
           </div>
           
-          <div class="filters">
-            ${selectedSite ? `<p><strong>Site:</strong> ${selectedSite.name}</p>` : ''}
-            ${selectedBuilding ? `<p><strong>Building:</strong> ${selectedBuilding.name}</p>` : ''}
-            ${startDate || endDate ? `<p><strong>Date Range:</strong> ${startDate || 'Start'} to ${endDate || 'End'}</p>` : ''}
+          <!-- Filters -->
+          <div style="margin-bottom: 20px; font-size: 14px; color: #666;">
+            ${selectedSite ? `<p style="margin: 5px 0;"><strong>Site:</strong> ${selectedSite.name}</p>` : ''}
+            ${selectedBuilding ? `<p style="margin: 5px 0;"><strong>Building:</strong> ${selectedBuilding.name}</p>` : ''}
+            ${startDate || endDate ? `<p style="margin: 5px 0;"><strong>Date Range:</strong> ${startDate || 'Start'} to ${endDate || 'End'}</p>` : ''}
           </div>
 
-          <div class="summary">
-            <div class="summary-item">
-              <div class="summary-value">${patientActivities.length}</div>
-              <div class="summary-label">Total Activities</div>
+          <!-- Summary -->
+          <div style="display: flex; justify-content: space-around; margin-bottom: 30px; background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: bold; color: #3B82F6;">${patientActivities.length}</div>
+              <div style="font-size: 14px; color: #666;">Total Activities</div>
             </div>
-            <div class="summary-item">
-              <div class="summary-value">${totalMinutes.toFixed(2)}</div>
-              <div class="summary-label">Total Minutes</div>
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: bold; color: #10B981;">${totalMinutes.toFixed(2)}</div>
+              <div style="font-size: 14px; color: #666;">Total Minutes</div>
             </div>
-            <div class="summary-item">
-              <div class="summary-value">${totalHours.toFixed(2)}</div>
-              <div class="summary-label">Total Hours</div>
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: bold; color: #8B5CF6;">${totalHours.toFixed(2)}</div>
+              <div style="font-size: 14px; color: #666;">Total Hours</div>
             </div>
           </div>
 
-          <h3>Activity Details</h3>
-          <table>
+          <!-- Activity Details -->
+          <h3 style="margin: 20px 0; color: #333;">Activity Details</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
             <thead>
-              <tr>
-                <th>Date</th>
-                <th>Activity Type</th>
-                <th>Duration (Minutes)</th>
-                <th>Site</th>
-                <th>Building</th>
-                <th>Notes</th>
-                <th>User</th>
+              <tr style="background-color: #f8f9fa;">
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">Date</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">Activity Type</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">Duration (Minutes)</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">Site</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">Building</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">Notes</th>
+                <th style="border: 1px solid #ddd; padding: 12px; text-align: left; font-weight: bold;">User</th>
               </tr>
             </thead>
             <tbody>
               ${patientActivities.map((activity) => `
                 <tr>
-                  <td>${new Date(activity.service_datetime).toLocaleDateString()}</td>
-                  <td>${activity.activity_type}</td>
-                  <td>${activity.duration_minutes.toFixed(2)}</td>
-                  <td>${activity.site_name}</td>
-                  <td>${activity.building || '-'}</td>
-                  <td>${activity.notes || '-'}</td>
-                  <td>${activity.user_initials || '-'}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${new Date(activity.service_datetime).toLocaleDateString()}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${activity.activity_type}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${(Number(activity.duration_minutes) || 0).toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${activity.site_name}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${activity.building || '-'}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${activity.notes || '-'}</td>
+                  <td style="border: 1px solid #ddd; padding: 12px; text-align: left;">${activity.user_initials || '-'}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-        </body>
-      </html>
-    `;
+        </div>
+      `;
 
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.focus();
-    
-    // Wait for content to load then print
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
+      // Add print-specific CSS to hide everything except our print container
+      const printStyle = document.createElement('style');
+      printStyle.id = 'print-style';
+      printStyle.innerHTML = `
+        @media print {
+          /* Hide everything except our print container */
+          body > *:not(#print-container) {
+            display: none !important;
+          }
+          
+          /* Show only our print container */
+          #print-container {
+            display: block !important;
+            position: static !important;
+            left: auto !important;
+            top: auto !important;
+          }
+          
+          /* Ensure proper page setup */
+          @page {
+            margin: 0.5in;
+            size: A4;
+          }
+          
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        }
+        
+        /* Hide print container in normal view */
+        #print-container {
+          position: absolute;
+          left: -9999px;
+          top: -9999px;
+          z-index: -1;
+        }
+      `;
+      
+      // Remove existing print style and container if they exist
+      const existingStyle = document.getElementById('print-style');
+      const existingContainer = document.getElementById('print-container');
+      if (existingStyle) existingStyle.remove();
+      if (existingContainer) existingContainer.remove();
+      
+      // Add the print container and style
+      document.body.appendChild(printContainer);
+      document.head.appendChild(printStyle);
+      
+      // Trigger print
+      window.print();
+      
+      // Clean up after printing
+      setTimeout(() => {
+        const styleToRemove = document.getElementById('print-style');
+        const containerToRemove = document.getElementById('print-container');
+        if (styleToRemove) styleToRemove.remove();
+        if (containerToRemove) containerToRemove.remove();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Print function error:', error);
+      alert('An error occurred while trying to print. Please try again.');
+    }
   };
 
   // Export patient detail report
