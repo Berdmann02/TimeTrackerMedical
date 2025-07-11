@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { User, Calendar, Building2, MapPin, X } from "lucide-react";
 import { createUser, type CreateUserDTO } from "../services/userService";
 import { getSites, getAllSitesForAdmin, type Site } from "../services/siteService";
-import { authService } from "../services/auth.service";
+import { useAuth } from "../contexts/AuthContext";
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ interface UserFormData {
 }
 
 const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite, defaultPrimarySiteId }: AddUserModalProps) => {
+  const { isAdmin } = useAuth();
   const initialFormData: UserFormData = {
     firstName: "",
     lastName: "",
@@ -62,10 +63,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded, defaultPrimarySite, defaul
     setIsLoading(true);
     setSitesError(null);
     try {
-      // Check if current user is admin to determine which endpoint to use
-      const currentUser = authService.getCurrentUser();
-      const isAdmin = authService.isAdmin();
-      
+      // Use isAdmin from AuthContext to determine which endpoint to use
       const siteData = isAdmin ? await getAllSitesForAdmin() : await getSites();
       const activeSites = siteData.filter(site => site.is_active);
       setSites(activeSites);
