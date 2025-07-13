@@ -593,10 +593,21 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
       const endTime = new Date(formData.service_endtime);
       const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
+      // Validate required fields
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+      if (!formData.patientId) {
+        throw new Error('Patient ID is required');
+      }
+      if (!formData.startTime || !formData.service_endtime) {
+        throw new Error('Start time and end time are required');
+      }
+      
       // Create activity data
       const activityData: CreateActivityDTO = {
         patient_id: parseInt(formData.patientId),
-        user_id: user?.id || 0,
+        user_id: user.id,
         activity_type: formData.activityType,
         service_datetime: formData.startTime,
         service_endtime: formData.service_endtime,
