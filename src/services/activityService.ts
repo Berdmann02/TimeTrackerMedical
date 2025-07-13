@@ -38,6 +38,11 @@ const hasMedicalChecks = (medical_checks?: CreateActivityDTO['medical_checks']):
 export const getActivities = async (): Promise<Activity[]> => {
   try {
     const response = await axiosInstance.get(`${API_URL}/activities`);
+    // Handle new response format that includes pagination info
+    if (response.data && response.data.activities) {
+      return response.data.activities;
+    }
+    // Fallback for old format or direct array
     return response.data;
   } catch (error) {
     console.error('Error fetching activities:', error);
@@ -91,9 +96,9 @@ export const createActivity = async (activityData: CreateActivityDTO): Promise<A
       pharm_flag: hasChecks, // Set pharm_flag based on medical checks
       notes: activityData.notes || '',
       site_name: activityData.site_name,
-      building: activityData.building || '',
+      building_name: activityData.building || '',
       service_datetime: activityData.service_datetime || new Date().toISOString(), // Use provided start time or fall back to current time
-      service_endtime: activityData.service_endtime, // Use provided end time
+      end_time: activityData.service_endtime, // Use provided end time
       duration_minutes: Math.max(0.01, Number(activityData.duration_minutes.toFixed(2))) // Support decimal values for seconds, minimum 0.01 minute (0.6 seconds)
     };
     
