@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react"
-import { User, Pencil, Trash, Plus, Shield, ArrowDownIcon, ArrowUpIcon, SearchIcon } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { User, Pencil, Trash, Plus, Shield, ArrowDownIcon, ArrowUpIcon, SearchIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import AddUserModal from "../../components/AddUserModal"
 import EditUserModal from "../../components/EditUserModal"
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"
-import { getUsers, deleteUser, type UserListItem } from "../../services/userService"
+import { getUsers, deleteUser, type UserListItem, type PaginatedUsersResponse } from "../../services/userService"
+import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
 import { useAuth } from "../../contexts/AuthContext"
 
 // Interface for the user accounts in the table (based on UserListItem from backend)
@@ -35,98 +36,108 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // State for users data
   const [users, setUsers] = useState<UserAccount[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "nurse" | "pharmacist">("all")
+  const [siteFilter, setSiteFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<string>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [usersPerPage] = useState(50)
 
-  const fetchUsers = async () => {
+  // State for sites data
+  const [sitesAndBuildings, setSitesAndBuildings] = useState<SiteWithBuildings[]>([])
+
+  // Fetch users data
+  const fetchUsersData = async (page: number = 1) => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsLoading(true)
-      const fetchedUsers = await getUsers()
+      const data: PaginatedUsersResponse = await getUsers(
+        page, 
+        usersPerPage,
+        searchTerm || undefined,
+        roleFilter !== "all" ? roleFilter : undefined,
+        siteFilter !== "all" ? siteFilter : undefined,
+        sortField,
+        sortDirection
+      );
+      
       // Transform the users to include isActive property
-      const transformedUsers = fetchedUsers.map((user) => ({
+      const transformedUsers = data.users.map((user) => ({
         ...user,
         isActive: true // You might want to determine this based on some criteria from your API
-      }))
-      setUsers(transformedUsers)
+      }));
+      
+      setUsers(transformedUsers);
+      setTotalUsers(data.total);
+      setCurrentPage(page);
     } catch (err) {
-      setError("Failed to fetch users")
-      console.error("Error fetching users:", err)
+      console.error('Error fetching users:', err);
+      setError('Failed to load users. Please try again later.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
+  // Fetch sites and buildings data in the background
+  const fetchSitesAndBuildingsData = async () => {
+    try {
+      const data = await getSitesAndBuildings();
+      setSitesAndBuildings(data);
+    } catch (err) {
+      console.error('Error fetching sites and buildings:', err);
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
+    fetchUsersData();
+    fetchSitesAndBuildingsData(); // Load in background without loading state
+  }, []);
+
+  // Get all unique site names
+  const siteNames = useMemo(() => {
+    return sitesAndBuildings.map(site => site.site_name);
+  }, [sitesAndBuildings]);
+
+  // Handle sort
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field)
-      setSortDirection('asc')
+      setSortField(field);
+      setSortDirection('asc');
     }
-  }
+  };
 
-  // Filter and sort users - current user first, then alphabetically
-  const filteredUsers = users
-    .filter((user) => {
-      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.name.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesRole = roleFilter === "all" || user.role === roleFilter
-      return matchesSearch && matchesRole
-    })
-    .sort((a, b) => {
-      // Current user always comes first
-      const aIsCurrentUser = currentUser && a.email === currentUser.email
-      const bIsCurrentUser = currentUser && b.email === currentUser.email
-      
-      if (aIsCurrentUser && !bIsCurrentUser) return -1
-      if (!aIsCurrentUser && bIsCurrentUser) return 1
-      
-      // Apply sorting based on selected field
-      let aValue: any, bValue: any
-      
-      switch (sortField) {
-        case 'name':
-          aValue = a.name
-          bValue = b.name
-          break
-        case 'email':
-          aValue = a.email
-          bValue = b.email
-          break
-        case 'role':
-          aValue = a.role
-          bValue = b.role
-          break
-        case 'primarysite':
-          aValue = a.primary_site || ''
-          bValue = b.primary_site || ''
-          break
-        default:
-          aValue = a.name
-          bValue = b.name
-      }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        aValue = aValue.toLowerCase()
-        bValue = bValue.toLowerCase()
-      }
-      
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-      return 0
-    })
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    fetchUsersData(newPage);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    const totalPages = Math.ceil(totalUsers / usersPerPage);
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   // Helper function to check if user is the current user
   const isCurrentUser = (user: UserAccount) => {
-    return currentUser && user.email === currentUser.email
-  }
+    return currentUser && user.email === currentUser.email;
+  };
 
   const handleEdit = (userId: number) => {
     const user = users.find(u => u.id === userId);
@@ -150,16 +161,16 @@ export default function UsersPage() {
   };
 
   const handleUserUpdated = () => {
-    fetchUsers(); // Refresh the users list
+    fetchUsersData(currentPage); // Refresh the users list
   };
 
   const handleDelete = (userId: number) => {
-    const user = users.find(u => u.id === userId)
+    const user = users.find(u => u.id === userId);
     if (user) {
-      setUserToDelete(user)
-      setIsDeleteModalOpen(true)
+      setUserToDelete(user);
+      setIsDeleteModalOpen(true);
     }
-  }
+  };
 
   const handleConfirmDelete = async () => {
     if (!userToDelete?.id) return;
@@ -168,7 +179,7 @@ export default function UsersPage() {
     try {
       // Use actual user ID from backend
       await deleteUser(userToDelete.id);
-      setUsers(users.filter((user) => user.id !== userToDelete.id));
+      fetchUsersData(currentPage); // Refresh the list
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -182,16 +193,40 @@ export default function UsersPage() {
       setIsDeleting(false);
       setUserToDelete(null);
     }
-  }
+  };
 
   const handleAddUser = () => {
-    setIsAddUserModalOpen(true)
-  }
+    setIsAddUserModalOpen(true);
+  };
 
   const handleUserAdded = () => {
-    fetchUsers(); // Refresh the users list
+    fetchUsersData(currentPage); // Refresh the users list
     setIsAddUserModalOpen(false);
-  }
+  };
+
+  // Handle search and filter changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page
+    fetchUsersData(1);
+  };
+
+  const handleRoleFilterChange = (value: "all" | "admin" | "nurse" | "pharmacist") => {
+    setRoleFilter(value);
+    setCurrentPage(1); // Reset to first page
+    fetchUsersData(1);
+  };
+
+  const handleSiteFilterChange = (value: string) => {
+    setSiteFilter(value);
+    setCurrentPage(1); // Reset to first page
+    fetchUsersData(1);
+  };
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalUsers / usersPerPage);
+  const startUser = (currentPage - 1) * usersPerPage + 1;
+  const endUser = Math.min(currentPage * usersPerPage, totalUsers);
 
   if (isLoading) {
     return (
@@ -238,6 +273,23 @@ export default function UsersPage() {
                     </select>
                   </div>
                 </div>
+                <div className="relative w-full md:w-48">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
+                  <div className="relative">
+                    <select
+                      value={siteFilter}
+                      onChange={(e) => setSiteFilter(e.target.value)}
+                      className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                    >
+                      <option value="all">All Sites</option>
+                      {siteNames.map((siteName) => (
+                        <option key={siteName} value={siteName}>
+                          {siteName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -278,9 +330,9 @@ export default function UsersPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search users..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
@@ -289,13 +341,30 @@ export default function UsersPage() {
                 <div className="relative">
                   <select
                     value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value as "all" | "admin" | "nurse" | "pharmacist")}
+                    onChange={(e) => handleRoleFilterChange(e.target.value as "all" | "admin" | "nurse" | "pharmacist")}
                     className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
                   >
                     <option value="all">All Roles</option>
                     <option value="admin">Admin</option>
                     <option value="nurse">Nurse</option>
                     <option value="pharmacist">Pharmacist</option>
+                  </select>
+                </div>
+              </div>
+              <div className="relative w-full md:w-48">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Site</label>
+                <div className="relative">
+                  <select
+                    value={siteFilter}
+                    onChange={(e) => handleSiteFilterChange(e.target.value)}
+                    className="block w-full pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md bg-white border appearance-none"
+                  >
+                    <option value="all">All Sites</option>
+                    {siteNames.map((siteName) => (
+                      <option key={siteName} value={siteName}>
+                        {siteName}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -308,7 +377,7 @@ export default function UsersPage() {
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 flex-shrink-0">
             <p>{error}</p>
             <button 
-              onClick={fetchUsers} 
+              onClick={() => fetchUsersData(currentPage)} 
               className="mt-2 text-red-600 hover:text-red-800 underline"
             >
               Try again
@@ -366,7 +435,7 @@ export default function UsersPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
+                  {users.map((user) => (
                     <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${isCurrentUser(user) ? 'bg-blue-50' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <div className="flex items-center">
@@ -414,7 +483,7 @@ export default function UsersPage() {
                       </td>
                     </tr>
                   ))}
-                  {filteredUsers.length === 0 && (
+                  {users.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                         No users found matching your filters
@@ -428,24 +497,47 @@ export default function UsersPage() {
             {/* Table Footer - Fixed */}
             <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="flex-1 flex justify-between sm:hidden">
-                <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <button 
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Previous
                 </button>
-                <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <button 
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Next
                 </button>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{filteredUsers.length}</span> of{" "}
-                    <span className="font-medium">{filteredUsers.length}</span> results
+                    Showing <span className="font-medium">{startUser}</span> to{" "}
+                    <span className="font-medium">{endUser}</span> of{" "}
+                    <span className="font-medium">{totalUsers}</span> results
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">
-                    Scroll to view more users
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeftIcon className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage >= totalPages}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>

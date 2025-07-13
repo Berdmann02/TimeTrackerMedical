@@ -12,6 +12,15 @@ export interface UserListItem {
     assigned_sites: string[]; // Array of site names (not IDs)
 }
 
+// Interface for paginated users response
+export interface PaginatedUsersResponse {
+    users: UserListItem[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
 // Interface for the full user data (used for create/update operations)
 export interface User {
     id?: number;
@@ -40,15 +49,34 @@ export interface CreateUserDTO {
     assignedsites_ids: number[];
 }
 
-// Returns: Array of UserListItem objects with:
-// - name: string (concatenated first_name + ' ' + last_name)
-// - email: string
-// - role: "admin" | "nurse" | "pharmacist"
-// - primary_site: string (site name)
-// - assigned_sites: string[] (array of site names)
-export const getUsers = async(): Promise<UserListItem[]> => {
+// Returns: PaginatedUsersResponse object with:
+// - users: UserListItem[] array
+// - total: number (total count)
+// - page: number (current page)
+// - limit: number (items per page)
+// - totalPages: number (total pages)
+export const getUsers = async(
+    page: number = 1, 
+    limit: number = 50,
+    search?: string,
+    role?: string,
+    site?: string,
+    sortField?: string,
+    sortDirection?: 'asc' | 'desc'
+): Promise<PaginatedUsersResponse> => {
     try {
-        const response = await axiosInstance.get(`${API_URL}/users`);
+        const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString()
+        });
+
+        if (search) params.append('search', search);
+        if (role && role !== 'all') params.append('role', role);
+        if (site && site !== 'all') params.append('site', site);
+        if (sortField) params.append('sortField', sortField);
+        if (sortDirection) params.append('sortDirection', sortDirection);
+
+        const response = await axiosInstance.get(`${API_URL}/users?${params.toString()}`);
         return response.data;
     } catch (error: unknown) {
         console.error('Error fetching users:', error);
@@ -171,8 +199,8 @@ export const getUsersBySite = async (siteName: string): Promise<UserListItem[]> 
     try {
         // For backward compatibility, we still support getting users by site name
         // This will need to be updated to get the site ID first and then use the optimized endpoint
-        const allUsers = await getUsers();
-        return allUsers.filter(user => 
+        const allUsersResponse = await getUsers(1, 1000); // Get all users with high limit
+        return allUsersResponse.users.filter(user => 
             user.primary_site === siteName || 
             (user.assigned_sites && user.assigned_sites.includes(siteName))
         );
