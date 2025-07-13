@@ -60,7 +60,7 @@ const PatientDetailReportPage = () => {
         const [sitesData, buildingsData, patientsData] = await Promise.all([
           getSites(),
           getBuildings(),
-          getPatients()
+          getPatients(1, 1000).then(response => response.patients) // Get all patients for reports
         ]);
         setSites(sitesData);
         setBuildings(buildingsData);

@@ -78,7 +78,8 @@ const SiteReportsPage = () => {
 
     try {
       // Get all patients for the selected site
-      const allPatients = await getPatients();
+      const allPatientsResponse = await getPatients(1, 1000); // Get all patients for reports
+      const allPatients = allPatientsResponse.patients;
       const sitePatients = allPatients.filter(patient => patient.site_name === selectedSite);
 
       if (sitePatients.length === 0) {

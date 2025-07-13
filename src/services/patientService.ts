@@ -48,9 +48,14 @@ const hasMedicalStatusChanges = (patientData: Partial<Patient>): boolean => {
   return medicalStatusFields.some(field => field in patientData);
 };
 
-export const getPatients = async (): Promise<Patient[]> => {
+export interface PaginatedPatientsResponse {
+  patients: Patient[];
+  total: number;
+}
+
+export const getPatients = async (page: number = 1, limit: number = 50): Promise<PaginatedPatientsResponse> => {
   try {
-    const response = await axiosInstance.get(`${API_URL}/patients`);
+    const response = await axiosInstance.get(`${API_URL}/patients?page=${page}&limit=${limit}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching patients:', error);

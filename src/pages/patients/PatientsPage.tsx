@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react"
-import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, PlusIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, SearchIcon, PlusIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AddPatientModal from "../../components/AddPatientModal"
 import AddActivityModal from "../../components/AddActivityModal"
-import { getPatients, type Patient } from "../../services/patientService"
+import { getPatients, type Patient, type PaginatedPatientsResponse } from "../../services/patientService"
 import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
 import { getActivitiesByPatientId, type Activity } from "../../services/activityService"
 
@@ -38,21 +38,28 @@ export default function PatientsPage() {
   const [showInactive, setShowInactive] = useState(false)
   const [buildingFilter, setBuildingFilter] = useState<string>("all")
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPatients, setTotalPatients] = useState(0)
+  const [patientsPerPage] = useState(50)
+
   // State for sites and buildings data
   const [sitesAndBuildings, setSitesAndBuildings] = useState<SiteWithBuildings[]>([])
 
   // Fetch patients data
-  const fetchPatientsData = async () => {
+  const fetchPatientsData = async (page: number = 1) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const data = await getPatients();
-      setPatients(data);
+      const data: PaginatedPatientsResponse = await getPatients(page, patientsPerPage);
+      setPatients(data.patients);
+      setTotalPatients(data.total);
+      setCurrentPage(page);
       
       // Fetch activities for each patient
       const activities: { [key: string]: Activity[] } = {};
-      for (const patient of data) {
+      for (const patient of data.patients) {
         if (patient.id) {
           try {
             const patientActivities = await getActivitiesByPatientId(patient.id);
@@ -240,7 +247,7 @@ export default function PatientsPage() {
 
   // Handle patient creation callback
   const handlePatientAdded = () => {
-    fetchPatientsData();
+    fetchPatientsData(currentPage);
   };
 
   // Handle opening the add activity modal
@@ -250,6 +257,30 @@ export default function PatientsPage() {
     setSelectedPatientSite(patient.site_name || "");
     setIsAddActivityModalOpen(true);
   };
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= Math.ceil(totalPatients / patientsPerPage)) {
+      fetchPatientsData(newPage);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < Math.ceil(totalPatients / patientsPerPage)) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalPatients / patientsPerPage);
+  const startIndex = (currentPage - 1) * patientsPerPage + 1;
+  const endIndex = Math.min(currentPage * patientsPerPage, totalPatients);
 
   // Helper to format dates consistently
   const formatDate = (date: string | Date) => {
@@ -402,7 +433,7 @@ export default function PatientsPage() {
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 flex-shrink-0">
             <p>{error}</p>
             <button 
-              onClick={fetchPatientsData} 
+              onClick={() => fetchPatientsData(currentPage)} 
               className="mt-2 text-red-600 hover:text-red-800 underline"
             >
               Try again
@@ -589,24 +620,46 @@ export default function PatientsPage() {
             {/* Table Footer - Fixed */}
             <div className="flex-shrink-0 bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="flex-1 flex justify-between sm:hidden">
-                <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <button 
+                  onClick={handlePreviousPage}
+                  disabled={currentPage <= 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Previous
                 </button>
-                <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <button 
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Next
                 </button>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{filteredAndSortedPatients.length}</span> of{" "}
-                    <span className="font-medium">{filteredAndSortedPatients.length}</span> results
+                    Showing <span className="font-medium">{startIndex}-{endIndex}</span> of{" "}
+                    <span className="font-medium">{totalPatients}</span> results
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">
-                    Scroll to view more patients
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage <= 1}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeftIcon className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage >= totalPages}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -625,7 +678,7 @@ export default function PatientsPage() {
       <AddActivityModal
         isOpen={isAddActivityModalOpen}
         onClose={() => setIsAddActivityModalOpen(false)}
-        onActivityAdded={() => fetchPatientsData()}
+        onActivityAdded={() => fetchPatientsData(currentPage)}
         patientId={selectedPatientId}
         patientName={selectedPatientName}
         siteName={selectedPatientSite}

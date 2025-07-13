@@ -115,12 +115,13 @@ const PatientReportsPage = () => {
     setSiteData([]);
 
     try {
-      const [sites, allPatients, allActivities] = await Promise.all([
+      const [sites, allPatientsResponse, allActivities] = await Promise.all([
         getSites(),
-        getPatients(),
+        getPatients(1, 1000), // Get all patients for reports
         getActivitiesWithDetails()
       ]);
 
+      const allPatients = allPatientsResponse.patients;
       const siteReports: SitePatientData[] = [];
 
       for (const site of sites) {
@@ -218,7 +219,7 @@ const PatientReportsPage = () => {
         const [sitesData, buildingsData, patientsData] = await Promise.all([
           getSites(),
           getBuildings(),
-          getPatients()
+          getPatients(1, 1000).then(response => response.patients) // Get all patients for reports
         ]);
         setSites(sitesData);
         setBuildings(buildingsData);

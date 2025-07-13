@@ -240,7 +240,7 @@ const AddActivityModal: React.FC<AddActivityModalProps> = ({
     try {
       const [activityTypesData, patientsData] = await Promise.all([
         getActivityTypes(),
-        providedPatients.length > 0 ? Promise.resolve(providedPatients) : getPatients()
+        providedPatients.length > 0 ? Promise.resolve(providedPatients) : getPatients(1, 1000).then(response => response.patients)
       ]);
       
       setActivityTypes(activityTypesData);

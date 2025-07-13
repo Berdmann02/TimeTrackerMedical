@@ -45,7 +45,8 @@ const ReportsPage = () => {
     try {
       // Get all sites and patients
       const sites = await getSites();
-      const allPatients = await getPatients();
+      const allPatientsResponse = await getPatients(1, 1000); // Get all patients for reports
+      const allPatients = allPatientsResponse.patients;
 
       // Process data for each site
       const siteDataMap = new Map<string, {
