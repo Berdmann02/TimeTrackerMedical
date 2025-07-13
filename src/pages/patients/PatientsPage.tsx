@@ -6,7 +6,8 @@ import AddPatientModal from "../../components/AddPatientModal"
 import AddActivityModal from "../../components/AddActivityModal"
 import { getPatients, type Patient, type PaginatedPatientsResponse } from "../../services/patientService"
 import { getSitesAndBuildings, type SiteWithBuildings } from "../../services/siteService"
-import { getActivitiesByPatientId, type Activity } from "../../services/activityService"
+import { getActivitiesBatch } from "../../services/activityService";
+import type { Activity } from "../../services/patientService";
 
 export default function PatientsPage() {
   const navigate = useNavigate()
@@ -57,17 +58,14 @@ export default function PatientsPage() {
       setTotalPatients(data.total);
       setCurrentPage(page);
       
-      // Fetch activities for each patient
-      const activities: { [key: string]: Activity[] } = {};
-      for (const patient of data.patients) {
-        if (patient.id) {
-          try {
-            const patientActivities = await getActivitiesByPatientId(patient.id);
-            activities[patient.id] = patientActivities;
-          } catch (err) {
-            console.error(`Error fetching activities for patient ${patient.id}:`, err);
-            activities[patient.id] = [];
-          }
+      // Fetch activities for all patients in a single batch request
+      const patientIds = data.patients.map((p) => p.id).filter((id): id is number => typeof id === 'number');
+      let activities: { [key: string]: Activity[] } = {};
+      if (patientIds.length > 0) {
+        try {
+          activities = await getActivitiesBatch(patientIds);
+        } catch (err) {
+          console.error('Error fetching activities batch:', err);
         }
       }
       setPatientActivities(activities);

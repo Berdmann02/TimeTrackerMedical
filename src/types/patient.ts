@@ -40,13 +40,20 @@ export interface Patient {
 }
 
 export interface Activity {
-  activityId: string
-  activityType: string
-  initials: string
-  recordDate: string
-  totalTime: number
-  time_spent?: number
-  duration_minutes?: number // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
+  id?: number;
+  patient_id: number;
+  user_id: number;
+  activity_type: string;
+  pharm_flag?: boolean;
+  notes?: string;
+  site_name?: string;
+  building?: string;
+  service_datetime: Date | string;
+  service_endtime: Date | string;
+  duration_minutes: number;
+  created_at?: Date | string;
+  user_initials?: string;
+  patient_name?: string;
 }
 
 export interface PatientActivity {

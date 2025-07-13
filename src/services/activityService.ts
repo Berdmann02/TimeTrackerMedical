@@ -2,23 +2,7 @@ import axiosInstance from './axiosConfig';
 import { API_URL } from '../config';
 import { createMedicalRecord } from './medicalRecordService';
 import { updatePatient } from './patientService';
-
-// Activity interface matching the backend schema
-export interface Activity {
-  id?: number;
-  patient_id: number;
-  user_id: number;
-  activity_type: string;
-  pharm_flag?: boolean;
-  notes?: string;
-  site_name: string;
-  building?: string;
-  service_datetime: Date | string;
-  service_endtime: Date | string;
-  duration_minutes: number; // Supports decimal values to account for seconds (e.g., 1.5 minutes = 1 minute 30 seconds)
-  created_at?: Date | string;
-  user_initials?: string; // Added to match backend enriched data
-}
+import type { Activity } from './patientService';
 
 // DTO for creating activities with medical checks
 export interface CreateActivityDTO {
@@ -201,6 +185,18 @@ export const getActivityTypes = async (): Promise<string[]> => {
     ];
   } catch (error) {
     console.error('Error fetching activity types:', error);
+    throw error;
+  }
+};
+
+export const getActivitiesBatch = async (patientIds: (number | string)[]): Promise<{ [patientId: number]: Activity[] }> => {
+  try {
+    const response = await axiosInstance.post(`${API_URL}/activities/batch`, {
+      patientIds: patientIds.map(id => typeof id === 'string' ? parseInt(id) : id)
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching activities batch:', error);
     throw error;
   }
 };
