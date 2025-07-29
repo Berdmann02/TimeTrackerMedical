@@ -38,6 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await authService.fetchProfile();
         setUser(profile);
       } catch (error) {
+        console.error('Auth initialization error:', error);
+        // Safari-specific debugging
+        if (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
+          console.log('Safari detected - checking for cookie issues');
+        }
         setUser(null);
       } finally {
         setIsLoading(false);
