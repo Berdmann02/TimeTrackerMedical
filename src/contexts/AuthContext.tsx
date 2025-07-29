@@ -56,6 +56,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const user = await authService.login(email, password);
       setUser(user);
+      
+      // Safari-specific debugging
+      const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+      if (isSafari) {
+        console.log('Safari login successful - checking cookies');
+        // Force a small delay to ensure cookies are set
+        setTimeout(() => {
+          console.log('Safari cookies after login:', document.cookie);
+        }, 100);
+      }
     } catch (error) {
       setUser(null);
       throw error;

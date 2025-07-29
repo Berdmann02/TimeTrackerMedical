@@ -14,6 +14,20 @@ axiosInstance.interceptors.request.use(
       config.headers['Content-Type'] = 'application/json';
       config.headers['Accept'] = 'application/json';
     }
+    
+    // Safari-specific debugging
+    const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+    if (isSafari) {
+      console.log('Safari request:', {
+        url: config.url,
+        method: config.method,
+        withCredentials: config.withCredentials,
+        headers: config.headers
+      });
+      
+
+    }
+    
     return config;
   },
   (error) => {
@@ -28,6 +42,22 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     // Log Safari-specific errors
+    const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+    
+    if (isSafari) {
+      console.error('Safari error detected:', {
+        status: error.response?.status,
+        message: error.message,
+        url: error.config?.url,
+        withCredentials: error.config?.withCredentials
+      });
+      
+      // If it's a 401 error in Safari, it's likely a cookie issue
+      if (error.response?.status === 401) {
+        console.error('Safari 401 error - likely cookie authentication issue');
+      }
+    }
+    
     if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
       console.error('Safari network error detected:', error);
     }
