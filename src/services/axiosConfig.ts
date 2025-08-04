@@ -29,8 +29,17 @@ axiosInstance.interceptors.request.use(
     // Use token from sessionStorage for all browsers (Safari-compatible)
     const token = sessionStorage.getItem('auth_token');
     if (token && !config.headers.Authorization) {
-      console.log('Using sessionStorage token for request');
+      console.log('Using sessionStorage token for request:', {
+        url: config.url,
+        hasToken: !!token,
+        tokenLength: token.length
+      });
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (!token) {
+      console.log('No sessionStorage token found for request:', {
+        url: config.url,
+        hasAuthorization: !!config.headers.Authorization
+      });
     }
     
     return config;

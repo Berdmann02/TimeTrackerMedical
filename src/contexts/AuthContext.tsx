@@ -35,14 +35,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       setIsLoading(true);
       try {
-        const profile = await authService.fetchProfile();
-        setUser(profile);
+        // Check if we have a stored token first
+        const token = authService.getAuthToken();
+        const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+        
+        if (token) {
+          console.log('Found stored token, attempting to fetch profile');
+          if (isSafari) {
+            console.log('Safari: Using stored token for authentication');
+          }
+          
+          try {
+            const profile = await authService.fetchProfile();
+            setUser(profile);
+            console.log('Successfully authenticated with stored token');
+          } catch (profileError) {
+            console.error('Failed to fetch profile with stored token:', profileError);
+            // Clear invalid token
+            sessionStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_token');
+            setUser(null);
+          }
+        } else {
+          console.log('No stored token found, user not authenticated');
+          setUser(null);
+        }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        // Safari-specific debugging
-        if (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
-          console.log('Safari detected - checking for cookie issues');
-        }
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -60,30 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Safari-specific debugging
       const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
       if (isSafari) {
-        console.log('Safari login successful - checking cookies');
-        // Force a small delay to ensure cookies are set
-        setTimeout(() => {
-          console.log('Safari cookies after login:', document.cookie);
-          
-          // Test if we can make an authenticated request
-          fetch('https://time-tracker-medical-backend-production.up.railway.app/auth/profile', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          })
-          .then(response => {
-            console.log('Safari post-login test:', {
-              status: response.status,
-              statusText: response.statusText,
-              hasCookies: document.cookie.includes('auth_token')
-            });
-          })
-          .catch(error => {
-            console.error('Safari post-login test failed:', error);
-          });
-        }, 500);
+        console.log('Safari login successful - token stored in sessionStorage');
+        console.log('Safari cookies after login:', document.cookie);
       }
     } catch (error) {
       setUser(null);

@@ -6,6 +6,13 @@ class AuthService {
   async login(email: string, password: string) {
     const response = await axiosInstance.post(`${API_URL}/auth/login`, { email, password });
     
+    console.log('Login response received:', {
+      status: response.status,
+      hasAccessToken: !!response.data.access_token,
+      hasUser: !!response.data.user,
+      responseData: response.data
+    });
+    
     // Safari-specific debugging
     const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
     if (isSafari) {
@@ -25,6 +32,9 @@ class AuthService {
     // Store token for all browsers as fallback
     if (response.data.access_token) {
       sessionStorage.setItem('auth_token', response.data.access_token);
+      console.log('Stored access token in sessionStorage for all browsers');
+    } else {
+      console.warn('No access_token received in login response');
     }
     
     return response.data.user;
@@ -51,18 +61,21 @@ class AuthService {
     // Check sessionStorage first (Safari-friendly)
     const sessionToken = sessionStorage.getItem('auth_token');
     if (sessionToken) {
+      console.log('Found token in sessionStorage');
       return sessionToken;
     }
     
     // Fallback to localStorage
     const localToken = localStorage.getItem('auth_token');
     if (localToken) {
+      console.log('Found token in localStorage, moving to sessionStorage');
       // Move to sessionStorage for better Safari compatibility
       sessionStorage.setItem('auth_token', localToken);
       localStorage.removeItem('auth_token');
       return localToken;
     }
     
+    console.log('No auth token found in any storage');
     return null;
   }
 
