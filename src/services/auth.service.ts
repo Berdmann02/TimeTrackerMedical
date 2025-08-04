@@ -15,7 +15,16 @@ class AuthService {
         responseHeaders: response.headers
       });
       
-
+      // Store token in sessionStorage for Safari (more secure than localStorage)
+      if (response.data.access_token) {
+        sessionStorage.setItem('auth_token', response.data.access_token);
+        console.log('Safari: Stored token in sessionStorage');
+      }
+    }
+    
+    // Store token for all browsers as fallback
+    if (response.data.access_token) {
+      sessionStorage.setItem('auth_token', response.data.access_token);
     }
     
     return response.data.user;
@@ -24,6 +33,11 @@ class AuthService {
   // Logout method
   async logout() {
     await axiosInstance.post(`${API_URL}/auth/logout`, {});
+    
+    // Clear all storage
+    sessionStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_token');
+    console.log('Cleared all auth tokens');
   }
 
   // Fetch current user profile
@@ -32,7 +46,35 @@ class AuthService {
     return response.data;
   }
 
+  // Get token from multiple sources (Safari-compatible)
+  getAuthToken(): string | null {
+    // Check sessionStorage first (Safari-friendly)
+    const sessionToken = sessionStorage.getItem('auth_token');
+    if (sessionToken) {
+      return sessionToken;
+    }
+    
+    // Fallback to localStorage
+    const localToken = localStorage.getItem('auth_token');
+    if (localToken) {
+      // Move to sessionStorage for better Safari compatibility
+      sessionStorage.setItem('auth_token', localToken);
+      localStorage.removeItem('auth_token');
+      return localToken;
+    }
+    
+    return null;
+  }
 
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    return this.getAuthToken() !== null;
+  }
+
+  // Set auth token (for manual token management)
+  setAuthToken(token: string): void {
+    sessionStorage.setItem('auth_token', token);
+  }
 }
 
 export default new AuthService(); 

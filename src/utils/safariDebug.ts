@@ -49,11 +49,23 @@ export const monitorSafariCookies = (): void => {
         timestamp: new Date().toISOString(),
         hasAuthToken,
         cookieCount: cookies.split(';').length,
-        allCookies: cookies
+        allCookies: cookies,
+        url: window.location.href,
+        domain: window.location.hostname
       });
       
       if (!hasAuthToken) {
         console.warn('⚠️ auth_token cookie missing in Safari!');
+        
+        // Test if we can set a cookie manually
+        try {
+          document.cookie = 'safari_test_cookie=test; path=/; max-age=60';
+          console.log('Test cookie set, checking if it persists...');
+        } catch (error) {
+          console.error('Failed to set test cookie:', error);
+        }
+      } else {
+        console.log('✅ auth_token cookie found in Safari');
       }
     }, 2000);
     
@@ -96,5 +108,59 @@ export const testSafariCrossDomainCookies = (): void => {
     .catch(error => {
       console.error('Safari cross-domain test error:', error);
     });
+  }
+};
+
+export const testSafariCookieSending = (): void => {
+  if (isSafari()) {
+    console.log('🧪 Testing if Safari sends cookies with requests...');
+    
+    // Create a test request and log all details
+    const testRequest = new XMLHttpRequest();
+    testRequest.open('GET', 'https://time-tracker-medical-backend-production.up.railway.app/auth/profile', true);
+    testRequest.withCredentials = true;
+    testRequest.setRequestHeader('Content-Type', 'application/json');
+    
+    testRequest.onreadystatechange = function() {
+      if (testRequest.readyState === 4) {
+        console.log('Safari XHR test result:', {
+          status: testRequest.status,
+          statusText: testRequest.statusText,
+          responseText: testRequest.responseText,
+          getAllResponseHeaders: testRequest.getAllResponseHeaders()
+        });
+      }
+    };
+    
+    testRequest.send();
+  }
+};
+
+export const testSafariThirdPartyCookies = (): void => {
+  if (isSafari()) {
+    console.log('🧪 Testing Safari third-party cookie behavior...');
+    
+    // Check if Safari is blocking third-party cookies
+    const currentDomain = window.location.hostname;
+    const backendDomain = 'time-tracker-medical-backend-production.up.railway.app';
+    
+    console.log('Domain comparison:', {
+      currentDomain,
+      backendDomain,
+      isCrossDomain: currentDomain !== backendDomain
+    });
+    
+    // Test setting a cookie for the backend domain
+    try {
+      // This should fail in Safari if third-party cookies are blocked
+      document.cookie = `safari_third_party_test=test; domain=${backendDomain}; path=/; max-age=60`;
+      console.log('Third-party cookie test set');
+    } catch (error) {
+      console.error('Third-party cookie test failed:', error);
+    }
+    
+    // Check Safari's Intelligent Tracking Prevention
+    console.log('Safari ITP check - this might be blocking cross-domain cookies');
+    console.log('To disable ITP: Safari → Preferences → Privacy → "Prevent cross-site tracking" → OFF');
   }
 }; 

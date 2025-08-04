@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/auth.service';
+import authService from '../services/auth.service';
 
 interface User {
   id?: number;
@@ -64,7 +64,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Force a small delay to ensure cookies are set
         setTimeout(() => {
           console.log('Safari cookies after login:', document.cookie);
-        }, 100);
+          
+          // Test if we can make an authenticated request
+          fetch('https://time-tracker-medical-backend-production.up.railway.app/auth/profile', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+          .then(response => {
+            console.log('Safari post-login test:', {
+              status: response.status,
+              statusText: response.statusText,
+              hasCookies: document.cookie.includes('auth_token')
+            });
+          })
+          .catch(error => {
+            console.error('Safari post-login test failed:', error);
+          });
+        }, 500);
       }
     } catch (error) {
       setUser(null);

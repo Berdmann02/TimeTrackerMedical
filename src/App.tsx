@@ -21,6 +21,7 @@ import RestrictPharmacistRoute from './components/layout/RestrictPharmacistRoute
 import RestrictNurseRoute from './components/layout/RestrictNurseRoute';
 import { InactivityLogoutProvider } from './components/layout/InactivityLogoutProvider';
 import NotFoundPage from './pages/not-found/NotFoundPage';
+import { SafariWarning } from './components/SafariWarning';
 
 function App() {
   const { isLoading } = useAuth();
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <InactivityLogoutProvider>
+      <SafariWarning />
       <Routes>
         <Route
           path="/login"

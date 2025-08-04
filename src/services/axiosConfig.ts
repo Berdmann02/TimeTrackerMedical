@@ -24,8 +24,13 @@ axiosInstance.interceptors.request.use(
         withCredentials: config.withCredentials,
         headers: config.headers
       });
-      
-
+    }
+    
+    // Use token from sessionStorage for all browsers (Safari-compatible)
+    const token = sessionStorage.getItem('auth_token');
+    if (token && !config.headers.Authorization) {
+      console.log('Using sessionStorage token for request');
+      config.headers.Authorization = `Bearer ${token}`;
     }
     
     return config;
@@ -55,6 +60,8 @@ axiosInstance.interceptors.response.use(
       // If it's a 401 error in Safari, it's likely a cookie issue
       if (error.response?.status === 401) {
         console.error('Safari 401 error - likely cookie authentication issue');
+        // Clear invalid token
+        sessionStorage.removeItem('auth_token');
       }
     }
     
